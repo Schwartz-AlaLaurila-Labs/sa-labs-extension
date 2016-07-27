@@ -1,9 +1,4 @@
-% Property Descriptions:
-%
-% LineColor (ColorSpec)
-%   Color of the mean response line. The default is blue.
-
-classdef OneDimensionalResposeFigureHandler < FigureHandler
+classdef OneDimensionalResponseFigureHandler < symphonyui.core.FigureHandler
     
     properties (Hidden)
         figureType = '1D Response'
@@ -43,46 +38,46 @@ classdef OneDimensionalResposeFigureHandler < FigureHandler
     
     methods
         
-        function obj = OneDimensionalResposeFigureHandler(protocolPlugin, deviceName, varargin)
+        function obj = OneDimensionalResponseFigureHandler(protocolPlugin, deviceName, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
-            ip.addParamValue('LineColor', 'b', @(x)ischar(x) || isvector(x));
-            ip.addParamValue('StartTime', 0, @(x)isnumeric(x));
-            ip.addParamValue('EndTime', 0, @(x)isnumeric(x));
-            ip.addParamValue('Mode', 'Cell attached', @(x)ischar(x));
-            ip.addParamValue('EpochParam', '', @(x)ischar(x));
-            ip.addParamValue('ResponseType', '', @(x)ischar(x));
-            ip.addParamValue('PlotType', 'Linear', @(x)ischar(x));
-            ip.addParamValue('LineStyle', 'none', @(x)ischar(x));
-            ip.addParamValue('LowPassFreq', 100, @(x)isnumeric(x));
-            ip.addParamValue('SpikeThreshold', 10, @(x)isnumeric(x));
-            ip.addParamValue('SpikeDetectorMode', 'Stdev', @(x)ischar(x));
+            ip.addParameter('startTime', 0, @(x)isnumeric(x));
+            ip.addParameter('endTime', 0, @(x)isnumeric(x));
+            ip.addParameter('ampMode', 'Cell attached', @(x)ischar(x));
+            ip.addParameter('epochParam', '', @(x)ischar(x));
+            ip.addParameter('responseType', '', @(x)ischar(x));
+            ip.addParameter('plotType', 'Linear', @(x)ischar(x));
+%             ip.addParameter('lineColor', 'b', @(x)ischar(x) || isvector(x));
+%             ip.addParameter('LineStyle', 'none', @(x)ischar(x));
+%             ip.addParameter('LowPassFreq', 100, @(x)isnumeric(x));
+%             ip.addParameter('SpikeThreshold', 10, @(x)isnumeric(x));
+%             ip.addParameter('SpikeDetectorMode', 'Stdev', @(x)ischar(x));
             
             % Allow deviceName to be an optional parameter.
             % inputParser.addOptional does not fully work with string variables.
-            if nargin > 1 && any(strcmp(deviceName, ip.Parameters))
-                varargin = [deviceName varargin];
-                deviceName = [];
-            end
-            if nargin == 1
-                deviceName = [];
-            end
+%             if nargin > 1 && any(strcmp(deviceName, ip.Parameters))
+%                 varargin = [deviceName varargin];
+%                 deviceName = [];
+%             end
+%             if nargin == 1
+%                 deviceName = [];
+%             end
             
             ip.parse(varargin{:});
             
             obj = obj@FigureHandler(protocolPlugin, ip.Unmatched);
             obj.deviceName = deviceName;
-            obj.lineColor = ip.Results.LineColor;
-            obj.lineStyle = ip.Results.LineStyle;
-            obj.stimStart = round(ip.Results.StartTime);
-            obj.stimEnd = round(ip.Results.EndTime);
-            obj.mode = ip.Results.Mode;
-            obj.epochParam = ip.Results.EpochParam;
-            obj.responseType = ip.Results.ResponseType;
+%             obj.lineColor = ip.Results.lineColor;
+%             obj.lineStyle = ip.Results.lineStyle;
+            obj.startTime = round(ip.Results.startTime);
+            obj.endTime = round(ip.Results.endTime);
+            obj.ampMode = ip.Results.ampMode;
+            obj.epochParam = ip.Results.epochParam;
+%             obj.responseType = ip.Results.responseType;
             obj.plotType = ip.Results.PlotType;
-            obj.lowPassFreq = ip.Results.LowPassFreq;
-            obj.spikeThreshold = ip.Results.SpikeThreshold;
-            obj.spikeDetectorMode = ip.Results.SpikeDetectorMode;
+%             obj.lowPassFreq = ip.Results.lowPassFreq;
+%             obj.spikeThreshold = ip.Results.spikeThreshold;
+%             obj.spikeDetectorMode = ip.Results.spikeDetectorMode;
             
             %set default response type
             if strcmp(obj.mode, 'Cell attached') && isempty(obj.responseType)
@@ -113,9 +108,9 @@ classdef OneDimensionalResposeFigureHandler < FigureHandler
             
             if isempty(obj.deviceName)
                 % Use the first device response found if no device name is specified.
-                [responseData, sampleRate, units] = epoch.response();
+                [responseData, sampleRate, ~] = epoch.response();
             else
-                [responseData, sampleRate, units] = epoch.response(obj.deviceName);
+                [responseData, sampleRate, ~] = epoch.response(obj.deviceName);
             end
             
             if strcmp(obj.mode, 'Cell attached')
