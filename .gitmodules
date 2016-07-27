@@ -1,0 +1,3 @@
+[submodule "src/main/matlab/+sa_labs/+protocol"]
+	path = src/main/matlab/+sa_labs/+protocol
+	url = https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-protocol
