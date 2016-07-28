@@ -6,6 +6,8 @@ classdef ResponseStatisticsFigure_mod < symphonyui.core.FigureHandler
         measurementCallbacks
         measurementRegion
         baselineRegion
+        epochSplitParameter
+        epochData
     end
     
     properties (Access = private)
@@ -23,14 +25,18 @@ classdef ResponseStatisticsFigure_mod < symphonyui.core.FigureHandler
             ip = inputParser();
             ip.addParameter('measurementRegion', [], @(x)isnumeric(x) || isvector(x));
             ip.addParameter('baselineRegion', [], @(x)isnumeric(x) || isvector(x));
+            ip.addParameter('epochSplitParameter', '', @(x)ischar(x));
             ip.parse(varargin{:});
             
             obj.device = device;
             obj.measurementCallbacks = measurementCallbacks;
             obj.measurementRegion = ip.Results.measurementRegion;
             obj.baselineRegion = ip.Results.baselineRegion;
+            obj.epochSplitParameter = ip.Results.epochSplitParameter;
             
             obj.createUi();
+            
+            obj.epochData = {};
         end
         
         function createUi(obj)
@@ -57,46 +63,66 @@ classdef ResponseStatisticsFigure_mod < symphonyui.core.FigureHandler
         end
         
         function handleEpoch(obj, epoch)
+            % process this epoch and add to epochData array
             if ~epoch.hasResponse(obj.device)
                 error(['Epoch does not contain a response for ' obj.device.name]);
             end
             
-            response = epoch.getResponse(obj.device);
-            quantities = response.getData();
-            rate = response.sampleRate.quantityInBaseUnits;
+            e = struct();
             
-            msToPts = @(t)max(round(t / 1e3 * rate), 1);
+            e.responseObject = epoch.getResponse(obj.device);
+            e.signal = e.responseObject.getData();
+            e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
+            
+            msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
             
             if ~isempty(obj.baselineRegion)
                 x1 = msToPts(obj.baselineRegion(1));
                 x2 = msToPts(obj.baselineRegion(2));
-                baseline = quantities(x1:x2);
-                quantities = quantities - mean(baseline);
+                baseline = e.signal(x1:x2);
+                e.signal = e.signal - mean(baseline);
             end
             
             if ~isempty(obj.measurementRegion)
                 x1 = msToPts(obj.measurementRegion(1));
                 x2 = msToPts(obj.measurementRegion(2));
-                quantities = quantities(x1:x2);
+                e.signal = e.signal(x1:x2);
             end           
             
+            e.measurements = [];
             for i = 1:numel(obj.measurementCallbacks)
                 fcn = obj.measurementCallbacks{i};
-                result = fcn(quantities);
-                if numel(obj.markers) < i
-                    colorOrder = get(groot, 'defaultAxesColorOrder');
-                    color = colorOrder(mod(i - 1, size(colorOrder, 1)) + 1, :);
-                    obj.markers(i) = line(1, result, 'Parent', obj.axesHandles(i), ...
-                        'LineStyle', 'none', ...
-                        'Marker', 'o', ...
-                        'MarkerEdgeColor', color, ...
-                        'MarkerFaceColor', color);
-                else
-                    x = get(obj.markers(i), 'XData');
-                    y = get(obj.markers(i), 'YData');
-                    set(obj.markers(i), 'XData', [x x(end)+1], 'YData', [y result]);
+                result = fcn(e.signal);
+                e.measurements(i) = result;
+            end
+            
+            obj.epochData{end+1} = e;
+            
+            % then loop through all the epochs we have and plot them
+            for measi = 1:numel(obj.measurementCallbacks)
+                for ei = 1:length(obj.epochData)
+                    epoc = obj.epochData{ei};
+                    
+                    measurement = epoc.measurements(measi);
+                    
+                    if numel(obj.markers) < measi
+                        colorOrder = get(groot, 'defaultAxesColorOrder');
+                        color = colorOrder(mod(measi - 1, size(colorOrder, 1)) + 1, :);
+                        obj.markers(measi) = line(1, measurement, 'Parent', obj.axesHandles(measi), ...
+                            'LineStyle', 'none', ...
+                            'Marker', 'o', ...
+                            'MarkerEdgeColor', color, ...
+                            'MarkerFaceColor', color);
+                    else
+                        x = get(obj.markers(measi), 'XData');
+                        y = get(obj.markers(measi), 'YData');
+                        set(obj.markers(measi), 'XData', [x x(end)+1], 'YData', [y measurement]);
+                    end
                 end
             end
+            
+            
+            
         end
         
     end
