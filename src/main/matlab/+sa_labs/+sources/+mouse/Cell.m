@@ -1,4 +1,4 @@
-classdef Cell < fi.helsinki.biosci.ala_laurila.sources.Cell
+classdef Cell < sa_labs.sources.Cell
     
     methods
         

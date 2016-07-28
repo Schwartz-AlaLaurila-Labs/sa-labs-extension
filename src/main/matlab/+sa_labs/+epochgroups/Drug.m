@@ -1,4 +1,4 @@
-classdef Drug < fi.helsinki.biosci.ala_laurila.epochgroups.EpochGroup
+classdef Drug < sa_labs.epochgroups.EpochGroup
     
     methods
         

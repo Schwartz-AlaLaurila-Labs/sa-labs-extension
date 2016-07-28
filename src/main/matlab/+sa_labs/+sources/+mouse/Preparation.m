@@ -1,4 +1,4 @@
-classdef Preparation < fi.helsinki.biosci.ala_laurila.sources.Preparation
+classdef Preparation < sa_labs.sources.Preparation
     
     methods
         

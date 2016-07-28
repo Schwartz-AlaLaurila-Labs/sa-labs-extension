@@ -1,4 +1,4 @@
-classdef Control < fi.helsinki.biosci.ala_laurila.epochgroups.EpochGroup
+classdef Control < sa_labs.epochgroups.EpochGroup
     
     methods
         

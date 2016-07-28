@@ -1,4 +1,4 @@
-classdef Mouse < fi.helsinki.biosci.ala_laurila.sources.Subject
+classdef Mouse < sa_labs.sources.Subject
 
     properties
         rodSpectrum

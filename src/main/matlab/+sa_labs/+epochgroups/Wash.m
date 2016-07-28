@@ -1,4 +1,4 @@
-classdef Wash < fi.helsinki.biosci.ala_laurila.epochgroups.EpochGroup
+classdef Wash < sa_labs.epochgroups.EpochGroup
     
     methods
         
