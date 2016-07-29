@@ -1,4 +1,4 @@
-classdef ResponseAnalysisPlot < symphonyui.core.FigureHandler
+classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
     % Plots statistics calculated from the response of a specified device for each epoch run.
     
     properties (SetAccess = private)
@@ -6,11 +6,14 @@ classdef ResponseAnalysisPlot < symphonyui.core.FigureHandler
         activeFunctionNames
         measurementRegion
         baselineRegion
-        epochSplitParameter
         epochData
         allMeasurementNames = {'mean','var','max','min','sum','std'};
         plotMode
     end
+    
+    properties % not private access
+        epochSplitParameter
+    end    
     
     properties (Access = private)
         axesHandles
@@ -19,14 +22,17 @@ classdef ResponseAnalysisPlot < symphonyui.core.FigureHandler
     
     methods
         
-        function obj = ResponseAnalysisPlot(device, activeFunctionNames, varargin)
+        function obj = ResponseAnalysisFigure(device, varargin)
+            
+%             disp('figure start')
             obj = obj@symphonyui.core.FigureHandler();
             
-            if ~iscell(activeFunctionNames)
-                activeFunctionNames = {activeFunctionNames};
-            end
+%             if ~iscell(activeFunctionNames)
+%                 activeFunctionNames = {activeFunctionNames};
+%             end
             
             ip = inputParser();
+            ip.addParameter('activeFunctionNames', {'mean'});            
             ip.addParameter('measurementRegion', [], @(x)isnumeric(x) || isvector(x));
             ip.addParameter('baselineRegion', [], @(x)isnumeric(x) || isvector(x));
             ip.addParameter('epochSplitParameter', '', @(x)ischar(x));
@@ -34,7 +40,7 @@ classdef ResponseAnalysisPlot < symphonyui.core.FigureHandler
             ip.parse(varargin{:});
             
             obj.device = device;
-            obj.activeFunctionNames = activeFunctionNames;
+            obj.activeFunctionNames = ip.Results.activeFunctionNames;
             obj.measurementRegion = ip.Results.measurementRegion;
             obj.baselineRegion = ip.Results.baselineRegion;
             obj.epochSplitParameter = ip.Results.epochSplitParameter;
@@ -49,7 +55,7 @@ classdef ResponseAnalysisPlot < symphonyui.core.FigureHandler
             import appbox.*;
 %             clf(obj.figureHandle);
             
-            fullBox = uix.VBox('Parent',obj.figureHandle,'Spacing',10);
+            fullBox = uix.VBoxFlex('Parent',obj.figureHandle,'Spacing',10);
 %             hbox = uix.HBox( 'Parent', obj.figureHandle);
 %             plotBox = uix.VBox('Parent', hbox );
 %             controlBox = uix.VBox('Parent', hbox);
@@ -151,7 +157,7 @@ classdef ResponseAnalysisPlot < symphonyui.core.FigureHandler
             e.signal = e.responseObject.getData();
             e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
             e.splitParameter = epoch.parameters(obj.epochSplitParameter);
-            
+                        
             msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
             
             % setup time regions for analysis
