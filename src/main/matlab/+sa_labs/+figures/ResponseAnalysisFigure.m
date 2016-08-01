@@ -9,14 +9,16 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         epochData
         allMeasurementNames = {'mean','var','max','min','sum','std'};
         plotMode
+        responseAxes
+        epochSplitParameter
     end
     
     properties % not private access
-        epochSplitParameter
+        
     end    
     
     properties (Access = private)
-        axesHandles
+        axesHandlesAnalysis
         markers
     end
     
@@ -54,8 +56,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         function createUi(obj)
             import appbox.*;
 %             clf(obj.figureHandle);
-            
-            fullBox = uix.VBoxFlex('Parent',obj.figureHandle,'Spacing',10);
+%             fullBox = uix.HBoxFlex('Parent', obj.figureHandle);
+            leftBox = uix.VBoxFlex('Parent',obj.figureHandle, 'Spacing',10);
+%             rightBox = uix.VBox('Parent', fullBox);
+
 %             hbox = uix.HBox( 'Parent', obj.figureHandle);
 %             plotBox = uix.VBox('Parent', hbox );
 %             controlBox = uix.VBox('Parent', hbox);
@@ -63,7 +67,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 
 %             funcNames = cellfun(@func2str, obj.activeFunctionNames, 'UniformOutput', 0);
 
-            obj.axesHandles = [];
+            obj.responseAxes = axes('Parent', leftBox);
+
+            obj.axesHandlesAnalysis = [];
             rowBoxes = [];
             plotControlBoxes = [];
             measListBoxes = [];
@@ -71,15 +77,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             for measi = 1:numel(obj.activeFunctionNames)
                 funcName = obj.activeFunctionNames{measi};
                 
-                rowBoxes(measi) = uix.HBox('Parent',fullBox);
+                rowBoxes(measi) = uix.HBox('Parent',leftBox);
                 
                 if strcmp(obj.plotMode, 'cartesian')
-                    obj.axesHandles(measi) = axes('Parent', rowBoxes(measi));
+                    obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
                 else
-                    obj.axesHandles(measi) = polaraxes('Parent', rowBoxes(measi));
+                    obj.axesHandlesAnalysis(measi) = polaraxes('Parent', rowBoxes(measi));
                 end
                 
-%                 set(obj.axesHandles(i),'Position',[.4 .4 .5 .5])
                 plotControlBoxes(measi) = uix.VBox('Parent',rowBoxes(measi));
                 
                 thisFuncIndex = find(not(cellfun('isempty', strfind(obj.activeFunctionNames, funcName))), 1);
@@ -94,24 +99,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 set(plotControlBoxes(measi), 'Heights', [-1, 30])
                 
                 set(rowBoxes(measi), 'Widths', [-3 80]);
-                
-                %                     'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
-                %                     'FontSize', get(obj.figureHandle, 'DefaultUicontrolFontSize'), ...
-                %                     'XTickMode', 'auto', ...
-                %                     'XColor', 'none');
-                %                 ylabel(obj.axesHandles(i), func2str(obj.activeFunctionNames{i}));
+
             end
-            %             set(obj.axesHandles(end), 'XColor', get(groot, 'defaultAxesXColor'));
-            %             xlabel(obj.axesHandles(end), 'epoch');
             
-            %             obj.setTitle([obj.device.name ' Response Statistics']);
-            
-            buttonArea = uix.HButtonBox('Parent',fullBox,'ButtonSize', [100, 30]);
+            buttonArea = uix.HButtonBox('Parent',leftBox,'ButtonSize', [100, 30]);
             newPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'new plot','Callback',@obj.addPlotCallback);
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
 
-            
-            set(fullBox, 'Heights', [-1*ones(1, numel(obj.activeFunctionNames)), 30])
+            set(leftBox, 'Heights', [-1, -1*ones(1, numel(obj.activeFunctionNames)), 30])
         end
         
         function redrawPlotCallback(obj, ~, ~)
@@ -122,27 +117,22 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             items = get(hObject,'String');
             index_selected = get(hObject,'Value');
             item_selected = items{index_selected};
-%             fprintf('plot %d switch to %s\n', measi, item_selected);
             obj.activeFunctionNames{measi} = item_selected;
-%             obj.redrawPlots();
         end
         
         function deletePlotCallback(obj, ~, ~, measi)
-%             fprintf('delete plot %d\n',measi);
             obj.activeFunctionNames(measi) = [];
             obj.createUi();
         end
         
         function addPlotCallback(obj, ~, ~)
-%             fprintf('delete plot %d\n',measi);
             obj.activeFunctionNames{end+1} = obj.allMeasurementNames{1};
             obj.createUi();
-%             obj.redrawPlots();
         end        
         
         function setTitle(obj, t)
             set(obj.figureHandle, 'Name', t);
-            title(obj.axesHandles(1), t);
+            title(obj.axesHandlesAnalysis(1), t);
         end
         
         function handleEpoch(obj, epoch)
@@ -154,9 +144,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             e = struct();
             
             e.responseObject = epoch.getResponse(obj.device);
-            e.signal = e.responseObject.getData();
+            [e.signal, e.units] = e.responseObject.getData();
             e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
             e.splitParameter = epoch.parameters(obj.epochSplitParameter);
+            
                         
             msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
             
@@ -187,7 +178,19 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         end
         
         function redrawPlots(obj)
-              
+            if isempty(obj.epochData)
+                return
+            end
+            %plot the most recent response at the top
+            epoc = obj.epochData{end};
+            
+            quantities = epoc.responseObject.getData();
+            x = (1:numel(quantities)) / epoc.responseObject.sampleRate.quantityInBaseUnits;
+            y = quantities;
+            plot(obj.responseAxes, x, y);
+            title(obj.responseAxes, 'previous response');
+            ylabel(obj.responseAxes, epoc.units, 'Interpreter', 'none');
+            
             % then loop through all the epochs we have and plot them
             
             for measi = 1:numel(obj.activeFunctionNames)
@@ -222,24 +225,29 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     Y_std(i) = std(allMeasurementsByX{i});
                 end
                 
-%                 axh = obj.axesHandles
+%                 axh = obj.axesHandlesAnalysis
                 if strcmp(obj.plotMode, 'cartesian')
-                    errorbar(obj.axesHandles(measi), X, Y, Y_std);
+%                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
+                    plot(obj.axesHandlesAnalysis(measi), X, Y, '-ob','LineWidth',2);
+                    hold(obj.axesHandlesAnalysis(measi), 'on');
+                    plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '--b','LineWidth',.5);
+                    plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '--b','LineWidth',.5);
+                    hold(obj.axesHandlesAnalysis(measi), 'off');
                 else
-%                     axes(obj.axesHandles(measi));
-                    cla(obj.axesHandles(measi))
+%                     axes(obj.axesHandlesAnalysis(measi));
+                    cla(obj.axesHandlesAnalysis(measi))
                     X_rad = deg2rad(X);
                     X_rad(end+1) = X_rad(1);
                     Y(end+1) = Y(1);
                     Y_std(end+1) = Y_std(1);
-                    polarplot(obj.axesHandles(measi), X_rad, Y, '-o');
-                    hold(obj.axesHandles(measi), 'on');
-                    polarplot(obj.axesHandles(measi), X_rad, Y + Y_std, '--r');
-                    polarplot(obj.axesHandles(measi), X_rad, Y - Y_std, '--r');
-                    hold(obj.axesHandles(measi), 'off');
+                    polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-ob','LineWidth',2);
+                    hold(obj.axesHandlesAnalysis(measi), 'on');
+                    polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '--b','LineWidth',.5);
+                    polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '--b','LineWidth',.5);
+                    hold(obj.axesHandlesAnalysis(measi), 'off');
                 end
-%                 boxplot(obj.axesHandles(measi), allMeasurementsByEpoch, paramByEpoch);
-                title(obj.axesHandles(measi), funcName);
+%                 boxplot(obj.axesHandlesAnalysis(measi), allMeasurementsByEpoch, paramByEpoch);
+                title(obj.axesHandlesAnalysis(measi), funcName);
                 
                 %                 for ei = 1:length(obj.epochData)
                 %                     epoc = obj.epochData{ei};
@@ -249,7 +257,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 %                     if numel(obj.markers) < measi
                 %                         colorOrder = get(groot, 'defaultAxesColorOrder');
                 %                         color = colorOrder(mod(measi - 1, size(colorOrder, 1)) + 1, :);
-                %                         obj.markers(measi) = line(1, measurement, 'Parent', obj.axesHandles(measi), ...
+                %                         obj.markers(measi) = line(1, measurement, 'Parent', obj.axesHandlesAnalysis(measi), ...
                 %                             'LineStyle', 'none', ...
                 %                             'Marker', 'o', ...
                 %                             'MarkerEdgeColor', color, ...
