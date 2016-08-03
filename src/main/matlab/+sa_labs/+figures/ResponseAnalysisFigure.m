@@ -12,6 +12,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         plotMode
         responseAxes
         epochSplitParameter
+        channelNames
     end
     
     properties % not private access
@@ -139,8 +140,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         
         function handleEpoch(obj, epoch)
             channels = cell(obj.numChannels, 1);
+            obj.channelNames = cell(obj.numChannels,1);
+
             for ci = 1:obj.numChannels
-                fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
+                obj.channelNames{ci} = obj.devices{ci}.name;
+%                 fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
                 % process this epoch and add to epochData array
                 if ~epoch.hasResponse(obj.devices{ci})
                     disp(['Epoch does not contain a response for ' obj.devices{ci}.name]);
@@ -190,19 +194,25 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             if isempty(obj.epochData)
                 return
             end
+            
+            colorOrder = get(groot, 'defaultAxesColorOrder');
+     
+            
             %plot the most recent response at the top
 %             clf(obj.responseAxes);
+            hold(obj.responseAxes, 'off')
             for ci = 1:obj.numChannels
+                color = colorOrder(mod(ci - 1, size(colorOrder, 1)) + 1, :);
                 epoch = obj.epochData{end}{ci};
                 quantities = epoch.responseObject.getData();
                 x = (1:numel(quantities)) / epoch.responseObject.sampleRate.quantityInBaseUnits;
                 y = quantities;
-                hold(obj.responseAxes, 'off')
-                plot(obj.responseAxes, x, y);
+                plot(obj.responseAxes, x, y, 'Color', color);
                 hold(obj.responseAxes, 'on')
                 title(obj.responseAxes, 'previous response');
                 ylabel(obj.responseAxes, epoch.units, 'Interpreter', 'none');
             end
+%             legend(obj.responseAxes, obj.channelNames , 'Location', 'east')
             hold(obj.responseAxes,'off')
             
 %             then loop through all the epochs we have and plot them
@@ -210,6 +220,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             for measi = 1:numel(obj.activeFunctionNames)
                 funcName = obj.activeFunctionNames{measi};
                 for ci = 1:obj.numChannels
+                    
+                    color = colorOrder(mod(ci - 1, size(colorOrder, 1)) + 1, :);
+                    
                     if ci == 1
                         hold(obj.axesHandlesAnalysis(measi), 'off');
                     else
@@ -249,10 +262,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
     %                 axh = obj.axesHandlesAnalysis
                     if strcmp(obj.plotMode, 'cartesian')
     %                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
-                        plot(obj.axesHandlesAnalysis(measi), X, Y, '-ob','LineWidth',2);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y, '-o','LineWidth',2, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'on');
-                        plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '--b','LineWidth',.5);
-                        plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '--b','LineWidth',.5);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '--','LineWidth',.5, 'Color', color);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '--','LineWidth',.5, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'off');
                     else
     %                     axes(obj.axesHandlesAnalysis(measi));
@@ -261,10 +274,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         X_rad(end+1) = X_rad(1);
                         Y(end+1) = Y(1);
                         Y_std(end+1) = Y_std(1);
-                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-ob','LineWidth',2);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-o','LineWidth',2, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'on');
-                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '--b','LineWidth',.5);
-                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '--b','LineWidth',.5);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '--','LineWidth',.5, 'Color', color);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '--','LineWidth',.5, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'off');
                     end
     %                 boxplot(obj.axesHandlesAnalysis(measi), allMeasurementsByEpoch, paramByEpoch);
