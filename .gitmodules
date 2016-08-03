@@ -1,9 +1,0 @@
-[submodule "src/main/matlab/+sa_labs/+protocol"]
-	path = src/main/matlab/+sa_labs/+protocols
-	url = https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-protocol
-[submodule "lib/matlab-lcr"]
-	path = lib/matlab-lcr
-	url = https://github.com/Stage-VSS/matlab-lcr.git
-[submodule "lib/matlab-emagin"]
-	path = lib/matlab-emagin
-	url = https://github.com/Stage-VSS/matlab-emagin.git
