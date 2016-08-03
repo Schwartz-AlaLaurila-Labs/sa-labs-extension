@@ -14,6 +14,7 @@ classdef Annulus < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
+        displayName = 'Annulus';
         keepConstantType = symphonyui.core.PropertyType('char', 'row', {'area', 'thickness'})
         innerDiameterVector             % Annulus inner diameter vector, linearly spaced between minInnerDiam and minOuterDiam diameter for numberOfSizeSteps
         curInnerDiameter                % Annulus innner diameter for the current epoch @see prepare epoch

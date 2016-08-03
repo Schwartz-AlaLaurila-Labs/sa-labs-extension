@@ -2,7 +2,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
     % Plots statistics calculated from the response of a specified device for each epoch run.
     
     properties (SetAccess = private)
-        device
+        devices
+        numChannels
         activeFunctionNames
         measurementRegion
         baselineRegion
@@ -24,7 +25,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
     
     methods
         
-        function obj = ResponseAnalysisFigure(device, varargin)
+        function obj = ResponseAnalysisFigure(devices, varargin)
             
 %             disp('figure start')
             obj = obj@symphonyui.core.FigureHandler();
@@ -41,13 +42,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('plotMode', 'cartesian', @(x)ischar(x));
             ip.parse(varargin{:});
             
-            obj.device = device;
+            obj.devices = devices;
+            obj.numChannels = length(obj.devices);
             obj.activeFunctionNames = ip.Results.activeFunctionNames;
             obj.measurementRegion = ip.Results.measurementRegion;
             obj.baselineRegion = ip.Results.baselineRegion;
             obj.epochSplitParameter = ip.Results.epochSplitParameter;
             obj.plotMode = ip.Results.plotMode;
-            
+                        
             obj.createUi();
             
             obj.epochData = {};
@@ -136,137 +138,157 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         end
         
         function handleEpoch(obj, epoch)
-            % process this epoch and add to epochData array
-            if ~epoch.hasResponse(obj.device)
-                error(['Epoch does not contain a response for ' obj.device.name]);
+            channels = cell(obj.numChannels, 1);
+            for ci = 1:obj.numChannels
+                fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
+                % process this epoch and add to epochData array
+                if ~epoch.hasResponse(obj.devices{ci})
+                    disp(['Epoch does not contain a response for ' obj.devices{ci}.name]);
+                    continue
+                end
+            
+                e = struct();
+                e.responseObject = epoch.getResponse(obj.devices{ci});
+                [e.signal, e.units] = e.responseObject.getData();
+                e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
+                e.splitParameter = epoch.parameters(obj.epochSplitParameter);
+
+                msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
+
+                % setup time regions for analysis
+                %             if ~isempty(obj.baselineRegion)
+                %                 x1 = msToPts(obj.baselineRegion(1));
+                %                 x2 = msToPts(obj.baselineRegion(2));
+                %                 baseline = e.signal(x1:x2);
+                %                 e.signal = e.signal - mean(baseline);
+                %             end
+
+                if ~isempty(obj.measurementRegion)
+                    x1 = msToPts(obj.measurementRegion(1));
+                    x2 = msToPts(obj.measurementRegion(2));
+                    e.signal = e.signal(x1:x2);
+                end
+
+                % make analysis measurements
+                e.measurements = containers.Map();
+                for i = 1:numel(obj.allMeasurementNames)
+                    fcn = str2func(obj.allMeasurementNames{i});
+                    result = fcn(e.signal);
+                    e.measurements(obj.allMeasurementNames{i}) = result;
+                end
+                
+                channels{ci} = e;
             end
             
-            e = struct();
-            
-            e.responseObject = epoch.getResponse(obj.device);
-            [e.signal, e.units] = e.responseObject.getData();
-            e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
-            e.splitParameter = epoch.parameters(obj.epochSplitParameter);
-            
-                        
-            msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
-            
-            % setup time regions for analysis
-            %             if ~isempty(obj.baselineRegion)
-            %                 x1 = msToPts(obj.baselineRegion(1));
-            %                 x2 = msToPts(obj.baselineRegion(2));
-            %                 baseline = e.signal(x1:x2);
-            %                 e.signal = e.signal - mean(baseline);
-            %             end
-            
-            if ~isempty(obj.measurementRegion)
-                x1 = msToPts(obj.measurementRegion(1));
-                x2 = msToPts(obj.measurementRegion(2));
-                e.signal = e.signal(x1:x2);
-            end
-            
-            % make analysis measurements
-            e.measurements = containers.Map();
-            for i = 1:numel(obj.allMeasurementNames)
-                fcn = str2func(obj.allMeasurementNames{i});
-                result = fcn(e.signal);
-                e.measurements(obj.allMeasurementNames{i}) = result;
-            end
-            
-            obj.epochData{end+1} = e;
+            obj.epochData{end+1} = channels;
+
             obj.redrawPlots();
         end
         
         function redrawPlots(obj)
+            disp('redraw');
             if isempty(obj.epochData)
                 return
             end
             %plot the most recent response at the top
-            epoc = obj.epochData{end};
+%             clf(obj.responseAxes);
+            for ci = 1:obj.numChannels
+                epoch = obj.epochData{end}{ci};
+                quantities = epoch.responseObject.getData();
+                x = (1:numel(quantities)) / epoch.responseObject.sampleRate.quantityInBaseUnits;
+                y = quantities;
+                hold(obj.responseAxes, 'off')
+                plot(obj.responseAxes, x, y);
+                hold(obj.responseAxes, 'on')
+                title(obj.responseAxes, 'previous response');
+                ylabel(obj.responseAxes, epoch.units, 'Interpreter', 'none');
+            end
+            hold(obj.responseAxes,'off')
             
-            quantities = epoc.responseObject.getData();
-            x = (1:numel(quantities)) / epoc.responseObject.sampleRate.quantityInBaseUnits;
-            y = quantities;
-            plot(obj.responseAxes, x, y);
-            title(obj.responseAxes, 'previous response');
-            ylabel(obj.responseAxes, epoc.units, 'Interpreter', 'none');
-            
-            % then loop through all the epochs we have and plot them
+%             then loop through all the epochs we have and plot them
             
             for measi = 1:numel(obj.activeFunctionNames)
                 funcName = obj.activeFunctionNames{measi};
-                % regenerate the independent axis variables
-                paramByEpoch = [];
-                for ei = 1:length(obj.epochData)
-                    epoc = obj.epochData{ei};
-                    paramByEpoch(ei) = epoc.splitParameter;
-                end
-                X = sort(unique(paramByEpoch));
-                
-                allMeasurementsByX = {};
-                allMeasurementsByEpoch = [];
-                for ei = 1:length(obj.epochData)
-                    epoc = obj.epochData{ei};
-                    whichXIndex = find(X == epoc.splitParameter);
-                    thisMeas = epoc.measurements(funcName);
-                    allMeasurementsByEpoch(ei) = thisMeas;
-                    if length(allMeasurementsByX) < whichXIndex
-                        allMeasurementsByX{whichXIndex} = thisMeas;
+                for ci = 1:obj.numChannels
+                    if ci == 1
+                        hold(obj.axesHandlesAnalysis(measi), 'off');
                     else
-                        prevMeasurements = allMeasurementsByX{whichXIndex};
-                        allMeasurementsByX{whichXIndex} = [prevMeasurements, thisMeas];
+                        hold(obj.axesHandlesAnalysis(measi), 'on');
                     end
+
+                    % regenerate the independent axis variables
+                    paramByEpoch = [];
+                    for ei = 1:length(obj.epochData)
+                        epoch = obj.epochData{ei}{ci};
+                        paramByEpoch(ei) = epoch.splitParameter;
+                    end
+                    X = sort(unique(paramByEpoch));
+
+                    allMeasurementsByX = {};
+                    allMeasurementsByEpoch = [];
+                    for ei = 1:length(obj.epochData)
+                        epoch = obj.epochData{ei}{ci};
+                        whichXIndex = find(X == epoch.splitParameter);
+                        thisMeas = epoch.measurements(funcName);
+                        allMeasurementsByEpoch(ei) = thisMeas;
+                        if length(allMeasurementsByX) < whichXIndex
+                            allMeasurementsByX{whichXIndex} = thisMeas;
+                        else
+                            prevMeasurements = allMeasurementsByX{whichXIndex};
+                            allMeasurementsByX{whichXIndex} = [prevMeasurements, thisMeas];
+                        end
+                    end
+
+                    Y = [];
+                    Y_std = [];
+                    for i = 1:length(X);
+                        Y(i) = mean(allMeasurementsByX{i});
+                        Y_std(i) = std(allMeasurementsByX{i});
+                    end
+
+    %                 axh = obj.axesHandlesAnalysis
+                    if strcmp(obj.plotMode, 'cartesian')
+    %                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y, '-ob','LineWidth',2);
+                        hold(obj.axesHandlesAnalysis(measi), 'on');
+                        plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '--b','LineWidth',.5);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '--b','LineWidth',.5);
+                        hold(obj.axesHandlesAnalysis(measi), 'off');
+                    else
+    %                     axes(obj.axesHandlesAnalysis(measi));
+                        cla(obj.axesHandlesAnalysis(measi))
+                        X_rad = deg2rad(X);
+                        X_rad(end+1) = X_rad(1);
+                        Y(end+1) = Y(1);
+                        Y_std(end+1) = Y_std(1);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-ob','LineWidth',2);
+                        hold(obj.axesHandlesAnalysis(measi), 'on');
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '--b','LineWidth',.5);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '--b','LineWidth',.5);
+                        hold(obj.axesHandlesAnalysis(measi), 'off');
+                    end
+    %                 boxplot(obj.axesHandlesAnalysis(measi), allMeasurementsByEpoch, paramByEpoch);
+                    title(obj.axesHandlesAnalysis(measi), funcName);
+
+                    %                 for ei = 1:length(obj.epochData)
+                    %                     epoc = obj.epochData{ei};
+                    %
+                    %                     measurement = epoc.measurements(measi);
+                    %
+                    %                     if numel(obj.markers) < measi
+                    %                         colorOrder = get(groot, 'defaultAxesColorOrder');
+                    %                         color = colorOrder(mod(measi - 1, size(colorOrder, 1)) + 1, :);
+                    %                         obj.markers(measi) = line(1, measurement, 'Parent', obj.axesHandlesAnalysis(measi), ...
+                    %                             'LineStyle', 'none', ...
+                    %                             'Marker', 'o', ...
+                    %                             'MarkerEdgeColor', color, ...
+                    %                             'MarkerFaceColor', color);
+                    %                     else
+                    %                         x = get(obj.markers(measi), 'XData');
+                    %                         y = get(obj.markers(measi), 'YData');
+                    %                         set(obj.markers(measi), 'XData', [x x(end)+1], 'YData', [y measurement]);
+                    %                     end
                 end
-                
-                Y = [];
-                Y_std = [];
-                for i = 1:length(X);
-                    Y(i) = mean(allMeasurementsByX{i});
-                    Y_std(i) = std(allMeasurementsByX{i});
-                end
-                
-%                 axh = obj.axesHandlesAnalysis
-                if strcmp(obj.plotMode, 'cartesian')
-%                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
-                    plot(obj.axesHandlesAnalysis(measi), X, Y, '-ob','LineWidth',2);
-                    hold(obj.axesHandlesAnalysis(measi), 'on');
-                    plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '--b','LineWidth',.5);
-                    plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '--b','LineWidth',.5);
-                    hold(obj.axesHandlesAnalysis(measi), 'off');
-                else
-%                     axes(obj.axesHandlesAnalysis(measi));
-                    cla(obj.axesHandlesAnalysis(measi))
-                    X_rad = deg2rad(X);
-                    X_rad(end+1) = X_rad(1);
-                    Y(end+1) = Y(1);
-                    Y_std(end+1) = Y_std(1);
-                    polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-ob','LineWidth',2);
-                    hold(obj.axesHandlesAnalysis(measi), 'on');
-                    polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '--b','LineWidth',.5);
-                    polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '--b','LineWidth',.5);
-                    hold(obj.axesHandlesAnalysis(measi), 'off');
-                end
-%                 boxplot(obj.axesHandlesAnalysis(measi), allMeasurementsByEpoch, paramByEpoch);
-                title(obj.axesHandlesAnalysis(measi), funcName);
-                
-                %                 for ei = 1:length(obj.epochData)
-                %                     epoc = obj.epochData{ei};
-                %
-                %                     measurement = epoc.measurements(measi);
-                %
-                %                     if numel(obj.markers) < measi
-                %                         colorOrder = get(groot, 'defaultAxesColorOrder');
-                %                         color = colorOrder(mod(measi - 1, size(colorOrder, 1)) + 1, :);
-                %                         obj.markers(measi) = line(1, measurement, 'Parent', obj.axesHandlesAnalysis(measi), ...
-                %                             'LineStyle', 'none', ...
-                %                             'Marker', 'o', ...
-                %                             'MarkerEdgeColor', color, ...
-                %                             'MarkerFaceColor', color);
-                %                     else
-                %                         x = get(obj.markers(measi), 'XData');
-                %                         y = get(obj.markers(measi), 'YData');
-                %                         set(obj.markers(measi), 'XData', [x x(end)+1], 'YData', [y measurement]);
-                %                     end
             end
         end
         

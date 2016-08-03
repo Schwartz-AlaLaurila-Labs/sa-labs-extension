@@ -75,12 +75,12 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@symphonyui.core.Protocol(obj, epoch);           
             
-            % add the real response here
-            device = obj.rig.getDevice(obj.chan1);
-            epoch.addResponse(device);
+            amps = obj.rig.getDevices('Amp');
+            for ai = 1:length(amps)
+                epoch.addResponse(amps{ai});
+            end
             
-            
-            obj.addGaussianLoopbackSignal(epoch, 1);
+            obj.addGaussianLoopbackSignals(epoch);
 
             controllers = obj.rig.getDevices('Temperature Controller');
             if ~isempty(controllers)
@@ -89,29 +89,28 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             
         end
         
-        function addGaussianLoopbackSignal(obj, epoch, mn)
+        function addGaussianLoopbackSignals(obj, epoch)
             % make fake input data via loopback
-            device1 = obj.rig.getDevice(obj.chan1);
-            g = sa_labs.stimuli.GaussianNoiseGenerator();
-            g.freqCutoff = 100;
-            g.numFilters = 1;
-            g.stDev = .2;
-            g.mean = mn;
-            g.seed = randi(100000);
-            g.preTime = obj.preTime;
-            g.tailTime = obj.tailTime;
-            g.stimTime = obj.stimTime;
-            measurement = device1.background;
-            g.units = measurement.displayUnits;
-            g.sampleRate = obj.sampleRate;
-            epoch.addStimulus(device1, g.generate());
+            for ci = 1:4
+                if strcmp(obj.(['chan' num2str(ci)]), 'None')
+                   continue
+                end
+                device = obj.rig.getDevice(obj.(['chan' num2str(ci)]));
+                g = sa_labs.stimuli.GaussianNoiseGeneratorV2();
+                g.freqCutoff = 100;
+                g.numFilters = 1;
+                g.stDev = .2;
+                g.mean = rand() * 10;
+                g.seed = randi(100000);
+                g.preTime = obj.preTime;
+                g.tailTime = obj.tailTime;
+                g.stimTime = obj.stimTime;
+                measurement = device.background;
+                g.units = measurement.displayUnits;
+                g.sampleRate = obj.sampleRate;
+                epoch.addStimulus(device, g.generate());
+            end
 
-%             if ~strcmp(obj.chan2, 'None')
-%                 device2 = obj.rig.getDevice(obj.chan2);
-%                 g.mean = mn *1.2;
-%                 g.stDev = .8;
-%                 epoch.addStimulus(device2, g.generate());
-%             end
         end
             
         
