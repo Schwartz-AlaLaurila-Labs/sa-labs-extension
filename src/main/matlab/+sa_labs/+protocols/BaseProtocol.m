@@ -5,12 +5,15 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan1 = 'Amp1';
         chan1Mode = 'Cell attached'
         chan1Hold = 0
+        
         chan2 = 'None';   
         chan2Mode = 'Cell attached'
         chan2Hold = 0
+        
         chan3  = 'None';  
         chan3Mode = 'Cell attached'
         chan3Hold = 0
+        
         chan4  = 'None';  
         chan4Mode = 'Cell attached'
         chan4Hold = 0
@@ -62,11 +65,15 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     d.category = '1 Basic';
                 case {'stimTime','preTime','tailTime'}
                     d.category = '2 Timing';
-                case {'chan1','chan2','chan3','chan4','chan1Mode','chan2Mode','chan3Mode','chan4Mode','sampleRate'}
+                case {'sampleRate'}
                     d.category = '9 Amplifiers';
                 otherwise
                     d.category = '4 Other';
             end
+            
+            if strfind(name, 'chan')
+                d.category = '9 Amplifiers';
+            end            
         end 
         
         
@@ -74,6 +81,24 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             prepareRun@symphonyui.core.Protocol(obj);
 %             obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.chan));
 %             obj.showFigure('symphonyui.builtin.figures.MeanResponseFigure', obj.rig.getDevice(obj.chan));
+
+            % TODO: check that two channels don't use the same amp (makes settings collision)
+
+            % Set amp hold signals.
+            for ci = 1:4
+                channelName = sprintf('chan%d', ci);
+%                 modeName = sprintf('chan%dMode', ci);
+                holdName = sprintf('chan%dHold', ci);
+                
+                if strcmp(obj.(channelName),'None')
+                    continue
+                end
+                ampName = obj.(channelName);
+                device = obj.rig.getDevice(ampName);
+                
+                device.background = symphonyui.core.Measurement(obj.(holdName), device.background.displayUnits);
+                device.applyBackground();
+            end
         end
         
         function prepareEpoch(obj, epoch)

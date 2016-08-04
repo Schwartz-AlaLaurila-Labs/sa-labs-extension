@@ -19,7 +19,7 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
             
             amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ANALOG_OUT.1')).bindStream(daq.getStream('ANALOG_IN.1'));
             obj.addDevice(amp2);
-%             
+            
 %             amp3 = MultiClampDevice('Amp3', 3).bindStream(daq.getStream('ANALOG_OUT.2')).bindStream(daq.getStream('ANALOG_IN.2'));
 %             obj.addDevice(amp3);
 % 

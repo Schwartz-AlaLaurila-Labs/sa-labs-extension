@@ -155,8 +155,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 e.responseObject = epoch.getResponse(obj.devices{ci});
                 [e.signal, e.units] = e.responseObject.getData();
                 e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
-                e.splitParameter = epoch.parameters(obj.epochSplitParameter);
-
+                if ~isempty(obj.epochSplitParameter)
+                    e.splitParameter = epoch.parameters(obj.epochSplitParameter);
+                else
+                    e.splitParameter = 0; % useful when you still want parameter extraction, but no independent vars
+                end
                 msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
 
                 % setup time regions for analysis
@@ -190,13 +193,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         end
         
         function redrawPlots(obj)
-            disp('redraw');
             if isempty(obj.epochData)
                 return
             end
             
             colorOrder = get(groot, 'defaultAxesColorOrder');
-     
             
             %plot the most recent response at the top
 %             clf(obj.responseAxes);
@@ -264,20 +265,19 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
     %                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
                         plot(obj.axesHandlesAnalysis(measi), X, Y, '-o','LineWidth',2, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'on');
-                        plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '--','LineWidth',.5, 'Color', color);
-                        plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '--','LineWidth',.5, 'Color', color);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                        plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'off');
                     else
     %                     axes(obj.axesHandlesAnalysis(measi));
-                        cla(obj.axesHandlesAnalysis(measi))
                         X_rad = deg2rad(X);
                         X_rad(end+1) = X_rad(1);
                         Y(end+1) = Y(1);
                         Y_std(end+1) = Y_std(1);
                         polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-o','LineWidth',2, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'on');
-                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '--','LineWidth',.5, 'Color', color);
-                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '--','LineWidth',.5, 'Color', color);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                        polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
                         hold(obj.axesHandlesAnalysis(measi), 'off');
                     end
     %                 boxplot(obj.axesHandlesAnalysis(measi), allMeasurementsByEpoch, paramByEpoch);

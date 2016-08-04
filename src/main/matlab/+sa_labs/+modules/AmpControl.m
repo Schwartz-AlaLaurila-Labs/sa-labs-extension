@@ -4,12 +4,19 @@ classdef AmpControl < symphonyui.ui.Module
         
         chan1 = 'Amp1';
         chan1Mode = 'Cell attached'
+        chan1Hold = 0
+        
         chan2 = 'None';   
         chan2Mode = 'Cell attached'
+        chan2Hold = 0
+        
         chan3  = 'None';  
         chan3Mode = 'Cell attached'
+        chan3Hold = 0
+        
         chan4  = 'None';  
         chan4Mode = 'Cell attached'
+        chan4Hold = 0
     end
     
     properties(Hidden)
@@ -20,12 +27,11 @@ classdef AmpControl < symphonyui.ui.Module
         chan3Type
         chan4Type
         chan1ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
-        chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
-        chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
-        chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
+        chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
+        chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
+        chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
     
         protocolPropertyGrid
-
     end
     
 %     methods (Access = protected)
@@ -73,7 +79,7 @@ classdef AmpControl < symphonyui.ui.Module
         function createUi(obj, figureHandle)
             set(figureHandle, ...
                 'Name', 'Amp Control', ...
-                'Position', appbox.screenCenter(200, 280));
+                'Position', appbox.screenCenter(240, 340));
             
             layout = uix.VBox( ...
                 'Parent', figureHandle, ...
@@ -95,7 +101,6 @@ classdef AmpControl < symphonyui.ui.Module
 
         
         function cbSetParameters(obj, ~, ~)
-            
             propertyMap = containers.Map();
             rawProperties = get(obj.protocolPropertyGrid, 'Properties');
             for p = 1:length(rawProperties)
@@ -106,7 +111,7 @@ classdef AmpControl < symphonyui.ui.Module
             obj.acquisitionService.setProtocolPropertyMap(propertyMap);
         end
         
-        function d = getPropertyDescriptors(obj)
+        function populateProtocolProperties(obj)
             names = properties(obj);
             exc = zeros(size(names));
             for i = 1:length(names)
@@ -121,15 +126,13 @@ classdef AmpControl < symphonyui.ui.Module
             % those 10 lines in python:
             % names = [n for n in properties(obj) if not strfind(n, 'chan')]
             
-            d = symphonyui.core.PropertyDescriptor.empty(0, numel(names));
+            descriptors = symphonyui.core.PropertyDescriptor.empty(0, numel(names));
             for i = 1:numel(names)
-                d(i) = symphonyui.core.PropertyDescriptor.fromProperty(obj, names{i});
+                descriptors(i) = symphonyui.core.PropertyDescriptor.fromProperty(obj, names{i});
+                descriptors(i).category = sprintf('Channel %s',names{i}(5));
             end
 
-        end        
-        
-        function populateProtocolProperties(obj)
-            fields = symphonyui.ui.util.desc2field(obj.getPropertyDescriptors());
+            fields = symphonyui.ui.util.desc2field(descriptors);
             set(obj.protocolPropertyGrid, 'Properties', fields);
         end
 

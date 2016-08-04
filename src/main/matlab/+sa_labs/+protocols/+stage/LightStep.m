@@ -19,7 +19,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         displayName = 'Light Step'
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'epochNum';
+        responsePlotSplitParameter = '';
     end
     
     methods
