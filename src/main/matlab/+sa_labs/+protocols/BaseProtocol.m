@@ -4,12 +4,16 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     properties
         chan1 = 'Amp1';
         chan1Mode = 'Cell attached'
+        chan1Hold = 0
         chan2 = 'None';   
         chan2Mode = 'Cell attached'
+        chan2Hold = 0
         chan3  = 'None';  
         chan3Mode = 'Cell attached'
+        chan3Hold = 0
         chan4  = 'None';  
         chan4Mode = 'Cell attached'
+        chan4Hold = 0
     end
 
     properties (Dependent, SetAccess = private)
