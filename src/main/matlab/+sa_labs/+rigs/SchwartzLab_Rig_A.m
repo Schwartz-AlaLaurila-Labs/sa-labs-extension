@@ -6,7 +6,7 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
             import symphonyui.builtin.daqs.*;
             import symphonyui.builtin.devices.*;
             import symphonyui.core.*;
-            
+%             
             daq = HekaDaqController(HekaDeviceType.USB18);
             obj.daqController = daq;
             
@@ -17,9 +17,9 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
 %             obj.addDevice(amp2);
 %             
             
-%             lightCrafter = sa_labs.devices.LightCrafterDevice();
-%             lightCrafter.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
-%             obj.addDevice(lightCrafter);
+            lightCrafter = sa_labs.devices.LightCrafterDevice();
+            lightCrafter.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
+            obj.addDevice(lightCrafter);
         end
         
     end

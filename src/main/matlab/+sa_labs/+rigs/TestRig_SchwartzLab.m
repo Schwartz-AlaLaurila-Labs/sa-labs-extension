@@ -36,7 +36,7 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
 
             obj.addDevice(stage);
             
-%             lightCrafter = fi.helsinki.biosci.ala_laurila.devices.LightCrafterDevice();
+%             lightCrafter = sa_labs.devices.LightCrafterDevice();
 %             lightCrafter.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
 %             obj.addDevice(lightCrafter);
         end

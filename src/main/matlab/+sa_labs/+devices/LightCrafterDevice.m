@@ -54,8 +54,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('monitorRefreshRate', refreshRate, 'isReadOnly', true);
-            obj.addConfigurationSetting('frameTrackerDuration', frameTrackerDuration, 'isReadOnly', true);
-            obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPosition, 'isReadOnly', true);            
+            obj.addConfigurationSetting('frameTrackerDuration', 100, 'isReadOnly', true);
+            obj.addConfigurationSetting('frameTrackerPosition', [100,100], 'isReadOnly', true);            
             obj.addConfigurationSetting('prerender', false, 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterLedEnables',  [auto, red, green, blue], 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate(), 'isReadOnly', true);
