@@ -24,6 +24,7 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
         function createUi(obj)
             obj.softwareAxesHandle = subplot(2, 1, 1, ...
                 'Parent', obj.figureHandle, ...
+                'FontUnits', get(obj.figureHandle, 'DefaultUicontrolFontUnits'), ...
                 'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
                 'FontSize', get(obj.figureHandle, 'DefaultUicontrolFontSize'), ...
                 'XTickMode', 'auto');
@@ -33,6 +34,7 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             
             obj.hardwareAxesHandle = subplot(2, 1, 2, ...
                 'Parent', obj.figureHandle, ...
+                'FontUnits', get(obj.figureHandle, 'DefaultUicontrolFontUnits'), ...
                 'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
                 'FontSize', get(obj.figureHandle, 'DefaultUicontrolFontSize'), ...
                 'XTickMode', 'auto');
@@ -46,7 +48,7 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
         function handleEpoch(obj, epoch)
             info = obj.stageDevice.getPlayInfo();
             if isa(info, 'MException')
-                error(['Stage encountered an error during the presentation: ' info.message]);
+                rethrow(info);
             end
             if ~epoch.hasResponse(obj.frameMonitor)
                 error(['Epoch does not contain a response for ' obj.frameMonitor.name]);
@@ -86,7 +88,7 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             
             % analyze timing
             sampleRate = response.sampleRate.quantityInBaseUnits;
-            indices = getFlipIndices(quantities);
+            indices = getFlipIndices(quantities, ~isa(obj.stageDevice, 'edu.washington.riekelab.devices.LightCrafterDevice'));
             durations = diff(indices(:) ./ sampleRate);
             
             minDuration = min(durations);
@@ -105,16 +107,35 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
     
 end
 
-% TODO: This function is equivalent to getFrameTiming and should be replaced when that becomes commonized.
-function i = getFlipIndices(sweep)
+% TODO: This function is equivalent to Max's getFrameTiming and should be replaced when that becomes commonized
+function i = getFlipIndices(sweep, usePeaks)
+    if usePeaks
+        % Smooth out non-monotonicity
+        sweep = lowPassFilter(sweep, 360, 1/1e4); 
+    end
+    
+    % Normalize
     sweep = sweep - min(sweep);
     sweep = sweep ./ max(sweep);
     
     ups = getThresholdCross(sweep, 0.5, 1);
     downs = getThresholdCross(sweep, 0.5, -1);
     
-    ups = [1 ups];
-    i = round(sort([ups'; downs']));
+    if ~usePeaks
+        % Add first upswing because its missed by getThresholdCross
+        ups = [1 ups];
+        i = round(sort([ups'; downs']));
+    else
+        % Get peaks/troughs between first and last flips
+        temp = sweep(ups(1):downs(end)); 
+        even = getPeaks(temp, 1);
+        odd = getPeaks(temp, -1);
+        
+        even = even + ups(1);
+        odd = [1 odd + ups(1)];
+        
+        i = round(sort([odd'; even']));
+    end
 end
 
 function i = getThresholdCross(sweep, threshold, direction)
@@ -125,4 +146,29 @@ function i = getThresholdCross(sweep, threshold, direction)
     else
         i = find(original >= threshold & shifted < threshold) + 1;
     end
+end
+
+function i = getPeaks(sweep, direction)
+    if direction > 0
+        i = find(diff(diff(sweep) > 0) < 0) + 1;
+    else
+        i = find(diff(diff(sweep) > 0) > 0) + 1;
+    end
+end
+
+function f = lowPassFilter(sweep, freq, interval)
+    % Flip if given a column vector
+    L = size(sweep, 2);
+    if L == 1
+        sweep = sweep'; 
+        L = size(sweep, 2);
+    end
+
+    stepSize = 1 / (interval * L);
+    cutoffPts = round(freq / stepSize);
+
+    % Eliminate frequencies beyond cutoff (middle of matrix given fft representation)
+    FFTData = fft(sweep, [], 2);
+    FFTData(:, cutoffPts:size(FFTData,2)-cutoffPts) = 0;
+    f = real(ifft(FFTData, [], 2));
 end
