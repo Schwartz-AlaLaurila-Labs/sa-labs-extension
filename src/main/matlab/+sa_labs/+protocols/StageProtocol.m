@@ -61,6 +61,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             tf = obj.numEpochsPrepared > obj.numEpochsCompleted || obj.numIntervalsPrepared > obj.numIntervalsCompleted;
         end
         
+        function completeEpoch(obj, epoch)
+            % remove the amp stimulus which was needed
+            epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
+            completeEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
+        end
+        
         function completeRun(obj)
             completeRun@sa_labs.protocols.BaseProtocol(obj);
             obj.rig.getDevice('Stage').clearMemory();
