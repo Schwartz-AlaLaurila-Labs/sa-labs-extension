@@ -32,7 +32,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         end
         
         function didSetRig(obj)
-            didSetRig@fi.helsinki.biosci.ala_laurila.protocols.AlaLaurilaProtocol(obj);
+            didSetRig@sa_labs.protocols.BaseProtocol(obj);
             
             [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
         end
@@ -46,7 +46,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         end
         
         function prepareRun(obj)
-            prepareRun@fi.helsinki.biosci.ala_laurila.protocols.AlaLaurilaProtocol(obj);
+            prepareRun@sa_labs.protocols.BaseProtocol(obj);
             
             if isempty(obj.modeFigure) || ~isvalid(obj.modeFigure)
                 obj.modeFigure = obj.showFigure('symphonyui.builtin.figures.CustomFigure', @null);
@@ -98,7 +98,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         end
         
         function prepareEpoch(obj, epoch)
-            prepareEpoch@fi.helsinki.biosci.ala_laurila.protocols.AlaLaurilaProtocol(obj, epoch);
+            prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
             devices = obj.rig.getInputDevices();
             for i = 1:numel(devices)
@@ -127,7 +127,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         end
         
         function completeRun(obj)
-            completeRun@fi.helsinki.biosci.ala_laurila.protocols.AlaLaurilaProtocol(obj);
+            completeRun@sa_labs.protocols.BaseProtocol(obj);
             
             if obj.alternateMode
                 if strcmpi(obj.mode, 'seal')
