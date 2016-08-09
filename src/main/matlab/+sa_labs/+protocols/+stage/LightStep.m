@@ -48,8 +48,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             
             controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.intensity, obj.meanLevel));
             p.addController(controller);
-                        
-%             obj.addFrameTracker(p);
+
         end
         
         
@@ -60,8 +59,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         function tf = shouldContinueRun(obj)
             tf = obj.numEpochsCompleted < obj.numberOfEpochs;
         end
-        
-        
+
     end
     
 end

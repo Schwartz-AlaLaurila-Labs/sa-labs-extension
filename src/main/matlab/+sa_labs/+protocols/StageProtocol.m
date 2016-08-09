@@ -42,6 +42,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 %             
 % %             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 %         end
+
+        function prepareEpoch(obj, epoch)
+            prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
+            
+            
+            % it is required to have an amp stimulus for stage protocols
+            device = obj.rig.getDevice(obj.chan1);
+            duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
+            epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
+        end
             
         function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>
             tf = false;
