@@ -18,10 +18,15 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Mode = 'Cell attached'
         chan4Hold = 0
     end
-
-    properties (Dependent, SetAccess = private)
-
-        ndfs    % Selected ndfs. To change ndf press ctrl+D and change for given LED
+    
+    properties (Transient, Hidden)
+        responseFigure
+    end
+    
+    properties (Abstract)
+        preTime
+        stimTime
+        tailTime
     end
     
     properties(Hidden)
@@ -50,15 +55,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         end
 
         function d = getPropertyDescriptor(obj, name)
-            d = getPropertyDescriptor@symphonyui.core.Protocol(obj, name);
-
-%             if ismember(name, obj.chanList) && isempty(obj.getSecondaryAmp(name))
-%                 d.isHidden = true;
-%             end
-%             
-%             if strncmp(name, 'ndfs', 4) && isempty(obj.ndfs)
-%                 d.isHidden = true;
-%             end            
+            d = getPropertyDescriptor@symphonyui.core.Protocol(obj, name);        
             
             switch name
                 case {'numberOfCycles','numberOfEpochs','ndfs'}
@@ -84,20 +81,39 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
 
             % TODO: check that two channels don't use the same amp (makes settings collision)
 
-            % Set amp hold signals.
+%             Set amp hold signals.
+            for ci = 1:4
+                channelName = sprintf('chan%d', ci);
+%                 modeName = sprintf('chan%dMode', ci);
+                holdName = sprintf('chan%dHold', ci);
+                signal = obj.(holdName);
+                
+                if strcmp(obj.(channelName),'None')
+                    continue
+                end
+                ampName = obj.(channelName);
+                device = obj.rig.getDevice(ampName);
+                
+                device.background = symphonyui.core.Measurement(signal, device.background.displayUnits);
+                device.applyBackground();
+            end
+
+            % make device list for analysis figure
+%             devices = {};
 %             for ci = 1:4
-%                 channelName = sprintf('chan%d', ci);
-% %                 modeName = sprintf('chan%dMode', ci);
-%                 holdName = sprintf('chan%dHold', ci);
-%                 
-%                 if strcmp(obj.(channelName),'None')
-%                     continue
+%                 ampName = obj.(['chan' num2str(ci)]);
+%                 if ~strcmp(ampName, 'None');
+%                     device = obj.rig.getDevice(ampName);
+%                     devices{end+1} = device; %#ok<AGROW>
 %                 end
-%                 ampName = obj.(channelName);
-%                 device = obj.rig.getDevice(ampName);
-%                 
-%                 device.background = symphonyui.core.Measurement(obj.(holdName), device.background.displayUnits);
-%                 device.applyBackground();
+%             end
+%             
+%             if obj.responsePlotMode ~= false
+%                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
+%                     'activeFunctionNames', {'mean'}, ...
+%                     'baselineRegion', [0 obj.preTime], ...
+%                     'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
+%                     'epochSplitParameter',obj.responsePlotSplitParameter, 'plotMode',obj.responsePlotMode);
 %             end
             
         end
@@ -146,42 +162,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             end
 
         end
-            
-        
-        function completeEpoch(obj, epoch)
-            completeEpoch@symphonyui.core.Protocol(obj, epoch);
-            
-            controllers = obj.rig.getDevices('Temperature Controller');
-            if ~isempty(controllers) && epoch.hasResponse(controllers{1})
-                response = epoch.getResponse(controllers{1});
-                [quantities, units] = response.getData();
-                if ~strcmp(units, 'V')
-                    error('Temperature Controller must be in volts');
-                end
-                
-                % Temperature readout from Warner TC-324B controller 100 mV/degree C.
-                temperature = mean(quantities) * 1000 * (1/100);
-                temperature = round(temperature * 10) / 10;
-                epoch.addParameter('bathTemperature', temperature);
-                
-                epoch.removeResponse(controllers{1});
-            end
-        end
-        
-        function ndfs = get.ndfs(obj)
-            ndfs = obj.getSelectedNdfs();
-        end
-        
-        % default configuration for led device.
-        % Can be overridden, if stage is configured for netural density filter
-        function ndfs = getSelectedNdfs(obj)
-            ndfs = [];
-            if ~ isprop(obj, 'led')
-                return;
-            end
-            ledDevice = obj.rig.getDevice(obj.led);
-            ndfs = ledDevice.getConfigurationSetting('ndfs');
-        end
+
     end
     
 end

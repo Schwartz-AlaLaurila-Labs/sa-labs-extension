@@ -6,11 +6,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetX = 0
         offsetY = 0
     end
-        
-    properties (Transient, Hidden)
-        responseFigure
-    end
-        
+       
     methods (Abstract)
         p = createPresentation(obj);
     end
@@ -37,32 +33,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                
         function controllerDidStartHardware(obj)
             controllerDidStartHardware@sa_labs.protocols.BaseProtocol(obj);
-            obj.rig.getDevice('Stage').play(obj.createPresentation(), obj.preTime);
+            obj.rig.getDevice('Stage').play(obj.createPresentation()); % may need mods for different devices
         end
         
-        function prepareRun(obj)
-            prepareRun@sa_labs.protocols.BaseProtocol(obj);
-            
-            % make device list for analysis figure
-            devices = {};
-            for ci = 1:4
-                ampName = obj.(['chan' num2str(ci)]);
-                if ~strcmp(ampName, 'None');
-                    device = obj.rig.getDevice(ampName);
-                    devices{end+1} = device; %#ok<AGROW>
-                end
-            end
-            
-%             if obj.responsePlotMode ~= false
-%                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
-%                     'activeFunctionNames', {'mean'}, ...
-%                     'baselineRegion', [0 obj.preTime], ...
-%                     'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
-%                     'epochSplitParameter',obj.responsePlotSplitParameter, 'plotMode',obj.responsePlotMode);
-%             end
-            
-%             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
-        end
+%         function prepareRun(obj)
+%             prepareRun@sa_labs.protocols.BaseProtocol(obj);
+%             
+%             
+% %             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
+%         end
             
         function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>
             tf = false;
