@@ -85,36 +85,41 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             % TODO: check that two channels don't use the same amp (makes settings collision)
 
             % Set amp hold signals.
-            for ci = 1:4
-                channelName = sprintf('chan%d', ci);
-%                 modeName = sprintf('chan%dMode', ci);
-                holdName = sprintf('chan%dHold', ci);
-                
-                if strcmp(obj.(channelName),'None')
-                    continue
-                end
-                ampName = obj.(channelName);
-                device = obj.rig.getDevice(ampName);
-                
-                device.background = symphonyui.core.Measurement(obj.(holdName), device.background.displayUnits);
-                device.applyBackground();
-            end
+%             for ci = 1:4
+%                 channelName = sprintf('chan%d', ci);
+% %                 modeName = sprintf('chan%dMode', ci);
+%                 holdName = sprintf('chan%dHold', ci);
+%                 
+%                 if strcmp(obj.(channelName),'None')
+%                     continue
+%                 end
+%                 ampName = obj.(channelName);
+%                 device = obj.rig.getDevice(ampName);
+%                 
+%                 device.background = symphonyui.core.Measurement(obj.(holdName), device.background.displayUnits);
+%                 device.applyBackground();
+%             end
+            
         end
         
         function prepareEpoch(obj, epoch)
-            prepareEpoch@symphonyui.core.Protocol(obj, epoch);           
+            prepareEpoch@symphonyui.core.Protocol(obj, epoch);
             
-            amps = obj.rig.getDevices('Amp');
-            for ai = 1:length(amps)
-                epoch.addResponse(amps{ai});
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                
+                if strcmp(ampName, 'None')
+                   continue
+                end
+                ampDevice = obj.rig.getDevice(ampName);
+                epoch.addResponse(ampDevice);
             end
             
-            obj.addGaussianLoopbackSignals(epoch);
-
-            controllers = obj.rig.getDevices('Temperature Controller');
-            if ~isempty(controllers)
-                epoch.addResponse(controllers{1});
-            end
+            % Do I need to set an epoch background if I also have a device
+            % background in prepareRun?
+            
+            % gaussian noise for analysis testing
+%             obj.addGaussianLoopbackSignals(epoch);
             
         end
         

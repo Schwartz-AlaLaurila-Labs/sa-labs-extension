@@ -148,8 +148,6 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             channels = cell(obj.numChannels, 1);
             obj.channelNames = cell(obj.numChannels,1);
             
-            
-            
             if strcmp(obj.plotMode, 'autocenter')
                 
                 responseObject = epoch.getResponse(obj.devices{1}); %only one channel for now
@@ -173,7 +171,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 
                 for ci = 1:obj.numChannels
                     obj.channelNames{ci} = obj.devices{ci}.name;
-                    %                 fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
+                    fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
                     % process this epoch and add to epochData array
                     if ~epoch.hasResponse(obj.devices{ci})
                         disp(['Epoch does not contain a response for ' obj.devices{ci}.name]);
@@ -183,6 +181,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     e = struct();
                     e.responseObject = epoch.getResponse(obj.devices{ci});
                     [e.signal, e.units] = e.responseObject.getData();
+                    e.responseObject
                     e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
                     if ~isempty(obj.epochSplitParameter)
                         e.splitParameter = epoch.parameters(obj.epochSplitParameter);
@@ -192,6 +191,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
                     
                     % setup time regions for analysis
+                    % remove baseline signal
                     %             if ~isempty(obj.baselineRegion)
                     %                 x1 = msToPts(obj.baselineRegion(1));
                     %                 x2 = msToPts(obj.baselineRegion(2));

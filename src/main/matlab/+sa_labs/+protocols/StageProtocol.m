@@ -43,6 +43,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
             
+            % make device list for analysis figure
             devices = {};
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
@@ -52,13 +53,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 end
             end
             
-            if obj.responsePlotMode ~= false
-                obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
-                    'activeFunctionNames', {'mean'}, ...
-                    'baselineRegion', [0 obj.preTime], ...
-                    'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
-                    'epochSplitParameter',obj.responsePlotSplitParameter, 'plotMode',obj.responsePlotMode);
-            end
+%             if obj.responsePlotMode ~= false
+%                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
+%                     'activeFunctionNames', {'mean'}, ...
+%                     'baselineRegion', [0 obj.preTime], ...
+%                     'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
+%                     'epochSplitParameter',obj.responsePlotSplitParameter, 'plotMode',obj.responsePlotMode);
+%             end
             
 %             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
         end
