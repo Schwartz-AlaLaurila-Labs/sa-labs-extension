@@ -99,22 +99,22 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             end
 
             % make device list for analysis figure
-%             devices = {};
-%             for ci = 1:4
-%                 ampName = obj.(['chan' num2str(ci)]);
-%                 if ~strcmp(ampName, 'None');
-%                     device = obj.rig.getDevice(ampName);
-%                     devices{end+1} = device; %#ok<AGROW>
-%                 end
-%             end
-%             
-%             if obj.responsePlotMode ~= false
-%                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
-%                     'activeFunctionNames', {'mean'}, ...
-%                     'baselineRegion', [0 obj.preTime], ...
-%                     'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
-%                     'epochSplitParameter',obj.responsePlotSplitParameter, 'plotMode',obj.responsePlotMode);
-%             end
+            devices = {};
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                if ~strcmp(ampName, 'None');
+                    device = obj.rig.getDevice(ampName);
+                    devices{end+1} = device; %#ok<AGROW>
+                end
+            end
+            
+            if obj.responsePlotMode ~= false
+                obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
+                    'activeFunctionNames', {'mean'}, ...
+                    'baselineRegion', [0 obj.preTime], ...
+                    'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
+                    'epochSplitParameter',obj.responsePlotSplitParameter, 'plotMode',obj.responsePlotMode);
+            end
             
         end
         

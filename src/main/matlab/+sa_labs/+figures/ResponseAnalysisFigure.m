@@ -63,6 +63,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         
         function createUi(obj)
             import appbox.*;
+            
+            set(obj.figureHandle,'GraphicsSmoothing', 'on');
             %             clf(obj.figureHandle);
             %             fullBox = uix.HBoxFlex('Parent', obj.figureHandle);
             leftBox = uix.VBoxFlex('Parent',obj.figureHandle, 'Spacing',10);
@@ -171,7 +173,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 
                 for ci = 1:obj.numChannels
                     obj.channelNames{ci} = obj.devices{ci}.name;
-                    fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
+%                     fprintf('processing input from channel %d: %s\n',ci,obj.devices{ci}.name)
                     % process this epoch and add to epochData array
                     if ~epoch.hasResponse(obj.devices{ci})
                         disp(['Epoch does not contain a response for ' obj.devices{ci}.name]);
@@ -181,7 +183,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     e = struct();
                     e.responseObject = epoch.getResponse(obj.devices{ci});
                     [e.signal, e.units] = e.responseObject.getData();
-                    e.responseObject
+%                     e.responseObject
                     e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
                     if ~isempty(obj.epochSplitParameter)
                         e.splitParameter = epoch.parameters(obj.epochSplitParameter);

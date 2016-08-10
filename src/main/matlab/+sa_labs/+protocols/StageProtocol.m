@@ -36,12 +36,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             obj.rig.getDevice('Stage').play(obj.createPresentation()); % may need mods for different devices
         end
         
-%         function prepareRun(obj)
-%             prepareRun@sa_labs.protocols.BaseProtocol(obj);
-%             
-%             
-% %             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
-%         end
+        function prepareRun(obj)
+            prepareRun@sa_labs.protocols.BaseProtocol(obj);
+
+            obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
+        end
 
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
@@ -60,7 +59,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function tf = shouldWaitToContinuePreparingEpochs(obj)
             tf = obj.numEpochsPrepared > obj.numEpochsCompleted || obj.numIntervalsPrepared > obj.numIntervalsCompleted;
         end
-        
+
         function completeEpoch(obj, epoch)
             % remove the amp stimulus which was needed
             epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
