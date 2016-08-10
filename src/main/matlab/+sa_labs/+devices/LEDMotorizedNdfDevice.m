@@ -4,6 +4,11 @@ classdef LEDMotorizedNdfDevice < symphonyui.builtin.devices.UnitConvertingDevice
         serialPort
         ndfs
         ndfName
+        
+        % from schwartz rig A
+%         filterWheelComPort = 'COM8'
+%         filterWheelNDFs = [2, 4, 5, 6, 7, 8];
+%         NDFattenuation = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];        
     end
     
     properties (Dependent, Access = private)
