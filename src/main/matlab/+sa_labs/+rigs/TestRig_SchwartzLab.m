@@ -30,13 +30,9 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
             daq.getStream('DIGITAL_OUT.1').setBitPosition(trigger1, 0);
             obj.addDevice(trigger1);
             
-%             stage = io.github.stage_vss.devices.StageDevice('localhost');
-%             stage.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
-%             stage.addConfigurationSetting('projectorAngleOffset', 0, 'isReadOnly', true);
-%             obj.addDevice(stage);
-            
             lightCrafter = sa_labs.devices.LightCrafterDevice('micronsPerPixel', 1.6);
-%             lightCrafter.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
+            lightCrafter.setConfigurationSetting('frameTrackerPosition', [40,40])
+            lightCrafter.setConfigurationSetting('frameTrackerSize', [80,80])
             obj.addDevice(lightCrafter);
         end
     end

@@ -131,9 +131,6 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 epoch.addResponse(ampDevice);
             end
             
-            % Do I need to set an epoch background if I also have a device
-            % background in prepareRun?
-            
             % gaussian noise for analysis testing
 %             obj.addGaussianLoopbackSignals(epoch);
             

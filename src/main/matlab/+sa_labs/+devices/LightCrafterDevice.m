@@ -25,6 +25,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             trueCanvasSize = obj.stageClient.getCanvasSize();
             canvasSize = [trueCanvasSize(1) * 2, trueCanvasSize(2)];
+            frameTrackerSize = [50,50];
+            frameTrackerPosition = [50,50];
             
             obj.stageClient.setCanvasProjectionIdentity();
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
@@ -53,6 +55,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
+            obj.addConfigurationSetting('frameTrackerSize', frameTrackerSize);
+            obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPosition);
             obj.addConfigurationSetting('monitorRefreshRate', refreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false, 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterLedEnables',  [auto, red, green, blue], 'isReadOnly', true);
@@ -81,6 +85,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
             s = obj.getConfigurationSetting('trueCanvasSize');
         end
         
+        function s = getFrameTrackerSize(obj)
+            s = obj.getConfigurationSetting('frameTrackerSize');
+        end
+        
+        function s = getFrameTrackerPosition(obj)
+            s = obj.getConfigurationSetting('frameTrackerPosition');
+        end              
+        
         function r = getMonitorRefreshRate(obj)
             r = obj.getConfigurationSetting('monitorRefreshRate');
         end
@@ -104,12 +116,13 @@ classdef LightCrafterDevice < symphonyui.core.Device
             presentation.insertStimulus(1, background);
             
             tracker = stage.builtin.stimuli.Rectangle();
-            tracker.size = [canvasSize(1) * 1/8, canvasSize(2)];
-            tracker.position = [canvasSize(1) - (canvasSize(1)/16), canvasSize(2)/2];
+            tracker.size = obj.getFrameTrackerSize();
+            tracker.position = obj.getFrameTrackerPosition();
             presentation.addStimulus(tracker);
             
-            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < presentation.duration));
-            presentation.addController(trackerColor);            
+            frameTrackerDuration = .20;
+            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < frameTrackerDuration));
+            presentation.addController(trackerColor);
             
             if obj.getPrerender()
                 player = stage.builtin.players.PrerenderedPlayer(presentation);

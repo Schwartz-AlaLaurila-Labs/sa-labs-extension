@@ -83,11 +83,11 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
                 M(M > 1) = 1;
             end
 
-            figure(99)
-            subplot(2,1,2)
-            imagesc(M)
-%             caxis([min(M(:)), max(M(:))/2])
-            colormap gray
+%             figure(99)
+%             subplot(2,1,2)
+%             imagesc(M)
+% %             caxis([min(M(:)), max(M(:))/2])
+%             colormap gray
             
             obj.imageMatrix = uint8(255 * M);
             disp('done');

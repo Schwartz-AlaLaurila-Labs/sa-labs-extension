@@ -39,7 +39,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
 
-            obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
+%             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
         end
 
         function prepareEpoch(obj, epoch)

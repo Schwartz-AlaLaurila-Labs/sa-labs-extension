@@ -13,7 +13,7 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
         gratingLength = 1500; %um
         gratingSpeed = 1000; %um/s
         cycleHalfWidth = 50; %um
-        apertureDiameter = 0; %um
+        apertureDiameter = 0; %um, pos: gratings in center, neg: gratings outside center
         gratingProfile = 'sine'; %sine, square, or sawtooth
         contrast = 1;
         
@@ -79,32 +79,38 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             p.addStimulus(grat);
             %             pixelSpeed = obj.gratingSpeed./obj.rigConfig.micronsPerPixel;
             
-            % circular aperture mask (only gratings in center)
+            % only gratings in center
             if obj.apertureDiameter > 0
-                apertureDiameterRel = obj.apertureDiameter / max(obj.gratingLength, obj.gratingWidth);
-                mask = stage.core.Mask.createCircularEnvelope(2048, apertureDiameterRel);
-                %                 mask = stage.core.Mask.createCircularEnvelope();
+                apertureDiameterRel = obj.um2pix(obj.apertureDiameter) / max(obj.gratingLength, obj.gratingWidth);
+                mask = stage.core.Mask.createAnnulus(-1, apertureDiameterRel, 2048);
                 grat.setMask(mask);
             end
             
-            %             circular block mask (only gratings outside center)
-            function opacity = onDuringStim(state, preTime, stimTime)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    opacity = 1;
-                else
-                    opacity = 0;
-                end
-            end
+            % only gratings outside center
             if obj.apertureDiameter < 0
-                spot = stage.builtin.stimuli.Ellipse();
-                spot.radiusX = round(obj.um2pix(obj.apertureDiameter) / 2); %convert to pixels
-                spot.radiusY = spot.radiusX;
-                spot.color = obj.meanLevel;
-                spot.position = centerPos;
-                p.addStimulus(spot);
-                centerCircleController = stage.builtin.controllers.PropertyController(spot, 'opacity', @(s)onDuringStim(s, obj.preTime, obj.stimTime));
-                p.addController(centerCircleController);
-            end
+                apertureDiameterRel = -1 * obj.um2pix(obj.apertureDiameter) / max(obj.gratingLength, obj.gratingWidth);
+                mask = stage.core.Mask.createAnnulus(apertureDiameterRel, 10, 2048);
+                grat.setMask(mask);
+            end            
+            
+            %             circular block mask (only gratings outside center)
+%             function opacity = onDuringStim(state, preTime, stimTime)
+%                 if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
+%                     opacity = 1;
+%                 else
+%                     opacity = 0;
+%                 end
+%             end
+%             if obj.apertureDiameter < 0
+%                 spot = stage.builtin.stimuli.Ellipse();
+%                 spot.radiusX = round(obj.um2pix(obj.apertureDiameter) / 2); %convert to pixels
+%                 spot.radiusY = spot.radiusX;
+%                 spot.color = obj.meanLevel;
+%                 spot.position = centerPos;
+%                 p.addStimulus(spot);
+%                 centerCircleController = stage.builtin.controllers.PropertyController(spot, 'opacity', @(s)onDuringStim(s, obj.preTime, obj.stimTime));
+%                 p.addController(centerCircleController);
+%             end
             
             
             % Gratings drift controller
