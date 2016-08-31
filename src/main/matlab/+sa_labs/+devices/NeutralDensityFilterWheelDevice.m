@@ -4,9 +4,6 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
         serialPortObject
     end
     
-    properties (Dependent, Access = private)
-        position
-    end
     
     methods
         
@@ -25,7 +22,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             obj.addConfigurationSetting('filterWheelValidPositions', filterWheelValidPositions);
         end
         
-        function position = get.position(obj)
+        function position = getPosition(obj)
             fopen(obj.serialPortObject);
             fprintf(obj.serialPortObject, 'pos?\n');
             pause(0.2);
@@ -41,12 +38,13 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             fclose(obj.serialPortObject);
         end
         
-        function set.position(obj, newPosition)
-            if ~any(obj.getConfigurationSetting('filterWheelValidPositions') == value)
-                error(['Error: filter value ' num2str(value) ' not found']);
+        function setPosition(obj, newPosition)
+            if ~any(obj.getConfigurationSetting('filterWheelValidPositions') == newPosition)
+                error(['Error: filter value ' num2str(newPosition) ' not found']);
             end
             
-            if newPosition ~= obj.position
+            oldPosition = obj.getPosition();
+            if newPosition ~= oldPosition
                 fopen(obj.serialPortObject);
                 fprintf(obj.serialPortObject, 'pos=%s\n', num2str(newPosition));
                 pause(3);

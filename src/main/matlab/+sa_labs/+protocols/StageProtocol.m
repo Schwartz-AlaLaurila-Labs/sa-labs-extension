@@ -42,18 +42,27 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
 
 %             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
+
+            % set the NDF filter wheel
+            if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
+                filterWheel.setPosition(obj.ndf);
+            end
         end
 
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
-                        
-            % it is required to have an amp stimulus for stage protocols
-%             device = obj.rig.getDevice(obj.chan1);
-%             duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
-%             epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
             
-            % gaussian noise for analysis testing
-            obj.addGaussianLoopbackSignals(epoch);
+            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
+            if testMode
+                % gaussian noise for analysis testing
+                obj.addGaussianLoopbackSignals(epoch);
+            else
+                % it is required to have an amp stimulus for stage protocols
+                device = obj.rig.getDevice(obj.chan1);
+                duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
+                epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
+            end
 
         end
             
@@ -66,8 +75,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
 
         function completeEpoch(obj, epoch)
-            % remove the amp stimulus which was needed
-            epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
+            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');            
+            if ~testMode
+                epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
+            end
+            
             completeEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
         end
         

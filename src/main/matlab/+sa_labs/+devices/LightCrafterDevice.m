@@ -123,6 +123,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             frameTrackerDuration = .20;
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < frameTrackerDuration));
             presentation.addController(trackerColor);
+
+% other config
+%             obj.setLcrPatternAttributes(obj.bitDepth, obj.color, obj.patternsPerFrame);
+%             obj.setLcrLedCurrents(0, obj.greenLED, obj.blueLED);
             
             if obj.getPrerender()
                 player = stage.builtin.players.PrerenderedPlayer(presentation);
