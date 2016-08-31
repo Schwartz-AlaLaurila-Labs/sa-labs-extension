@@ -54,12 +54,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('monitorRefreshRate', refreshRate, 'isReadOnly', true);
-            obj.addConfigurationSetting('frameTrackerDuration', 100, 'isReadOnly', true);
-            obj.addConfigurationSetting('frameTrackerPosition', [100,100], 'isReadOnly', true);            
             obj.addConfigurationSetting('prerender', false, 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterLedEnables',  [auto, red, green, blue], 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate(), 'isReadOnly', true);
-            %obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel, 'isReadOnly', true);
+            obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel, 'isReadOnly', true);
         end
         
         function close(obj)
@@ -105,10 +103,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             presentation.setBackgroundColor(0);
             presentation.insertStimulus(1, background);
             
-            tracker = stage.builtin.stimuli.FrameTracker();
-            tracker.position = obj.frameTrackerPosition;
+            tracker = stage.builtin.stimuli.Rectangle();
+            tracker.size = [canvasSize(1) * 1/8, canvasSize(2)];
+            tracker.position = [canvasSize(1) - (canvasSize(1)/16), canvasSize(2)/2];
             presentation.addStimulus(tracker);
-            trackerColor =  stage.builtin.controllers.PropertyController(tracker, 'color', @(s)double(255.*repmat(s.time < obj.frameTrackerDuration *1e-3, 1, 3)));
+            
+            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < presentation.duration));
             presentation.addController(trackerColor);            
             
             if obj.getPrerender()
@@ -170,3 +170,4 @@ classdef LightCrafterDevice < symphonyui.core.Device
     end
     
 end
+
