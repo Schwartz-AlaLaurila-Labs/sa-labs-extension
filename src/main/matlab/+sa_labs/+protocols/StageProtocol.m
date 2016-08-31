@@ -5,6 +5,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         meanLevel = 0.0       % Background light intensity (0-1)
         offsetX = 0
         offsetY = 0
+        
+        ndf = 4;
     end
        
     methods (Abstract)
@@ -44,12 +46,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
-            
-            
+                        
             % it is required to have an amp stimulus for stage protocols
-            device = obj.rig.getDevice(obj.chan1);
-            duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
-            epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
+%             device = obj.rig.getDevice(obj.chan1);
+%             duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
+%             epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
+            
+            % gaussian noise for analysis testing
+            obj.addGaussianLoopbackSignals(epoch);
+
         end
             
         function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>

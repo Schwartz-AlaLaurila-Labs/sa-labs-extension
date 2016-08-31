@@ -70,7 +70,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             
             if strfind(name, 'chan')
                 d.category = '9 Amplifiers';
-            end            
+            end
         end 
         
         
@@ -130,10 +130,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
             end
-            
-            % gaussian noise for analysis testing
-%             obj.addGaussianLoopbackSignals(epoch);
-            
+                        
         end
         
         function addGaussianLoopbackSignals(obj, epoch)
