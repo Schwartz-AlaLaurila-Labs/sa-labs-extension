@@ -9,8 +9,8 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
         movementDelay = 200;
         
         %in microns, use rigConfig to set microns per pixel
-        gratingWidth = 1500; %um
-        gratingLength = 1500; %um
+        gratingWidth = 2500; %um
+        gratingLength = 2500; %um
         gratingSpeed = 1000; %um/s
         cycleHalfWidth = 50; %um
         apertureDiameter = 0; %um, pos: gratings in center, neg: gratings outside center

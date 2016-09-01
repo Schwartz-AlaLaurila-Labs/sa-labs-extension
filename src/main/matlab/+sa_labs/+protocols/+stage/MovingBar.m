@@ -51,7 +51,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             yStep = sind(obj.barAngle);
             
             xPos = canvasSize(1)/2 - xStep * canvasSize(2)/2;
-            yPos = canvasSize(1)/2 - yStep * canvasSize(2)/2;
+            yPos = canvasSize(2)/2 - yStep * canvasSize(2)/2;
             
             function pos = movementController(state, duration)
                 pos = [NaN, NaN];
