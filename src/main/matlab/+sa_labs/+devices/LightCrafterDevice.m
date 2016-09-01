@@ -163,7 +163,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             r = obj.patternRatesToAttributes.keys;
         end
         
-        function setPatternRate(obj, rate)
+        function attributes = setPatternRate(obj, rate)
             if ~obj.patternRatesToAttributes.isKey(rate)
                 error([num2str(rate) ' is not an available pattern rate']);
             end

@@ -6,11 +6,9 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         stimTime = 1000	% Spot duration (ms)
         tailTime = 500	% Spot trailing duration (ms)
         
-        %mean (bg) and amplitude of pulse
         intensity = 0.1;
         
-        %spot size in microns, use rigConfig to set microns per pixel
-        spotSize = 200;
+        spotSize = 200; % um
         numberOfEpochs = 50;
     end
     

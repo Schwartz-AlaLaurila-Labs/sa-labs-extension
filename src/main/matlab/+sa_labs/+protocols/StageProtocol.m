@@ -10,14 +10,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 %         patternsPerFrame = 1
         frameRate = 60;% Hz
         patternRate = 60;% Hz
-%         bitDepth = 8;
         blueLED = 100 % 0-255
         greenLED = 100 % 0-255
+        bitDepth = 8;
+        patternsPerFrame = 1;
     end
     
-    properties (dependent)
+    properties (Dependent)
         RstarMean
         RstarIntensity
+    end
+    
+    properties (Hidden)
+        color = 'cyan';
     end
        
     methods (Abstract)
@@ -33,7 +38,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 case {'meanLevel', 'offsetX', 'offsetY', 'intensity'}
                     d.category = '1 Basic';
                     
-                case {'blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth'}
+                case {'blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
                     d.category = '8 Projector';
             end
         end
@@ -67,7 +72,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             % Set the projector configuration
             lightCrafter = obj.rig.getDevice('LightCrafter');
-            lightCrafter.setPatternRate(obj.patternRate);
+            attr = lightCrafter.setPatternRate(obj.patternRate);
+%             obj.bitDepth = attr{1};
             lightCrafter.setLedEnables(0,0,1,1); % auto, r, g, b
             lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
             
@@ -120,48 +126,46 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
     
 
-        function RstarMean = get.RstarMean(obj)
-            if isempty(obj.color) || DEMO_MODE || isempty(obj.NDF)
-                RstarMean = [];
-            else
-                filterIndex = find(obj.rigConfig.filterWheelNDFs == obj.NDF);
-                if isempty(filterIndex)
+        
+        function rstar = convertRelativeToRStar(obj, inval)
+            rstar = [];
+            if isempty(inval)
+                return
+            end
+            if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
+                filterWheelPositions = filterWheel.getConfigurationSetting('filterWheelValidPositions');
+                
+                filterIndex = filterWheelPositions == obj.NDF;
+                if ~any(filterIndex)
                     disp('Error: bad NDF value');
-                    RstarMean = [];
+                    rstar = [];
                 else
                     if isempty(obj.bitDepth) %assume we are filling all patterns
                         obj.bitDepth = 8; 
                         obj.patternsPerFrame = 2;
                     end
-                    NDF_attenuation = obj.rigConfig.NDFattenuation(filterIndex);
-                    [R,M,S] = photoIsom2(obj.blueLED, obj.greenLED, obj.color, obj.rigConfig.fitBlue, obj.rigConfig.fitGreen);
-                    RstarMean = R * obj.meanLevel * NDF_attenuation;
+                    
+                    filterWheelAttentuationValues = filterWheel.getResource('filterWheelAttentuationValues');
+                    
+                    NDF_attenuation = filterWheelAttentuationValues(filterIndex);
+                    lightCrafter = obj.rig.getDevice('LightCrafter');
+                    [R,M,S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, obj.color, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'));
+                    rstar = R * inval * NDF_attenuation;
                     %deal with patternsPerFrame in Rstar calculation
-                    RstarMean = RstarMean * obj.patternsPerFrame./obj.maxPatternsPerFrame(obj.bitDepth) * 2;
+                    maxPatternsPerFrame  = [24 12 8 6 4 4 3 2];
+                    rstar = rstar * obj.patternsPerFrame./maxPatternsPerFrame(obj.bitDepth) * 2;
                 end
             end
-        end
+    end
+ 
         
+        function RstarMean = get.RstarMean(obj)
+            RstarMean = obj.convertRelativeToRStar(obj.meanLevel)
+        end
+    
         function RstarIntensity = get.RstarIntensity(obj)
-            if isempty(obj.color) || DEMO_MODE || isempty(obj.NDF) || ~isprop(obj,'intensity')
-                 RstarIntensity = [];
-            else
-                filterIndex = find(obj.rigConfig.filterWheelNDFs == obj.NDF);
-                if isempty(filterIndex)
-                    disp('Error: bad NDF value');
-                    RstarIntensity = [];
-                else
-                    if isempty(obj.bitDepth) %assume we are filling all patterns
-                        obj.bitDepth = 8;
-                        obj.patternsPerFrame = 2;
-                    end
-                    NDF_attenuation = obj.rigConfig.NDFattenuation(filterIndex);
-                    [R,M,S] = photoIsom2(obj.blueLED, obj.greenLED, obj.color, obj.rigConfig.fitBlue, obj.rigConfig.fitGreen);
-                    RstarIntensity = R * obj.intensity * NDF_attenuation;
-                    %deal with patternsPerFrame in Rstar calculation
-                    RstarIntensity = RstarIntensity * obj.patternsPerFrame./obj.maxPatternsPerFrame(obj.bitDepth) * 2;
-                end
-            end
+            RstarIntensity = obj.convertRelativeToRStar(obj.intensity)
         end        
         
     end

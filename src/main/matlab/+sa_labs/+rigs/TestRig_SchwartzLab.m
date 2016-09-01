@@ -44,10 +44,10 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
             
-%             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
-%             neutralDensityFilterWheel.setConfigurationSetting('filterWheelValidPositions', obj.filterWheelValidPositions);
-%             neutralDensityFilterWheel.addResource('filterWheelAttentuationValues', obj.filterWheelAttentuationValues);
-%             obj.addDevice(neutralDensityFilterWheel);
+            neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
+            neutralDensityFilterWheel.setConfigurationSetting('filterWheelValidPositions', obj.filterWheelValidPositions);
+            neutralDensityFilterWheel.addResource('filterWheelAttentuationValues', obj.filterWheelAttentuationValues);
+            obj.addDevice(neutralDensityFilterWheel);
             
             lightCrafter = sa_labs.devices.LightCrafterDevice('micronsPerPixel', obj.micronsPerPixel);
             lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition)
