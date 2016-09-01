@@ -2,11 +2,17 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 % this class handles protocol control which is visual stimulus specific
 
     properties
-        meanLevel = 0.0       % Background light intensity (0-1)
-        offsetX = 0
-        offsetY = 0
+        meanLevel = 0.5       % Background light intensity (0-1)
+        offsetX = 0 % um
+        offsetY = 0 % um
         
-        ndf = 4;
+        NDF = 4 % Filter wheel position
+%         patternsPerFrame = 1
+        frameRate = 60;% Hz
+        patternRate = 60;% Hz
+%         bitDepth = 8;
+        blueLED = 5 % 0-255
+        greenLED = 5 % 0-255
     end
        
     methods (Abstract)
@@ -21,6 +27,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             switch name
                 case {'meanLevel', 'offsetX', 'offsetY', 'intensity'}
                     d.category = '1 Basic';
+                    
+                case {'blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth'}
+                    d.category = '8 Projector';
             end
         end
         
@@ -46,8 +55,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             % set the NDF filter wheel
             if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheel.setPosition(obj.ndf);
+                filterWheel.setPosition(obj.NDF);
+                obj.NDF = filterWheel.getPosition();
+            else
+                disp('No filter wheel');
             end
+            
+            
+            % Set the projector configuration
+            lightCrafter = obj.rig.getDevice('LightCrafter');
+            lightCrafter.setPatternRate(obj.patternRate);
+            lightCrafter.setLedEnables(0,0,1,1); % auto, r, g, b
+            lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
+            
         end
 
         function prepareEpoch(obj, epoch)
@@ -101,12 +121,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     methods (Access = protected)
         
         function p = um2pix(obj, um)
-            stages = obj.rig.getDevices('Stage');
-            if isempty(stages)
-                micronsPerPixel = 1;
-            else
-                micronsPerPixel = stages{1}.getConfigurationSetting('micronsPerPixel');
-            end
+            stage = obj.rig.getDevice('Stage');
+            micronsPerPixel = stage.getConfigurationSetting('micronsPerPixel');
             p = round(um / micronsPerPixel);
         end
         

@@ -14,7 +14,7 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
     
     methods
         
-        function obj = TestRig_SchwartzLab()            
+        function obj = TestRig_SchwartzLab()
             import symphonyui.builtin.daqs.*;
             import symphonyui.builtin.devices.*;
             import symphonyui.core.*;
