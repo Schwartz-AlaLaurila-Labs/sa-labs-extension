@@ -11,8 +11,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         frameRate = 60;% Hz
         patternRate = 60;% Hz
 %         bitDepth = 8;
-        blueLED = 5 % 0-255
-        greenLED = 5 % 0-255
+        blueLED = 100 % 0-255
+        greenLED = 100 % 0-255
+    end
+    
+    properties (dependent)
+        RstarMean
+        RstarIntensity
     end
        
     methods (Abstract)
@@ -57,8 +62,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 filterWheel.setPosition(obj.NDF);
                 obj.NDF = filterWheel.getPosition();
-            else
-                disp('No filter wheel');
             end
             
             
@@ -115,8 +118,54 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 msg = 'No stage';
             end
         end
+    
+
+        function RstarMean = get.RstarMean(obj)
+            if isempty(obj.color) || DEMO_MODE || isempty(obj.NDF)
+                RstarMean = [];
+            else
+                filterIndex = find(obj.rigConfig.filterWheelNDFs == obj.NDF);
+                if isempty(filterIndex)
+                    disp('Error: bad NDF value');
+                    RstarMean = [];
+                else
+                    if isempty(obj.bitDepth) %assume we are filling all patterns
+                        obj.bitDepth = 8; 
+                        obj.patternsPerFrame = 2;
+                    end
+                    NDF_attenuation = obj.rigConfig.NDFattenuation(filterIndex);
+                    [R,M,S] = photoIsom2(obj.blueLED, obj.greenLED, obj.color, obj.rigConfig.fitBlue, obj.rigConfig.fitGreen);
+                    RstarMean = R * obj.meanLevel * NDF_attenuation;
+                    %deal with patternsPerFrame in Rstar calculation
+                    RstarMean = RstarMean * obj.patternsPerFrame./obj.maxPatternsPerFrame(obj.bitDepth) * 2;
+                end
+            end
+        end
+        
+        function RstarIntensity = get.RstarIntensity(obj)
+            if isempty(obj.color) || DEMO_MODE || isempty(obj.NDF) || ~isprop(obj,'intensity')
+                 RstarIntensity = [];
+            else
+                filterIndex = find(obj.rigConfig.filterWheelNDFs == obj.NDF);
+                if isempty(filterIndex)
+                    disp('Error: bad NDF value');
+                    RstarIntensity = [];
+                else
+                    if isempty(obj.bitDepth) %assume we are filling all patterns
+                        obj.bitDepth = 8;
+                        obj.patternsPerFrame = 2;
+                    end
+                    NDF_attenuation = obj.rigConfig.NDFattenuation(filterIndex);
+                    [R,M,S] = photoIsom2(obj.blueLED, obj.greenLED, obj.color, obj.rigConfig.fitBlue, obj.rigConfig.fitGreen);
+                    RstarIntensity = R * obj.intensity * NDF_attenuation;
+                    %deal with patternsPerFrame in Rstar calculation
+                    RstarIntensity = RstarIntensity * obj.patternsPerFrame./obj.maxPatternsPerFrame(obj.bitDepth) * 2;
+                end
+            end
+        end        
         
     end
+    
     
     methods (Access = protected)
         
