@@ -1,7 +1,17 @@
-classdef AmpControl < symphonyui.ui.Module
+classdef CommonControl < symphonyui.ui.Module
     
     properties
+        % projector
+        offsetX = 0 % um
+        offsetY = 0 % um
         
+        NDF = 4 % Filter wheel position
+        frameRate = 60;% Hz
+        patternRate = 60;% Hz
+        blueLED = 100 % 0-255
+        greenLED = 100 % 0-255
+        
+        % amplifiers
         chan1 = 'Amp1';
         chan1Mode = 'Cell attached'
         chan1Hold = 0
@@ -20,6 +30,7 @@ classdef AmpControl < symphonyui.ui.Module
     end
     
     properties(Hidden)
+        projectorPropertyNames = {'NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
         ampList
         
         chan1Type
@@ -101,6 +112,7 @@ classdef AmpControl < symphonyui.ui.Module
 
         
         function cbSetParameters(obj, ~, ~)
+            % set values in the protocol (callback on change settings in this module)
             propertyMap = containers.Map();
             rawProperties = get(obj.protocolPropertyGrid, 'Properties');
             for p = 1:length(rawProperties)
@@ -112,24 +124,40 @@ classdef AmpControl < symphonyui.ui.Module
         end
         
         function populateProtocolProperties(obj)
+            numAmps = length(obj.ampList) - 1;
+            % get values from the protocol to instantiate display
             names = properties(obj);
-            exc = zeros(size(names));
+            excludeParam = zeros(size(names));
             for i = 1:length(names)
-                if strfind(names{i}, 'chan')
-                    exc(i) = 0;
+                
+                % Select out projector properties
+                if any(strcmp(names{i}, obj.projectorPropertyNames))
+                    continue
+                end
+                
+                %select out the channel parameters
+                if isempty(strfind(names{i}, 'chan')) % get rid of 
+                    excludeParam(i) = 1;
                 else
-                    exc(i) = 1;
+                    % toss the ones with too high a channel number
+                    if numAmps < str2double(names{i}(5))
+                        excludeParam(i) = 1;
+                    end
                 end
             end
-            names(logical(exc)) = [];
-            
-            % those 10 lines in python:
+            names(logical(excludeParam)) = [];
+            % preceding 10 lines in 1 python line:
             % names = [n for n in properties(obj) if not strfind(n, 'chan')]
             
+            % set the display category
             descriptors = symphonyui.core.PropertyDescriptor.empty(0, numel(names));
             for i = 1:numel(names)
                 descriptors(i) = symphonyui.core.PropertyDescriptor.fromProperty(obj, names{i});
-                descriptors(i).category = sprintf('Channel %s',names{i}(5));
+                if strfind(names{i}, 'chan')
+                    descriptors(i).category = sprintf('Channel %s',names{i}(5));
+                else
+                    descriptors(i).category = 'Projector';
+                end
             end
 
             fields = symphonyui.ui.util.desc2field(descriptors);

@@ -35,10 +35,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             d = getPropertyDescriptor@sa_labs.protocols.BaseProtocol(obj, name);
             
             switch name
-                case {'meanLevel', 'offsetX', 'offsetY', 'intensity'}
+                case {'meanLevel', 'intensity'}
                     d.category = '1 Basic';
                     
-                case {'blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
+                case {'offsetX','offsetY','blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
                     d.category = '8 Projector';
             end
         end
@@ -161,11 +161,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
  
         
         function RstarMean = get.RstarMean(obj)
-            RstarMean = obj.convertRelativeToRStar(obj.meanLevel)
+            RstarMean = obj.convertRelativeToRStar(obj.meanLevel);
         end
     
         function RstarIntensity = get.RstarIntensity(obj)
-            RstarIntensity = obj.convertRelativeToRStar(obj.intensity)
+            RstarIntensity = obj.convertRelativeToRStar(obj.intensity);
         end        
         
     end
