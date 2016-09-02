@@ -12,8 +12,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         patternRate = 60;% Hz
         blueLED = 100 % 0-255
         greenLED = 100 % 0-255
-        bitDepth = 8;
-        patternsPerFrame = 1;
     end
     
     properties (Dependent)
@@ -23,6 +21,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     
     properties (Hidden)
         color = 'cyan';
+        bitDepth = 8;
+        patternsPerFrame = 1;        
     end
        
     methods (Abstract)
