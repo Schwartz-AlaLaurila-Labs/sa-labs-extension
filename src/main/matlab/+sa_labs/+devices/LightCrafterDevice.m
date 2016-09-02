@@ -62,6 +62,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('lightCrafterLedEnables',  [auto, red, green, blue], 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate(), 'isReadOnly', true);
             obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel, 'isReadOnly', true);
+            obj.addConfigurationSetting('canvasTranslation', [0,0]);
         end
         
         function close(obj)
@@ -91,7 +92,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function s = getFrameTrackerPosition(obj)
             s = obj.getConfigurationSetting('frameTrackerPosition');
-        end              
+        end
+        
+        function s = getCanvasTranslation(obj)
+            s = obj.getConfigurationSetting('canvasTranslation');
+        end            
         
         function r = getMonitorRefreshRate(obj)
             r = obj.getConfigurationSetting('monitorRefreshRate');
@@ -111,17 +116,21 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function play(obj, presentation)
             canvasSize = obj.getCanvasSize();
-            
+            canvasTranslation = obj.getConfigurationSetting('canvasTranslation');
+            obj.stageClient.setCanvasProjectionIdentity();
+            obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));            
+            obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
+
             background = stage.builtin.stimuli.Rectangle();
             background.size = canvasSize;
-            background.position = canvasSize/2;
+            background.position = canvasSize/2 - canvasTranslation;
             background.color = presentation.backgroundColor;
             presentation.setBackgroundColor(0);
             presentation.insertStimulus(1, background);
             
             tracker = stage.builtin.stimuli.Rectangle();
             tracker.size = obj.getFrameTrackerSize();
-            tracker.position = obj.getFrameTrackerPosition();
+            tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
             
             frameTrackerDuration = .20;
@@ -161,6 +170,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function r = availablePatternRates(obj)
             r = obj.patternRatesToAttributes.keys;
+        end
+        
+        function setPatternAttributes(obj, bitDepth, color, numPatterns)
+            obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
         end
         
         function attributes = setPatternRate(obj, rate)

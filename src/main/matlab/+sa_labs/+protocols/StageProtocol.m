@@ -7,7 +7,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetY = 0 % um
         
         NDF = 4 % Filter wheel position
-%         patternsPerFrame = 1
         frameRate = 60;% Hz
         patternRate = 60;% Hz
         blueLED = 100 % 0-255
@@ -22,7 +21,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     properties (Hidden)
         color = 'cyan';
         bitDepth = 8;
-        patternsPerFrame = 1;        
+        numPatternsPerFrame = 1
+        
+        colorType = symphonyui.core.PropertyType('char', 'row', {'cyan','blue','green'});
     end
        
     methods (Abstract)
@@ -38,7 +39,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 case {'meanLevel', 'intensity'}
                     d.category = '1 Basic';
                     
-                case {'offsetX','offsetY','blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
+                case {'color','offsetX','offsetY','blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
                     d.category = '8 Projector';
             end
         end
@@ -72,11 +73,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             % Set the projector configuration
             lightCrafter = obj.rig.getDevice('LightCrafter');
-            attr = lightCrafter.setPatternRate(obj.patternRate);
+%             attr = lightCrafter.setPatternRate(obj.patternRate);
+            lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
 %             obj.bitDepth = attr{1};
-            lightCrafter.setLedEnables(0,0,1,1); % auto, r, g, b
+            lightCrafter.setLedEnables(0, 0, obj.greenLED > 0, obj.blueLED > 0); % auto, r, g, b
             lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
-            
+            lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
         end
 
         function prepareEpoch(obj, epoch)
@@ -125,47 +127,41 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
     
-
-        
         function rstar = convertRelativeToRStar(obj, inval)
             rstar = [];
             if isempty(inval)
                 return
             end
-            if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+            if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+                filterWheelPositions = 1:7;
+                filterWheelAttentuationValues = [1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6];
+            else
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheelPositions = filterWheel.getConfigurationSetting('filterWheelValidPositions');
-                
-                filterIndex = filterWheelPositions == obj.NDF;
-                if ~any(filterIndex)
-                    disp('Error: bad NDF value');
-                    rstar = [];
-                else
-                    if isempty(obj.bitDepth) %assume we are filling all patterns
-                        obj.bitDepth = 8; 
-                        obj.patternsPerFrame = 2;
-                    end
-                    
-                    filterWheelAttentuationValues = filterWheel.getResource('filterWheelAttentuationValues');
-                    
-                    NDF_attenuation = filterWheelAttentuationValues(filterIndex);
-                    lightCrafter = obj.rig.getDevice('LightCrafter');
-                    [R,M,S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, obj.color, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'));
-                    rstar = R * inval * NDF_attenuation;
-                    %deal with patternsPerFrame in Rstar calculation
-                    maxPatternsPerFrame  = [24 12 8 6 4 4 3 2];
-                    rstar = rstar * obj.patternsPerFrame./maxPatternsPerFrame(obj.bitDepth) * 2;
-                end
+                filterWheelPositions = filterWheel.getConfigurationSetting('filterWheelValidPositions');                
+                filterWheelAttentuationValues = filterWheel.getResource('filterWheelAttentuationValues');
             end
-    end
- 
-        
+
+            filterIndex = filterWheelPositions == obj.NDF;
+
+            NDF_attenuation = filterWheelAttentuationValues(filterIndex);
+            lightCrafter = obj.rig.getDevice('LightCrafter');
+            [R,~,~] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, obj.color, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'));
+            rstar = R * inval * NDF_attenuation;
+            %deal with patternsPerFrame in Rstar calculation
+            maxPatternsPerFrame  = [24 12 8 6 4 4 3 2];
+            rstar = rstar * obj.numPatternsPerFrame./maxPatternsPerFrame(obj.bitDepth) * 2;
+        end
+         
         function RstarMean = get.RstarMean(obj)
             RstarMean = obj.convertRelativeToRStar(obj.meanLevel);
         end
     
         function RstarIntensity = get.RstarIntensity(obj)
-            RstarIntensity = obj.convertRelativeToRStar(obj.intensity);
+            if isprop(obj, 'intensity')
+                RstarIntensity = obj.convertRelativeToRStar(obj.intensity);
+            else
+                RstarIntensity = [];
+            end
         end        
         
     end

@@ -16,21 +16,24 @@ classdef CommonControl < symphonyui.ui.Module
         chan1Mode = 'Cell attached'
         chan1Hold = 0
         
-        chan2 = 'None';   
+        chan2 = 'None';
         chan2Mode = 'Cell attached'
         chan2Hold = 0
         
-        chan3  = 'None';  
+        chan3  = 'None';
         chan3Mode = 'Cell attached'
         chan3Hold = 0
         
-        chan4  = 'None';  
+        chan4  = 'None';
         chan4Mode = 'Cell attached'
         chan4Hold = 0
     end
     
     properties(Hidden)
-        projectorPropertyNames = {'NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
+        color = 'cyan'       
+        colorType = symphonyui.core.PropertyType('char', 'row', {'cyan','blue','green'});
+        
+        projectorPropertyNames = {'color','NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
         ampList
         
         chan1Type
