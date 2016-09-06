@@ -14,6 +14,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         epochSplitParameter
         channelNames
         analysisData % just for autocenter for now
+        
+        responseMode % 'Whole cell' or 'Cell attached'
+        spikeThresholdVoltage % in mV
     end
     
     properties % not private access
@@ -44,6 +47,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('baselineRegion', [], @(x)isnumeric(x) || isvector(x));
             ip.addParameter('epochSplitParameter', '', @(x)ischar(x));
             ip.addParameter('plotMode', 'cartesian', @(x)ischar(x));
+            ip.addParameter('responseMode','Whole cell', @(x)ischar(x));
+            ip.addParameter('spikeThresholdVoltage','spikeThresholdVoltage', 0, @(x)isnumeric(x));
             ip.parse(varargin{:});
             
             obj.devices = devices;
@@ -53,6 +58,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.baselineRegion = ip.Results.baselineRegion;
             obj.epochSplitParameter = ip.Results.epochSplitParameter;
             obj.plotMode = ip.Results.plotMode;
+            obj.responseMode = ip.Results.responseMode;
+            obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
             
             obj.createUi();
             
