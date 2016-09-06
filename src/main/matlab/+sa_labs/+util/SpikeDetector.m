@@ -1,55 +1,30 @@
 classdef SpikeDetector < handle
-    %SPIKEDETECTOR Summary of this class goes here
-    %   Detailed explanation goes here
     
     properties
-        HighPassCut_drift = 70; %Hz, in order to remove drift and 60Hz noise
-        HighPassCut_spikes = 500; %Hz, in order to remove everything but spikes
+        freq_driftAndNoise = 70; %Hz, in order to remove drift and 60Hz noise
+        freq_spikeLowerThreshold = 500; %Hz, in order to remove everything but spikes
+        highPassFilter
+        bandPassFilter
         ref_period = 2E-3; %s
         searchInterval = 1E-3; %s
-        SampleInterval
+        sampleInterval = 1E-4;
         thres_std
+        spikeDetectorMode
+        spikeThreshold
     end
     
     methods
         
-        function Xfilt = BandPassFilter(obj, X, low, high)
-            Xfilt = obj.LowPassFilter(obj.HighPassFilter(X, low), high);
-        end
-        
-        function Xfilt = HighPassFilter(obj, X, F)
-            % %F is in Hz
-            % %Sample interval is in seconds
-            % %X is a vector or a matrix of row vectors
-            L = size(X,2);
-            if L == 1 %flip if given a column vector
-                X=X';
-                L = size(X,2);
+        function obj = SpikeDetector(spikeDetectorMode)
+            obj.spikeDetectorMode = spikeDetectorMode;
+            if ~strcmp(obj.spikeDetectorMode, 'Simple threshold')
+
+                [b,a] = butter(21, obj.freq_spikeLowerThreshold / (.5/obj.sampleInterval), 'high');
+                obj.highPassFilter = {b,a};
+
+                [b,a] = butter(21, [obj.freq_driftAndNoise, obj.freq_spikeLowerThreshold] / (.5/obj.sampleInterval));
+                obj.bandPassFilter = {b,a};
             end
-            
-            FreqStepSize = 1/(obj.SampleInterval * L);
-            FreqKeepPts = round(obj.HighPassCut_ / FreqStepSize);
-            
-            FFTData = fft(X, [], 2);
-            FFTData(:,1:FreqKeepPts) = 0;
-            FFTData(end-FreqKeepPts:end) = 0;
-            Xfilt = real(ifft(FFTData, [], 2));
-        end
-        
-        function Xfilt = LowPassFilter(obj, X)
-            L = size(X,2);
-            if L == 1 %flip if given a column vector
-                X=X';
-                L = size(X,2);
-            end
-            
-            FreqStepSize = 1/(obj.SampleInterval * L);
-            FreqCutoffPts = round(obj.HighPassCut_spikes / FreqStepSize);
-            
-            FFTData = fft(X, [], 2);
-            FFTData(:,FreqCutoffPts:size(FFTData,2)-FreqCutoffPts) = 0;
-            Xfilt = real(ifft(FFTData, [], 2));
-            
         end
         
         function Ind = getThresCross(obj, V, th, dir)
@@ -99,12 +74,12 @@ classdef SpikeDetector < handle
                 
             else
                 
-                ref_period_points = round(obj.ref_period./obj.SampleInterval);
-                searchInterval_points = round(obj.searchInterval./obj.SampleInterval);
+                ref_period_points = round(obj.ref_period./obj.sampleInterval);
+                searchInterval_points = round(obj.searchInterval./obj.sampleInterval);
                 
                 [Ntraces,~] = size(data);
-                D_noSpikes = obj.BandPassFilter(data);
-                Dhighpass = obj.HighPassFilter(data);
+                DnoSpikes = filtfilt(obj.bandPassFilter{1}, obj.bandPassFilter{2}, data);
+                Dhighpass = filtfilt(obj.highPassFilter{1}, obj.highPassFilter{2}, data);
                 
                 sp = cell(Ntraces,1);
                 spikeAmps = cell(Ntraces,1);
@@ -122,7 +97,7 @@ classdef SpikeDetector < handle
                     end
                     
                     
-                    trace_noise = D_noSpikes(i,:);
+                    trace_noise = DnoSpikes(i,:);
                     noise_std = std(trace_noise);
                     
                     %get peaks
