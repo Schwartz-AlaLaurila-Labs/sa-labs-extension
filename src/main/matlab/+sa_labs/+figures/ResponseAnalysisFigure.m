@@ -11,6 +11,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         allMeasurementNames = {'mean','var','max','min','sum','std'};
         plotMode
         responseAxes
+        signalAxes
+        rightBox
         epochSplitParameter
         channelNames
         analysisData % just for autocenter for now
@@ -75,19 +77,13 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             
             set(obj.figureHandle,'GraphicsSmoothing', 'on');
             %             clf(obj.figureHandle);
-            %             fullBox = uix.HBoxFlex('Parent', obj.figureHandle);
-            leftBox = uix.VBoxFlex('Parent',obj.figureHandle, 'Spacing',10);
-            %             rightBox = uix.VBox('Parent', fullBox);
+            fullBox = uix.HBoxFlex('Parent', obj.figureHandle);
+            leftBox = uix.VBoxFlex('Parent',fullBox, 'Spacing',10);
             
-            %             hbox = uix.HBox( 'Parent', obj.figureHandle);
-            %             plotBox = uix.VBox('Parent', hbox );
-            %             controlBox = uix.VBox('Parent', hbox);
-            %
-            
-            %             funcNames = cellfun(@func2str, obj.activeFunctionNames, 'UniformOutput', 0);
-            
+            % top left response
             obj.responseAxes = axes('Parent', leftBox);
             
+            % bottom left analysis over param
             obj.axesHandlesAnalysis = [];
             rowBoxes = [];
             plotControlBoxes = [];
@@ -127,6 +123,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
             
             set(leftBox, 'Heights', [-1, -1*ones(1, numel(obj.activeFunctionNames)), 30])
+            
+            % right side signals over time for each param value
+            obj.rightBox = uix.VBox('Parent', fullBox);
+            obj.signalAxes = [];
+            
         end
         
         function redrawPlotCallback(obj, ~, ~)
@@ -291,7 +292,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 plotShapeData(obj.analysisData, spm);
                 
             else
-                
+                % left graphs, where each signal feature is plotted across epoch parameters
                 for measi = 1:numel(obj.activeFunctionNames)
                     funcName = obj.activeFunctionNames{measi};
                     for ci = 1:obj.numChannels
@@ -376,6 +377,30 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         %                         set(obj.markers(measi), 'XData', [x x(end)+1], 'YData', [y measurement]);
                         %                     end
                     end
+                end
+                
+                % right side, where mean signal is plotted over time for each parameter
+                
+                paramByEpoch = [];
+                for ei = 1:length(obj.epochData)
+                    epoch = obj.epochData{ei}{ci};
+                    paramByEpoch(ei) = epoch.splitParameter; %#ok<AGROW>
+                end
+                paramValues = sort(unique(paramByEpoch));
+                
+                for paramValueIndex = 1:length(paramValues)
+                    paramValue = paramValues(paramValueIndex);
+                    
+                    signals = [];
+                    for ei = 1:length(obj.epochData)
+                        epoch = obj.epochData{ei}{ci};
+                        if paramValue == epoch.splitParameter
+                            signals(end+1, :) = epoch.signal;
+                        end
+                        
+                    end
+                    obj.signalAxes(end+1) = axes('Parent', obj.rightBox);
+                    plot(obj.signalAxes(end), mean(signals)) % probably won't work
                 end
             end
         end
