@@ -10,6 +10,10 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
         frameTrackerPosition = [40,40];
         frameTrackerSize = [80,80];
         filterWheelComPort = 'COM8';
+        projectorAngleOffset = 180;
+
+        fitBlue = [1.97967e-11,	-4.35548e-09,	8.49409e-07,	1.07816e-05];
+        fitGreen =[1.9510e-12, -1.4200e-09, 5.1430e-07, 9.6550e-06];        
     end
     
     
@@ -32,9 +36,18 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
             
-            lightCrafter = sa_labs.devices.LightCrafterDevice('micronsPerPixel', 1.6);
-            lightCrafter.setConfigurationSetting('frameTrackerPosition', [40,40])
-            lightCrafter.setConfigurationSetting('frameTrackerSize', [80,80])
+            
+            neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
+            neutralDensityFilterWheel.setConfigurationSetting('filterWheelValidPositions', obj.filterWheelValidPositions);
+            neutralDensityFilterWheel.addResource('filterWheelAttentuationValues', obj.filterWheelAttentuationValues);
+            obj.addDevice(neutralDensityFilterWheel);
+            
+            lightCrafter = sa_labs.devices.LightCrafterDevice('micronsPerPixel', obj.micronsPerPixel);
+            lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition)
+            lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize)
+            lightCrafter.addResource('fitBlue', obj.fitBlue);
+            lightCrafter.addResource('fitGreen', obj.fitGreen);
+            lightCrafter.addResource('projectorAngleOffset', obj.projectorAngleOffset);
             obj.addDevice(lightCrafter);
 
         end
