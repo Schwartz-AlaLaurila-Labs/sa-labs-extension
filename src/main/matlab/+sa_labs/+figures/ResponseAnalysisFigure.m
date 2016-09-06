@@ -48,7 +48,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('epochSplitParameter', '', @(x)ischar(x));
             ip.addParameter('plotMode', 'cartesian', @(x)ischar(x));
             ip.addParameter('responseMode','Whole cell', @(x)ischar(x));
-            ip.addParameter('spikeThresholdVoltage','spikeThresholdVoltage', 0, @(x)isnumeric(x));
+            ip.addParameter('spikeThresholdVoltage', 0, @(x)isnumeric(x));
             ip.parse(varargin{:});
             
             obj.devices = devices;
@@ -65,7 +65,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             
             obj.epochData = {};
             
-            obj.spikeDetector = sa_labs.util.SpikeDetector();
+            obj.spikeDetector = sa_labs.util.SpikeDetector('Simple threshold');
+            obj.spikeDetector.spikeThreshold = 10;
+            obj.spikeDetector.sampleInterval = 1E-4;
         end
         
         function createUi(obj)
@@ -189,7 +191,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     
                     e = struct();
                     e.responseObject = epoch.getResponse(obj.devices{ci});
-                    [e.signal, e.units] = e.responseObject.getData();
+                    [e.rawSignal, e.units] = e.responseObject.getData();
 %                     e.responseObject
                     e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
                     if ~isempty(obj.epochSplitParameter)
@@ -199,6 +201,22 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     end
                     msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
                     
+                    if strcmp(obj.responseMode, 'Whole cell')
+                        e.signal = e.rawSignal;
+                        e.spikeTimes = [];
+                    else
+                        % Extract spikes from signal
+                        result = obj.spikeDetector.detectSpikes(e.rawSignal);
+                        spikeFrames = result.sp;
+
+                        % Generate spike rate signals
+                        spikeRate = zeros(size(e.signal));
+                        spikeRate(spikeFrames) = 1.0;
+                        spikeRate_resampled = filtfilt(hann(e.sampleRate / 10), 1, spikeRate); % 10 ms (100 samples) window filter
+                        e.signal = spikeRate_resampled;
+                        e.spikeTimes = spikeFrames / e.sampleRate;
+                    end
+
                     % setup time regions for analysis
                     % remove baseline signal
                     %             if ~isempty(obj.baselineRegion)
