@@ -26,7 +26,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 3
+        version = 4 % Symphony 2
         displayName = 'Auto Center'
         
         shapeDataMatrix
@@ -40,9 +40,14 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         runConfig
         pointSetIndex
         
-        responsePlotMode = 'autocenter';
-        responsePlotSplitParameter = '';
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = 'presentationId';
+        
     end
+    
+    properties (Transient, Hidden)
+        shapeResponseFigure
+    end    
     
     properties (Dependent)
         stimTime
@@ -53,7 +58,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     methods
         
         function prepareRun(obj)
-            obj.sessionId = str2double(regexprep(num2str(fix(clock),'%1d'),' +','')); % this is how you get a datetime string number in MATLAB
+            obj.sessionId = regexprep(num2str(fix(clock),'%1d'),' +',''); % this is how you get a datetime string in MATLAB
             obj.epochNum = 0;
             %             obj.startTime = clock;
             obj.autoContinueRun = true;
@@ -65,6 +70,26 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             if obj.alternateVoltage
                 obj.currentVoltageIndex = 1;
             end
+            
+            % make device list for figure
+            devices = {};
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                if ~strcmp(ampName, 'None');
+                    device = obj.rig.getDevice(ampName);
+                    devices{end+1} = device; %#ok<AGROW>
+                end
+            end
+            
+            % store this protocol's params as a struct for the figure handler
+            warning('off','MATLAB:structOnObject')
+            propertyStruct = struct(obj);
+            
+            obj.shapeResponseFigure = obj.showFigure('sa_labs.figures.ShapeResponseFigure', devices, ...
+                propertyStruct,...
+                'shapePlotMode','plotSpatial_mean',...
+                'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
+                'spikeThresholdVoltage', obj.spikeThresholdVoltage);
             
             prepareRun@sa_labs.protocols.StageProtocol(obj);
         end
@@ -208,7 +233,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                             obj.autoContinueRun = false;
                         end
                         
-                        runConfig = generateShapeStimulus(p, analysisData); %#ok<*PROPLC,*PROP>
+                        runConfig = sa_labs.util.shape.generateShapeStimulus(p, analysisData); %#ok<*PROPLC,*PROP>
                         %                         sdm = runConfig.shapeDataMatrix
                         
                         p %#ok<NOPRT>
