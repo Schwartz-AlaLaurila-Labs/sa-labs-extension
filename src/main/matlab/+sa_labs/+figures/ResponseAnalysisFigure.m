@@ -19,6 +19,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         
         responseMode % 'Whole cell' or 'Cell attached'
         spikeThresholdVoltage % in mV
+        spikeRateBinLength
     end
     
     properties % not private access
@@ -51,6 +52,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('plotMode', 'cartesian', @(x)ischar(x));
             ip.addParameter('responseMode','Whole cell', @(x)ischar(x));
             ip.addParameter('spikeThresholdVoltage', 0, @(x)isnumeric(x));
+            ip.addParameter('spikeRateBinLength', 0.05, @(x)isnumeric(x));
             ip.parse(varargin{:});
             
             obj.devices = devices;
@@ -62,6 +64,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.plotMode = ip.Results.plotMode;
             obj.responseMode = ip.Results.responseMode;
             obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
+            obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
             
             obj.createUi();
             
@@ -217,13 +220,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         % Generate spike rate signals
                         spikeRate = zeros(size(e.rawSignal));
 %                         spikeRate(spikeFrames) = 1.0;
-                        spikeBins = [0:.05:max(e.t), inf];
+                        spikeBins = [0:obj.spikeRateBinLength:max(e.t), inf];
                         spikeRate_binned = histcounts(e.spikeTimes, spikeBins);
 %                         spikeRate_smoothed = resample(spikeRate_binned, spikeBins(1:end-1), e.sampleRate);
-                        spikeRate_smoothed = interp1(spikeBins(1:end-1), spikeRate_binned, e.t);
-                        whos spikeRate_smoothed
+                        spikeRate_smoothed = interp1(spikeBins(1:end-1), spikeRate_binned, e.t, 'pchip');
+%                         whos spikeRate_smoothed
 %                         f = hann(e.sampleRate / 10);
 %                         spikeRate_smoothed = filtfilt(f, 1, spikeRate); % 10 ms (100 samples) window filter
+                        spikeRate_smoothed = spikeRate_smoothed / obj.spikeRateBinLength;
                         e.signal = spikeRate_smoothed';
 
                     end
@@ -284,7 +288,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     plot(obj.responseAxes, spikeTimes, spikeHeights, '.');
                 end
                 set(obj.responseAxes,'LooseInset',get(obj.responseAxes,'TightInset'))
-                title(obj.responseAxes, 'previous response');
+                title(obj.responseAxes, sprintf('Previous: %s: %d', obj.epochSplitParameter, epoch.splitParameter))
                 ylabel(obj.responseAxes, epoch.units, 'Interpreter', 'none');
             end
             %             legend(obj.responseAxes, obj.channelNames , 'Location', 'east')
@@ -412,6 +416,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     obj.signalAxes(length(paramValues)) = newAxis;
                 end
                 
+                highest = 0;
                 for paramValueIndex = 1:length(paramValues)
                     paramValue = paramValues(paramValueIndex);
                     
@@ -424,6 +429,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         t = epoch.t;
                     end
                     plotval = mean(signals, 1);
+                    highest = max(max(plotval), highest);
                     thisAxis = obj.signalAxes(paramValueIndex);
                     set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
                     plot(thisAxis, t, plotval);
@@ -431,10 +437,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     if ~isempty(obj.epochSplitParameter)
                         title(thisAxis, sprintf('%s: %d', obj.epochSplitParameter,paramValue));
                     end
-%                     paramValue
-%                     disp('plotinfo')
-%                     a = get(thisAxis,{'Position','tightinset'});
-%                     a{:}
+                end
+                
+%                 linkaxes(obj.signalAxes);
+                if strcmp(obj.responseMode, 'Cell attached')
+                    highest
+                    for paramValueIndex = 1:length(paramValues)
+                        ylim(obj.signalAxes(paramValueIndex), [0, highest * 1.1]);
+                    end
                 end
             end
         end
