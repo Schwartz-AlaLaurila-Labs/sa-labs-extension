@@ -17,6 +17,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4  = 'None';  
         chan4Mode = 'Cell attached'
         chan4Hold = 0
+        
+        spikeThresholdVoltage = 3.5 % mV
     end
     
     properties (Transient, Hidden)
@@ -114,7 +116,9 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     'baselineRegion', [0 obj.preTime], ...
                     'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
                     'epochSplitParameter',obj.responsePlotSplitParameter,...
-                    'plotMode',obj.responsePlotMode);
+                    'plotMode',obj.responsePlotMode,... 
+                    'responseMode',obj.chan1Mode,...
+                    'spikeThresholdVoltage', obj.spikeThresholdVoltage);
             end
             
         end
@@ -144,8 +148,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 g = sa_labs.stimuli.GaussianNoiseGeneratorV2();
                 g.freqCutoff = 100;
                 g.numFilters = 1;
-                g.stDev = .2;
-                g.mean = rand() * 10;
+                g.stDev = 10;
+                g.mean = 0;
                 g.seed = randi(100000);
                 g.preTime = obj.preTime;
                 g.tailTime = obj.tailTime;

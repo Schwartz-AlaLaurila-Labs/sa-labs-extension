@@ -68,7 +68,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.epochData = {};
             
             obj.spikeDetector = sa_labs.util.SpikeDetector('Simple threshold');
-            obj.spikeDetector.spikeThreshold = 10;
+            obj.spikeDetector.spikeThreshold = obj.spikeThresholdVoltage;
             obj.spikeDetector.sampleInterval = 1E-4;
         end
         
@@ -76,12 +76,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             import appbox.*;
             
             set(obj.figureHandle,'GraphicsSmoothing', 'on');
-            %             clf(obj.figureHandle);
-            fullBox = uix.HBoxFlex('Parent', obj.figureHandle);
-            leftBox = uix.VBoxFlex('Parent',fullBox, 'Spacing',10);
+            set(obj.figureHandle,'DefaultAxesFontSize',8,'DefaultTextFontSize',10);
+            
+            
+            fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
+            leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
             
             % top left response
-            obj.responseAxes = axes('Parent', leftBox);
+            obj.responseAxes = axes('Parent', leftBox);%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
             
             % bottom left analysis over param
             obj.axesHandlesAnalysis = [];
@@ -195,12 +197,13 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     [e.rawSignal, e.units] = e.responseObject.getData();
 %                     e.responseObject
                     e.sampleRate = e.responseObject.sampleRate.quantityInBaseUnits;
+                    e.t = (0:length(e.rawSignal)-1) / e.sampleRate;
                     if ~isempty(obj.epochSplitParameter)
                         e.splitParameter = epoch.parameters(obj.epochSplitParameter);
                     else
                         e.splitParameter = 0; % useful when you still want parameter extraction, but no independent vars
                     end
-                    msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
+%                     msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
                     
                     if strcmp(obj.responseMode, 'Whole cell')
                         e.signal = e.rawSignal;
@@ -209,13 +212,20 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         % Extract spikes from signal
                         result = obj.spikeDetector.detectSpikes(e.rawSignal);
                         spikeFrames = result.sp;
-
+                        e.spikeTimes = e.t(spikeFrames);
+                        
                         % Generate spike rate signals
-                        spikeRate = zeros(size(e.signal));
-                        spikeRate(spikeFrames) = 1.0;
-                        spikeRate_resampled = filtfilt(hann(e.sampleRate / 10), 1, spikeRate); % 10 ms (100 samples) window filter
-                        e.signal = spikeRate_resampled;
-                        e.spikeTimes = spikeFrames / e.sampleRate;
+                        spikeRate = zeros(size(e.rawSignal));
+%                         spikeRate(spikeFrames) = 1.0;
+                        spikeBins = [0:.05:max(e.t), inf];
+                        spikeRate_binned = histcounts(e.spikeTimes, spikeBins);
+%                         spikeRate_smoothed = resample(spikeRate_binned, spikeBins(1:end-1), e.sampleRate);
+                        spikeRate_smoothed = interp1(spikeBins(1:end-1), spikeRate_binned, e.t);
+                        whos spikeRate_smoothed
+%                         f = hann(e.sampleRate / 10);
+%                         spikeRate_smoothed = filtfilt(f, 1, spikeRate); % 10 ms (100 samples) window filter
+                        e.signal = spikeRate_smoothed';
+
                     end
 
                     % setup time regions for analysis
@@ -227,11 +237,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     %                 e.signal = e.signal - mean(baseline);
                     %             end
                     
-                    if ~isempty(obj.measurementRegion)
-                        x1 = msToPts(obj.measurementRegion(1));
-                        x2 = msToPts(obj.measurementRegion(2));
-                        e.signal = e.signal(x1:x2);
-                    end
+%                     if ~isempty(obj.measurementRegion)
+%                         x1 = msToPts(obj.measurementRegion(1));
+%                         x2 = msToPts(obj.measurementRegion(2));
+%                         e.signal = e.signal(x1:x2);
+%                     end
                     
                     % make analysis measurements
                     e.measurements = containers.Map();
@@ -258,16 +268,22 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             colorOrder = get(groot, 'defaultAxesColorOrder');
             
             %plot the most recent response at the top
-            %             clf(obj.responseAxes);
             hold(obj.responseAxes, 'off')
             for ci = 1:obj.numChannels
                 color = colorOrder(mod(ci - 1, size(colorOrder, 1)) + 1, :);
                 epoch = obj.epochData{end}{ci};
-                quantities = epoch.responseObject.getData();
-                x = (1:numel(quantities)) / epoch.responseObject.sampleRate.quantityInBaseUnits;
-                y = quantities;
-                plot(obj.responseAxes, x, y, 'Color', color);
+                signal = epoch.responseObject.getData();
+                plot(obj.responseAxes, epoch.t, signal, 'Color', color);
                 hold(obj.responseAxes, 'on')
+                
+                if strcmp(obj.responseMode, 'Cell attached')
+                    % plot spikes detected
+                    spikeTimes = epoch.spikeTimes;
+                    [~, spikeFrames] = ismember(spikeTimes, epoch.t);
+                    spikeHeights = signal(spikeFrames);
+                    plot(obj.responseAxes, spikeTimes, spikeHeights, '.');
+                end
+                set(obj.responseAxes,'LooseInset',get(obj.responseAxes,'TightInset'))
                 title(obj.responseAxes, 'previous response');
                 ylabel(obj.responseAxes, epoch.units, 'Interpreter', 'none');
             end
@@ -336,27 +352,29 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         end
                         
                         %                 axh = obj.axesHandlesAnalysis
+                        thisAxis = obj.axesHandlesAnalysis(measi);
                         if strcmp(obj.plotMode, 'cartesian')
                             %                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
-                            plot(obj.axesHandlesAnalysis(measi), X, Y, '-o','LineWidth',2, 'Color', color);
-                            hold(obj.axesHandlesAnalysis(measi), 'on');
-                            plot(obj.axesHandlesAnalysis(measi), X, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
-                            plot(obj.axesHandlesAnalysis(measi), X, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
-                            hold(obj.axesHandlesAnalysis(measi), 'off');
+                            plot(thisAxis, X, Y, '-o','LineWidth',2, 'Color', color);
+                            hold(thisAxis, 'on');
+                            plot(thisAxis, X, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                            plot(thisAxis, X, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
+                            hold(thisAxis, 'off');
                         else
                             %                     axes(obj.axesHandlesAnalysis(measi));
                             X_rad = deg2rad(X);
                             X_rad(end+1) = X_rad(1);
                             Y(end+1) = Y(1);
                             Y_std(end+1) = Y_std(1);
-                            polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y, '-o','LineWidth',2, 'Color', color);
-                            hold(obj.axesHandlesAnalysis(measi), 'on');
-                            polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
-                            polarplot(obj.axesHandlesAnalysis(measi), X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
-                            hold(obj.axesHandlesAnalysis(measi), 'off');
+                            polarplot(thisAxis, X_rad, Y, '-o','LineWidth',2, 'Color', color);
+                            hold(thisAxis, 'on');
+                            polarplot(thisAxis, X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                            polarplot(thisAxis, X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
+                            hold(thisAxis, 'off');
                         end
-                        %                 boxplot(obj.axesHandlesAnalysis(measi), allMeasurementsByEpoch, paramByEpoch);
-                        title(obj.axesHandlesAnalysis(measi), funcName);
+                        %                 boxplot(thisAxis, allMeasurementsByEpoch, paramByEpoch);
+                        title(thisAxis, funcName);
+                        set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
                         
                         %                 for ei = 1:length(obj.epochData)
                         %                     epoc = obj.epochData{ei};
@@ -380,13 +398,19 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 end
                 
                 % right side, where mean signal is plotted over time for each parameter
-                
+                ci = 1;
                 paramByEpoch = [];
                 for ei = 1:length(obj.epochData)
                     epoch = obj.epochData{ei}{ci};
                     paramByEpoch(ei) = epoch.splitParameter; %#ok<AGROW>
                 end
                 paramValues = sort(unique(paramByEpoch));
+
+                % add a new plot to the end if we need one
+                if length(obj.signalAxes) < length(paramValues)
+                    newAxis = axes('Parent', obj.rightBox);
+                    obj.signalAxes(length(paramValues)) = newAxis;
+                end
                 
                 for paramValueIndex = 1:length(paramValues)
                     paramValue = paramValues(paramValueIndex);
@@ -397,10 +421,20 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         if paramValue == epoch.splitParameter
                             signals(end+1, :) = epoch.signal;
                         end
-                        
+                        t = epoch.t;
                     end
-                    obj.signalAxes(end+1) = axes('Parent', obj.rightBox);
-                    plot(obj.signalAxes(end), mean(signals)) % probably won't work
+                    plotval = mean(signals, 1);
+                    thisAxis = obj.signalAxes(paramValueIndex);
+                    set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
+                    plot(thisAxis, t, plotval);
+                    xlim(thisAxis, [t(1), t(end)])
+                    if ~isempty(obj.epochSplitParameter)
+                        title(thisAxis, sprintf('%s: %d', obj.epochSplitParameter,paramValue));
+                    end
+%                     paramValue
+%                     disp('plotinfo')
+%                     a = get(thisAxis,{'Position','tightinset'});
+%                     a{:}
                 end
             end
         end
