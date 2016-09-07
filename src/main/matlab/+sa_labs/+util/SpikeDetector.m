@@ -27,15 +27,15 @@ classdef SpikeDetector < handle
             end
         end
         
-        function Ind = getThresCross(obj, V, th, dir)
+        function Ind = getThresCross(obj, V, threshold, direction)
             %dir 1 = up, -1 = down
             Vorig = V(1:end-1);
             Vshift = V(2:end);
             
-            if dir>0
-                Ind = find(Vorig<th & Vshift>=th) + 1;
+            if direction>0
+                Ind = find(Vorig<threshold & Vshift>=threshold) + 1;
             else
-                Ind = find(Vorig>=th & Vshift<th) + 1;
+                Ind = find(Vorig>=threshold & Vshift<threshold) + 1;
             end
         end
         

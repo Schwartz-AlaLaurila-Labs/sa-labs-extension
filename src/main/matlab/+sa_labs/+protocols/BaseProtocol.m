@@ -64,7 +64,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     d.category = '1 Basic';
                 case {'stimTime','preTime','tailTime'}
                     d.category = '2 Timing';
-                case {'sampleRate'}
+                case {'sampleRate', 'spikeThresholdVoltage'}
                     d.category = '9 Amplifiers';
                 otherwise
                     d.category = '4 Other';
@@ -117,7 +117,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     'measurementRegion', [obj.preTime obj.preTime+obj.stimTime],...
                     'epochSplitParameter',obj.responsePlotSplitParameter,...
                     'plotMode',obj.responsePlotMode,... 
-                    'responseMode',obj.chan1Mode,...
+                    'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
                     'spikeThresholdVoltage', obj.spikeThresholdVoltage);
             end
             
@@ -154,8 +154,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 g.preTime = obj.preTime;
                 g.tailTime = obj.tailTime;
                 g.stimTime = obj.stimTime;
-                measurement = device.background;
-                g.units = measurement.displayUnits;
+                g.units = device.background.displayUnits;
                 g.sampleRate = obj.sampleRate;
                 epoch.addStimulus(device, g.generate());
             end
