@@ -82,7 +82,7 @@ classdef ShapeData < handle
                 obj.numValueRepeats = epoch.numValueRepeats;
                 obj.stimTime = epoch.stimTime;
                 obj.positionOffset = [epoch.offsetX,epoch.offsetY];
-                obj.timeOffset = nan;
+                obj.timeOffset = epoch.timeOffset;
                 obj.rigOffsetAngle = 0;% TODO: make work %epoch.angleOffsetForRigAndStimulus;
             end
                        

@@ -135,15 +135,15 @@ for p = 1:num_epochs
 %         e.signalLightOn(tRegion) = intensities(si); % square wave for plotting
     end
     
-    
+    epoch = e
     
     if isKey(alignmentTemporalOffset_by_v, e.ampVoltage)
         
         t_offset = alignmentTemporalOffset_by_v(e.ampVoltage);
-%         fprintf('using premade alignment %1.3f for v = %d\n',t_offset,e.ampVoltage)
+        fprintf('using premade alignment %1.3f for v = %d\n',t_offset,e.ampVoltage)
 
     elseif strcmp(e.epochMode, 'temporalAlignment')
-
+        asb = e.timeOffset
         % read the value set in the alignment epoch in the curator
         if ~isnan(e.timeOffset) && abs(e.timeOffset) > 0
             alignmentTemporalOffset_by_v(e.ampVoltage) = e.timeOffset;
@@ -162,7 +162,7 @@ for p = 1:num_epochs
             t_offset = t_offset - .01;
 
             alignmentTemporalOffset_by_v(e.ampVoltage) = t_offset;
-    %         fprintf('temporal alignment gave offset of %1.3f for v = %d\n',t_offset,e.ampVoltage)
+            fprintf('temporal alignment gave offset of %1.3f for v = %d\n',t_offset,e.ampVoltage)
             skipResponses = 1;
         end
         
@@ -195,7 +195,6 @@ for p = 1:num_epochs
     end
     
 %     figure(12)
-    dfsdf = e
     if strcmp(e.epochMode, 'flashingSpots')
         
         prevPosition = nan;

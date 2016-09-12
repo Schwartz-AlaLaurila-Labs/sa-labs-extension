@@ -54,7 +54,7 @@ elseif strncmp(mode, 'plotSpatial', 11)
     
     data = cell(num_voltages, num_intensities, 2);
     
-    ha = sa_labs.util.tightSubplotWithParent(ax, num_intensities, num_voltages);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, num_intensities, num_voltages);
     for vi = 1:num_voltages
         for ii = 1:num_intensities
             intensity = intensities(ii);
@@ -80,7 +80,7 @@ elseif strncmp(mode, 'plotSpatial', 11)
             plotIndex = vi + (ii-1) * num_voltages;
             
             if posIndex >= 3
-                plotSpatial(ha(plotIndex), goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
+                plotSpatial(axisHandles(plotIndex), goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
     %             caxis([0, max(vals)]);
     %             colormap(flipud(colormap))
             end
@@ -115,7 +115,7 @@ elseif strcmp(mode, 'subunit')
         dim1 = floor(sqrt(num_positions));
         dim2 = ceil(num_positions / dim1);
         
-        ha = sa_labs.util.tightSubplotWithParent(ax, dim1,dim2);
+        axisHandles = sa_labs.util.tightSubplotWithParent(ax, dim1,dim2);
         
         obs = ad.observations;
         if isempty(obs)
@@ -143,10 +143,10 @@ elseif strcmp(mode, 'subunit')
                 responses = obs(obs_sel_v, 5); % peak: 6, mean: 5
                 intensities = obs(obs_sel_v, 3);
 
-                plot(ha(p), intensities, responses, 'o')
+                plot(axisHandles(p), intensities, responses, 'o')
                 if length(unique(intensities)) > 1
                     pfit = polyfit(intensities, responses, 1);
-                    plot(ha(p), intensities, polyval(pfit,intensities))
+                    plot(axisHandles(p), intensities, polyval(pfit,intensities))
                     
                     
                     goodPosIndex = goodPosIndex + 1;
@@ -159,14 +159,14 @@ elseif strcmp(mode, 'subunit')
             grid on
             hold off
             
-            set(ha(p), 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-            set(ha(p), 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+            set(axisHandles(p), 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+            set(axisHandles(p), 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
 
         end
         
         if ~isempty(goodPositions)
             figure(99)
-            plotSpatial(ha(p), goodPositions, goodSlopes, 'intensity response slope', 1, 0)
+            plotSpatial(axisHandles(p), goodPositions, goodSlopes, 'intensity response slope', 1, 0)
         end
         
 %         set(ha(1:end-dim2),'XTickLabel','');
@@ -177,26 +177,26 @@ elseif strcmp(mode, 'subunit')
     
 elseif strcmp(mode, 'temporalResponses')
     num_plots = length(ad.epochData);
-    h = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03)
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03);
     
 %     ax = axes(ax)
     for ei = 1:num_plots
-        ha = h(ei);
+        h = axisHandles(ei);
         t = ad.epochData{ei}.t;
         resp = ad.epochData{ei}.response;
 %         ha = subplot(num_plots, 1, ei, 'Parent',ax);
         
         % display original and shifted light On signal
-        plot(ha, t, resp,'b');
-%         hold(ha, 'on');
-%         light = ad.epochData{ei}.signalLightOn;
-%         if abs(min(resp)) > abs(max(resp))
-%             light = light * -1;
-%         end
-%         light = light * max(abs(resp)) * 0.5;
-%         plot(ha, ad.epochData{ei}.timeOffset + t, light,'r')
-% 
-%         hold(ha, 'off');
+        plot(h, t, resp,'b');
+        hold(h, 'on');
+        light = ad.epochData{ei}.signalLightOn;
+        if abs(min(resp)) > abs(max(resp))
+            light = light * -1;
+        end
+        light = light * max(abs(resp)) * 0.5;
+        plot(h, ad.epochData{ei}.timeOffset + t, light,'r')
+
+        hold(h, 'off');
         
         
 %         hold(ha, 'on');
@@ -204,7 +204,7 @@ elseif strcmp(mode, 'temporalResponses')
 %         plot(ha, t, resp - expFit);
 %         hold(ha, 'off');
         
-        title(ha, sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
+        title(h, sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
     end
     
     
@@ -216,7 +216,7 @@ elseif strcmp(mode, 'temporalComponents')
     obs = ad.observations;
     voltages = sort(unique(obs(:,4)));
 
-    ha = sa_labs.util.tightSubplotWithParent(ax, length(voltages), 1, .03, .03);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, length(voltages), 1, .03, .03);
     
     num_positions = size(ad.positions,1);
     signalsByVoltageByPosition = {};
@@ -262,12 +262,10 @@ elseif strcmp(mode, 'temporalComponents')
         
         signalsByVoltageByPosition{vi,1} = signalsByPosition;
         
-%         axes(ha((vi - 1) * 2 + 1))    
-        axes(ha(vi));
         t = (1:length(signalByV)) / ad.sampleRate - 1/ad.sampleRate;
-        plot(t, signalByV ./ max(abs(signalByV)))
+        plot(axisHandles(vi), t, signalByV ./ max(abs(signalByV)))
         hold on
-        plot(t, varByV)
+        plot(axisHandles(vi), t, varByV)
         title(sprintf('voltage: %d', v))
         legend('mean','variance');
         
@@ -348,7 +346,7 @@ elseif strcmp(mode, 'responsesByPosition')
     dim1 = floor(sqrt(num_positions));
     dim2 = ceil(num_positions / dim1);
 
-    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .006, .006, .006);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .006, .006, .006);
     
     max_value = -inf;
     min_value = inf;
@@ -388,7 +386,7 @@ elseif strcmp(mode, 'responsesByPosition')
                     obs_sel = obs_sel & obs(:,3) == intensities(inti) & obs(:,4) == v & obs(:,14) == adaptstates(ai);
                     indices = find(obs_sel);
 
-                    hold(ha(poi), 'on');
+                    hold(axisHandles(poi), 'on');
 
                     for ii = 1:length(indices)
                         entry = obs(indices(ii),:)';
@@ -398,7 +396,7 @@ elseif strcmp(mode, 'responsesByPosition')
 %                         signal = signal - mean(signal(1:10));
                         signal = smooth(signal, 20);
                         t = (0:(length(signal)-1)) / ad.sampleRate;
-                        h = plot(ha(poi), t, signal,'color',squeeze(colorsets(vi, ai, inti,1:3)));
+                        h = plot(axisHandles(poi), t, signal,'color',squeeze(colorsets(vi, ai, inti,1:3)));
                         if ii > 1
                             set(get(get(h,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         end
@@ -412,25 +410,25 @@ elseif strcmp(mode, 'responsesByPosition')
         end
         
 %         set(gca,'XTickLabelMode','manual')
-        set(ha(poi),'XTickLabels',[])
+        set(axisHandles(poi),'XTickLabels',[])
         
-        grid(ha(poi), 'on')
-        zline = line([0,max(t)],[0,0], 'Parent', ha(poi), 'color', 'k');
+        grid(axisHandles(poi), 'on')
+        zline = line([0,max(t)],[0,0], 'Parent', axisHandles(poi), 'color', 'k');
         set(get(get(zline,'Annotation'),'LegendInformation'),'IconDisplayStyle','off'); % only display one legend per type
 
 %         title(ha(poi), sprintf('%d,%d', round(pos)));
         
     end
-    set(ha(1),'YTickLabelMode','auto');
-    set(ha(1),'XTickLabelMode','auto');
-    legend(ha(1),legends,'location','best')
+    set(axisHandles(1),'YTickLabelMode','auto');
+    set(axisHandles(1),'XTickLabelMode','auto');
+    legend(axisHandles(1),legends,'location','best')
 
-    linkaxes(ha);
+    linkaxes(axisHandles);
 %     for i = 1:length(ha)
 %         i
 %         min_value
-    ylim(ha(1), [min_value, max_value]);
-    xlim(ha(1), [0, max(t)])
+    ylim(axisHandles(1), [min_value, max_value]);
+    xlim(axisHandles(1), [0, max(t)])
 %     end
     
 elseif strcmp(mode, 'wholeCell')
@@ -470,21 +468,18 @@ elseif strcmp(mode, 'wholeCell')
 %     min_ = min(vertcat(r_ex, r_in));
 
 
-    ha = sa_labs.util.tightSubplotWithParent(ax, 1, 3);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, 1, 3);
 
     % EX
-    axes(ha(1))
-    plotSpatial(ax, goodPositions, r_ex, sprintf('Excitatory conductance: %d mV', v_ex), 1, 0);
+    plotSpatial(axisHandles(1), goodPositions, r_ex, sprintf('Excitatory conductance: %d mV', v_ex), 1, 0);
 %     caxis([min_, max_]);
     
     % IN
-    axes(ha(2))
-    plotSpatial(ax, goodPositions, r_in, sprintf('Inhibitory conductance: %d mV', v_in), 1, 0);
+    plotSpatial(axisHandles(2), goodPositions, r_in, sprintf('Inhibitory conductance: %d mV', v_in), 1, 0);
 %     caxis([min_, max_]);
     
     % Ratio    
-    axes(ha(3))
-    plotSpatial(ax, goodPositions, r_exinrat, 'Ex/In difference', 1, 0)
+    plotSpatial(axisHandles(3), goodPositions, r_exinrat, 'Ex/In difference', 1, 0)
     
 elseif strcmp(mode, 'spatialOffset')
     
@@ -525,14 +520,14 @@ elseif strcmp(mode, 'spatialOffset')
         end
     end
 
-    ha = sa_labs.util.tightSubplotWithParent(ax,1,3, .03);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, 1, 3, .03);
 
     % EX
-    g_ex = plotSpatial(ha(1), goodPositions_ex, -r_ex, sprintf('Exc. current (pA)'), 1, 1);
+    g_ex = plotSpatial(axisHandles(1), goodPositions_ex, -r_ex, sprintf('Exc. current (pA)'), 1, 1);
 %     caxis([min_, max_]);
     
     % IN
-    g_in = plotSpatial(ha(2), goodPositions_in, r_in, sprintf('Inh. current (pA)'), 1, 1);
+    g_in = plotSpatial(axisHandles(2), goodPositions_in, r_in, sprintf('Inh. current (pA)'), 1, 1);
 %     caxis([min_, max_]);
         
     offsetDist = sqrt((g_in('centerX') - g_ex('centerX')).^2) + sqrt((g_in('centerY') - g_ex('centerY')).^2);
@@ -541,16 +536,16 @@ elseif strcmp(mode, 'spatialOffset')
     firstEpoch = ad.epochData{1};
     fprintf('Spatial offset = %3.1f um, avg sigma2 = %3.1f, ratio = %2.2f, sessionId %d\n', offsetDist, avgSigma2, offsetDist/avgSigma2, firstEpoch.sessionId);
     
-    axes(ha(3))
-    hold(ha(3),'on')
+    axes(axisHandles(3))
+    hold(axisHandles(3),'on')
     ellipse(g_ex('sigma2X'), g_ex('sigma2Y'), -g_ex('angle'), g_ex('centerX'), g_ex('centerY'), 'magenta');
     
     ellipse(g_in('sigma2X'), g_in('sigma2Y'), -g_in('angle'), g_in('centerX'), g_in('centerY'), 'cyan');
     
     legend('Exc','Inh')
     
-    plot(ha(3),g_ex('centerX'), g_ex('centerY'),'red','MarkerSize',20, 'Marker','+')
-    plot(ha(3),g_in('centerX'), g_in('centerY'),'blue','MarkerSize',20, 'Marker','+')
+    plot(axisHandles(3),g_ex('centerX'), g_ex('centerY'),'red','MarkerSize',20, 'Marker','+')
+    plot(axisHandles(3),g_in('centerX'), g_in('centerY'),'blue','MarkerSize',20, 'Marker','+')
     
     hold off
     axis equal
@@ -562,7 +557,7 @@ elseif strcmp(mode, 'spatialOffset')
         set(gca, 'YTick', [], 'YColor', 'none')    
     title('Gaussian 2\sigma Fits Overlaid')
     colorbar
-    linkaxes(ha)
+    linkaxes(axisHandles)
     
 elseif strcmp(mode, 'spatialDiagnostics')
     obs = ad.observations;
@@ -575,7 +570,7 @@ elseif strcmp(mode, 'spatialDiagnostics')
     % variance by point value at max value
     maxIntensity = max(obs(:,3));
     
-    ha = tight_subplot(1, num_voltages);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, 1, num_voltages);
     for vi = 1:num_voltages
         voltage = voltages(vi);
         vals = [];
@@ -586,7 +581,7 @@ elseif strcmp(mode, 'spatialDiagnostics')
             obs_sel = obs_sel & obs(:,4) == voltage;
             vals(poi,1) = std(obs(obs_sel,5),1) / mean(obs(obs_sel,5),1);
         end    
-        plotSpatial(ha(vi), ad.positions, vals, sprintf('STD/mean at V = %d mV', voltage), 1, 0)
+        plotSpatial(axisHandles(vi), ad.positions, vals, sprintf('STD/mean at V = %d mV', voltage), 1, 0)
 %         caxis([0, max(vals)]);
     end
     
@@ -708,7 +703,7 @@ elseif strcmp(mode, 'adaptationRegion')
     max_value = -inf;
     min_value = inf;
 
-    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .05, .05, .05);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .05, .05, .05);
     
     % nice way of displaying plots with an aligned-to-grid location using percentiles
     pos_sorted = flipud(sortrows(positions, 2));
@@ -721,7 +716,7 @@ elseif strcmp(mode, 'adaptationRegion')
     for poi = 1:num_positions
         
         pos = pos_sorted(poi,:);
-        axes(ha(poi))
+        axes(axisHandles(poi))
         hold on
         for adaptstate = 0:1
             responses = [];
@@ -747,7 +742,7 @@ elseif strcmp(mode, 'adaptationRegion')
         end
     end
     for poi = 1:num_positions
-        ylim(ha(poi), [min_value, max_value])
+        ylim(axisHandles(poi), [min_value, max_value])
     end
 
 

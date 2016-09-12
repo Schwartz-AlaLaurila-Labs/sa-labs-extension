@@ -17,6 +17,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
         shapePlotMode
         
         displayBox
+        temporalOffsetBox
     end
     
     methods
@@ -67,20 +68,25 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
             fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
-            leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
+            leftBox = uix.VBox('Parent', fullBox, 'Spacing', 10);
             
+            uicontrol(leftBox, 'Style','text','String','Plot mode:')
             displayModeSelectionControl = uicontrol(leftBox, 'Style', 'popupmenu');
-            displayModeSelectionControl.String = {'plotSpatial_mean','temporalResponses','responsesByPosition',...
+            displayModeSelectionControl.String = {'plotSpatial_mean','plotSpatial_peak','temporalResponses','responsesByPosition',...
                 'subunit','spatialDiagnostics','wholeCell',...
-                'positionDifferenceAnalysis','printParameters','adaptationRegion',...
+                'printParameters','adaptationRegion',...
                 'spatialOffset','temporalComponents'};
             displayModeSelectionControl.Callback = @obj.cbModeSelection;
+            
+            uicontrol(leftBox, 'Style','text','String','Temporal offset (msec):')
+            obj.temporalOffsetBox = uicontrol(leftBox, 'Style','edit','String','');
+            obj.temporalOffsetBox.Callback = @obj.cbTimeOffset;            
             
 %             obj.displayBox = uix.Panel('Parent',fullBox);
             obj.displayBox = uipanel('Parent',fullBox);
 
-            set(fullBox, 'Widths', [100, -1]);
-            
+            fullBox.Widths = [160, -1];
+            leftBox.Heights = [20,20,20,20];
         end
         
         function cbModeSelection(obj, hObject, ~)
@@ -88,6 +94,11 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             index_selected = get(hObject,'Value');
             item_selected = items{index_selected};
             obj.shapePlotMode = item_selected;
+            obj.generatePlot();
+        end
+        
+        function cbTimeOffset(obj, ~, ~)
+            obj.analyzeData(false);
             obj.generatePlot();
         end
         
@@ -105,6 +116,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
                 val = values{ki};
                 obj.parameterStruct.(name)= val;
             end
+            obj.parameterStruct.timeOffset = nan;
 
             sd = sa_labs.util.shape.ShapeData(obj.parameterStruct, 'online2');
             
@@ -125,26 +137,46 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
 %                 end
             end
             
+            
             % reset here if we've got a new session
+            newSession = false;
             if isempty(obj.currentSessionId)
                 obj.currentSessionId = obj.parameterStruct.sessionId;
+                newSession = true;
             else
                 if ~strcmp(obj.parameterStruct.sessionId, obj.currentSessionId)
                     obj.currentSessionId = obj.parameterStruct.sessionId;
                     obj.resetPlots();
+                    newSession = true;
                 end
             end
-                    
+            
+            % add the epoch to the array
             obj.epochIndex = obj.epochIndex + 1;
             obj.epochData{obj.epochIndex, 1} = sd;
-                        
-            obj.analysisData = sa_labs.util.shape.processShapeData(obj.epochData);
+            
+            obj.analyzeData(newSession);
 
             if strcmp(obj.shapePlotMode, 'plotSpatial_mean') && obj.epochIndex == 1
                 obj.shapePlotMode = 'temporalResponses';
             end
 
             obj.generatePlot();
+        end
+        
+        function analyzeData(obj, newSession)
+            
+            for ei = 1:length(obj.epochData)
+                obj.epochData{ei}.timeOffset = nan;
+            end
+            if ~newSession
+                obj.epochData{1}.timeOffset = 1e-3 * str2double(obj.temporalOffsetBox.String);
+            end
+            fprintf('set timeoffset to %d\n',obj.epochData{1}.timeOffset)
+            
+            obj.analysisData = sa_labs.util.shape.processShapeData(obj.epochData);
+            
+            obj.temporalOffsetBox.String = num2str(1000 * obj.analysisData.timeOffset);
             
         end
         
@@ -159,11 +191,6 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             obj.resetPlots();
             clearFigure@FigureHandler(obj);
         end
-        
-%         function od = getOutputData(obj)
-%             od = obj.outputData;
-%         end
-        
         
         function resetPlots(obj)
             obj.analysisData = [];
