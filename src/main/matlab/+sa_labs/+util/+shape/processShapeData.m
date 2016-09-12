@@ -195,7 +195,7 @@ for p = 1:num_epochs
     end
     
 %     figure(12)
-    
+    dfsdf = e
     if strcmp(e.epochMode, 'flashingSpots')
         
         prevPosition = nan;
@@ -343,5 +343,4 @@ ad.observations = observations;
 ad.observationColumns = observationColumns;
 ad.timeOffset = t_offset;
 ad.validSearchResult = validSearchResult;
-
 end

@@ -1,4 +1,4 @@
-function [] = plotShapeData(ad, mode)
+function [] = plotShapeData(ax, ad, mode)
 
 if ~isfield(ad,'observations')
     disp('no observations');
@@ -54,7 +54,7 @@ elseif strncmp(mode, 'plotSpatial', 11)
     
     data = cell(num_voltages, num_intensities, 2);
     
-    ha = tight_subplot(num_intensities, num_voltages);
+    ha = sa_labs.util.tightSubplotWithParent(ax, num_intensities, num_voltages);
     for vi = 1:num_voltages
         for ii = 1:num_intensities
             intensity = intensities(ii);
@@ -82,7 +82,7 @@ elseif strncmp(mode, 'plotSpatial', 11)
             axes(ha(a));
 
             if posIndex >= 3
-                plotSpatial(goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
+                plotSpatial(ax, goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
     %             caxis([0, max(vals)]);
     %             colormap(flipud(colormap))
             end
@@ -117,7 +117,7 @@ elseif strcmp(mode, 'subunit')
         dim1 = floor(sqrt(num_positions));
         dim2 = ceil(num_positions / dim1);
         
-        ha = tight_subplot(dim1,dim2);
+        ha = sa_labs.util.tightSubplotWithParent(ax, dim1,dim2);
         
         obs = ad.observations;
         if isempty(obs)
@@ -145,10 +145,10 @@ elseif strcmp(mode, 'subunit')
                 responses = obs(obs_sel_v, 5); % peak: 6, mean: 5
                 intensities = obs(obs_sel_v, 3);
 
-                plot(intensities, responses, 'o')
+                plot(ax, intensities, responses, 'o')
                 if length(unique(intensities)) > 1
                     pfit = polyfit(intensities, responses, 1);
-                    plot(intensities, polyval(pfit,intensities))
+                    plot(ax, intensities, polyval(pfit,intensities))
                     
                     
                     goodPosIndex = goodPosIndex + 1;
@@ -168,7 +168,7 @@ elseif strcmp(mode, 'subunit')
         
         if ~isempty(goodPositions)
             figure(99)
-            plotSpatial(goodPositions, goodSlopes, 'intensity response slope', 1, 0)
+            plotSpatial(ax, goodPositions, goodSlopes, 'intensity response slope', 1, 0)
         end
         
 %         set(ha(1:end-dim2),'XTickLabel','');
@@ -179,11 +179,13 @@ elseif strcmp(mode, 'subunit')
     
 elseif strcmp(mode, 'temporalResponses')
     num_plots = length(ad.epochData);
-    ha = tight_subplot(num_plots, 1, .03);
+%     ha = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03);
     
+    ax = axes(ax)
     for ei = 1:num_plots
         t = ad.epochData{ei}.t;
         resp = ad.epochData{ei}.response;
+        ha = subplot(num_plots, 1, ax);
         
         % play with exponential fitting:
 %         if max(t) > 5
@@ -198,26 +200,27 @@ elseif strcmp(mode, 'temporalResponses')
 %         end
         
         % display original and shifted light On signal
-        plot(ha(ei), t, resp,'b');
-        hold(ha(ei), 'on');
+        ha
+        plot(ha, t, resp,'b');
+        hold(ha, 'on');
         light = ad.epochData{ei}.signalLightOn;
         if abs(min(resp)) > abs(max(resp))
             light = light * -1;
         end
         light = light * max(abs(resp)) * 0.5;
-        plot(ha(ei), ad.epochData{ei}.timeOffset + t, light,'r')
+        plot(ha, ad.epochData{ei}.timeOffset + t, light,'r')
         
 %         resp = smooth(resp, 20);
-%         plot(ha(ei), t, resp,'g');
-        hold(ha(ei), 'off');
+%         plot(ha, t, resp,'g');
+        hold(ha, 'off');
         
         
-%         hold(ha(ei), 'on');
-%         plot(ha(ei), t, expFit)
-%         plot(ha(ei), t, resp - expFit);
-%         hold(ha(ei), 'off');
+%         hold(ha, 'on');
+%         plot(ha, t, expFit)
+%         plot(ha, t, resp - expFit);
+%         hold(ha, 'off');
         
-        title(ha(ei), sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
+        title(ha, sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
 %         disp('Normalization parameters:');
 %         disp(ad.epochData{ei}.signalNormalizationParameters)
     end
@@ -320,7 +323,7 @@ elseif strcmp(mode, 'temporalComponents')
     obs = ad.observations;
     voltages = sort(unique(obs(:,4)));
 
-    ha = tight_subplot(length(voltages), 1, .03, .03);
+    ha = sa_labs.util.tightSubplotWithParent(ax, length(voltages), 1, .03, .03);
     
     num_positions = size(ad.positions,1);
     signalsByVoltageByPosition = {};
@@ -398,7 +401,7 @@ elseif strcmp(mode, 'temporalComponents')
     
     
     figure(21);clf;
-    hb = tight_subplot(length(voltages), maxComponents, .03, .03);
+    hb = sa_labs.util.tightSubplotWithParent(ax, length(voltages), maxComponents, .03, .03);
 
     for vi = 1:length(voltages)
         
@@ -421,8 +424,7 @@ elseif strcmp(mode, 'temporalComponents')
             end
 
             p = maxComponents * (vi-1) + ci;
-            axes(hb(p));
-            plotSpatial(ad.positions, valuesByComponent(:,ci), sprintf('v %d component %d', v, ci), 1, 0);
+            plotSpatial(hb(p), ad.positions, valuesByComponent(:,ci), sprintf('v %d component %d', v, ci), 1, 0);
         end
         
     end
@@ -453,7 +455,7 @@ elseif strcmp(mode, 'responsesByPosition')
     dim1 = floor(sqrt(num_positions));
     dim2 = ceil(num_positions / dim1);
 
-    ha = tight_subplot(dim1, dim2, .004, .004, .004);
+    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .004, .004, .004);
     
     max_value = -inf;
     min_value = inf;
@@ -575,21 +577,21 @@ elseif strcmp(mode, 'wholeCell')
 %     min_ = min(vertcat(r_ex, r_in));
 
 
-    ha = tight_subplot(1,3);
+    ha = sa_labs.util.tightSubplotWithParent(ax, 1, 3);
 
     % EX
     axes(ha(1))
-    plotSpatial(goodPositions, r_ex, sprintf('Excitatory conductance: %d mV', v_ex), 1, 0);
+    plotSpatial(ax, goodPositions, r_ex, sprintf('Excitatory conductance: %d mV', v_ex), 1, 0);
 %     caxis([min_, max_]);
     
     % IN
     axes(ha(2))
-    plotSpatial(goodPositions, r_in, sprintf('Inhibitory conductance: %d mV', v_in), 1, 0);
+    plotSpatial(ax, goodPositions, r_in, sprintf('Inhibitory conductance: %d mV', v_in), 1, 0);
 %     caxis([min_, max_]);
     
     % Ratio    
     axes(ha(3))
-    plotSpatial(goodPositions, r_exinrat, 'Ex/In difference', 1, 0)
+    plotSpatial(ax, goodPositions, r_exinrat, 'Ex/In difference', 1, 0)
     
 elseif strcmp(mode, 'spatialOffset')
     
@@ -630,16 +632,14 @@ elseif strcmp(mode, 'spatialOffset')
         end
     end
 
-    ha = tight_subplot(1,3, .03);
+    ha = sa_labs.util.tightSubplotWithParent(ax,1,3, .03);
 
     % EX
-    axes(ha(1))
-    g_ex = plotSpatial(goodPositions_ex, -r_ex, sprintf('Exc. current (pA)'), 1, 1);
+    g_ex = plotSpatial(ha(1), goodPositions_ex, -r_ex, sprintf('Exc. current (pA)'), 1, 1);
 %     caxis([min_, max_]);
     
     % IN
-    axes(ha(2))
-    g_in = plotSpatial(goodPositions_in, r_in, sprintf('Inh. current (pA)'), 1, 1);
+    g_in = plotSpatial(ha(2), goodPositions_in, r_in, sprintf('Inh. current (pA)'), 1, 1);
 %     caxis([min_, max_]);
         
     offsetDist = sqrt((g_in('centerX') - g_ex('centerX')).^2) + sqrt((g_in('centerY') - g_ex('centerY')).^2);
@@ -649,15 +649,15 @@ elseif strcmp(mode, 'spatialOffset')
     fprintf('Spatial offset = %3.1f um, avg sigma2 = %3.1f, ratio = %2.2f, sessionId %d\n', offsetDist, avgSigma2, offsetDist/avgSigma2, firstEpoch.sessionId);
     
     axes(ha(3))
-    hold on
+    hold(ha(3),'on')
     ellipse(g_ex('sigma2X'), g_ex('sigma2Y'), -g_ex('angle'), g_ex('centerX'), g_ex('centerY'), 'magenta');
     
     ellipse(g_in('sigma2X'), g_in('sigma2Y'), -g_in('angle'), g_in('centerX'), g_in('centerY'), 'cyan');
     
     legend('Exc','Inh')
     
-    plot(g_ex('centerX'), g_ex('centerY'),'red','MarkerSize',20, 'Marker','+')
-    plot(g_in('centerX'), g_in('centerY'),'blue','MarkerSize',20, 'Marker','+')
+    plot(ha(3),g_ex('centerX'), g_ex('centerY'),'red','MarkerSize',20, 'Marker','+')
+    plot(ha(3),g_in('centerX'), g_in('centerY'),'blue','MarkerSize',20, 'Marker','+')
     
     hold off
     axis equal
@@ -693,8 +693,7 @@ elseif strcmp(mode, 'spatialDiagnostics')
             obs_sel = obs_sel & obs(:,4) == voltage;
             vals(poi,1) = std(obs(obs_sel,5),1) / mean(obs(obs_sel,5),1);
         end    
-        axes(ha(vi));
-        plotSpatial(ad.positions, vals, sprintf('STD/mean at V = %d mV', voltage), 1, 0)
+        plotSpatial(ha(vi), ad.positions, vals, sprintf('STD/mean at V = %d mV', voltage), 1, 0)
 %         caxis([0, max(vals)]);
     end
     
@@ -714,7 +713,7 @@ elseif strcmp(mode, 'positionDifferenceAnalysis')
     end
     
     % general distance to value
-    subplot(2,1,1)
+    subplot(ax,2,1,1)
     plot(obs(:,8), obs(:,5), 'o')
     hold on
     sel = ~isnan(obs(:,8)) & ~isnan(obs(:,5));
@@ -723,7 +722,7 @@ elseif strcmp(mode, 'positionDifferenceAnalysis')
     hold off
     
     % compare repeat values with different distances
-    subplot(2,1,2)
+    subplot(ax,2,1,2)
     
     
 elseif strcmp(mode, 'adaptationRegion')
@@ -816,7 +815,7 @@ elseif strcmp(mode, 'adaptationRegion')
     max_value = -inf;
     min_value = inf;
 
-    ha = tight_subplot(dim1, dim2, .05, .05, .05);
+    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .05, .05, .05);
     
     % nice way of displaying plots with an aligned-to-grid location using percentiles
     pos_sorted = flipud(sortrows(positions, 2));
@@ -840,7 +839,7 @@ elseif strcmp(mode, 'adaptationRegion')
                 responses(inti) = mean(obs(obs_sel,5));
                 adaptPos = mean(obs(obs_sel, [12,13]));
             end
-            plot(intensities, responses, 'o-')
+            plot(ax, intensities, responses, 'o-')
             max_value = max(max_value, max(responses));
             min_value = min(min_value, min(responses));
             
@@ -864,31 +863,36 @@ else
     disp('incorrect plot type')
 end
 
-    function gfit = plotSpatial(positions, values, titl, addcolorbar, gaussianfit)
+    function gfit = plotSpatial(ax, positions, values, titl, addcolorbar, gaussianfit)
+        t = get(ax,'type');
+        if strcmp(t, 'uipanel')
+            ax = axes(ax);
+        end
+                
 %         positions = bsxfun(@plus, positions, positionOffset);
         largestDistanceOffset = max(abs(positions(:)));
         X = linspace(-1*largestDistanceOffset, largestDistanceOffset, 100);
         [xq,yq] = meshgrid(X, X);        
         c = griddata(positions(:,1), positions(:,2), values, xq, yq);
-        surface(xq, yq, zeros(size(xq)), c)
-        hold on
-%         plot(positions(:,1), positions(:,2), '.r');
-        hold off
-        title(titl)
-        grid off
+        surface(ax, xq, yq, zeros(size(xq)), c)
+%         hold(ax,'on')
+% %         plot(positions(:,1), positions(:,2), '.r');
+%         hold(ax, 'off')
+        title(ax, titl)
+        grid(ax,'off')
     %     axis square
-        axis equal
-        shading interp
-        if addcolorbar
-            colorbar
-        end
+        axis(ax,'equal')
+        shading(ax,'interp')
+%         if addcolorbar % bug here for some reason in symphony 2
+%             colorbar(ax,'east')
+%         end
         if gaussianfit ~= 0
             if gaussianfit < 0
                 fitValues = values * -1; % seems to be the only place we need positive deflections is for fitting
             else
                 fitValues = values;
             end
-            hold on
+            hold(ax,'on')
             
 %             values = zeros(size(values));
 %             hi = 20;%round(length(values) / 2);
@@ -899,9 +903,9 @@ end
             v = fitValues - min(fitValues);
 %             centerOfMass = mean(bsxfun(@times, positions, v ./ mean(v)), 1);
 %             plot(centerOfMass(1), centerOfMass(2),'green','MarkerSize',20, 'Marker','+')
-            plot(gfit('centerX'), gfit('centerY'),'red','MarkerSize',20, 'Marker','+')
-            ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red');
-            hold off
+            plot(ax, gfit('centerX'), gfit('centerY'),'red','MarkerSize',20, 'Marker','+')
+            ellipse(ax, gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red');
+            hold(ax,'off');
         else
             gfit = nan;
         end
@@ -910,14 +914,15 @@ end
 %         rectangle('Position',0.05 * largestDistanceOffset * [-.5, -.5, 1, 1],'Curvature',1,'FaceColor',[1 1 1]);
         
         % set axis limits
-        axis(largestDistanceOffset * [-1 1 -1 1])
+        axis(ax, largestDistanceOffset * [-1 1 -1 1])
         
 %         set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
 %         set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
         
         % plot with no axis labels
-        set(gca, 'XTick', [], 'XColor', 'none')
-        set(gca, 'YTick', [], 'YColor', 'none')
+        set(ax, 'XTick', [], 'XColor', 'none')
+        set(ax, 'YTick', [], 'YColor', 'none')
+        set(ax,'LooseInset',get(ax,'TightInset'))
     end
 
 end

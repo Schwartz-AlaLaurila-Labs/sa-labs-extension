@@ -10,10 +10,13 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
         baselineRate
         devices
         parameterStruct
+        currentSessionId
         
         analysisData
         epochData
         shapePlotMode
+        
+        displayBox
     end
     
     methods
@@ -51,13 +54,44 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             
             obj.resetPlots();
             
+            obj.createUi();
         end
         
         
+        function createUi(obj)
+            
+            import appbox.*;
+            
+            set(obj.figureHandle, 'MenuBar', 'none');
+            set(obj.figureHandle, 'GraphicsSmoothing', 'on');
+            set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
+            
+            fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
+            leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
+            
+            displayModeSelectionControl = uicontrol(leftBox, 'Style', 'popupmenu');
+            displayModeSelectionControl.String = {'plotSpatial_mean','temporalResponses','responsesByPosition',...
+                'subunit','spatialDiagnostics','wholeCell',...
+                'positionDifferenceAnalysis','printParameters','adaptationRegion',...
+                'spatialOffset','temporalComponents'};
+            displayModeSelectionControl.Callback = @obj.cbModeSelection;
+            
+            obj.displayBox = uix.Panel('Parent',fullBox);
+            
+            set(fullBox, 'Widths', [100, -1]);
+            
+        end
+        
+        function cbModeSelection(obj, hObject, ~)
+            items = get(hObject,'String');
+            index_selected = get(hObject,'Value');
+            item_selected = items{index_selected};
+            obj.shapePlotMode = item_selected;
+            obj.generatePlot();
+        end
+        
         function handleEpoch(obj, epoch)
-                       
-            obj.epochIndex = obj.epochIndex + 1;
-                       
+                                             
             responseObject = epoch.getResponse(obj.devices{1}); %only one channel for now
             [signal, ~] = responseObject.getData();
 %             sampleRate = responseObject.sampleRate.quantityInBaseUnits;
@@ -90,22 +124,34 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
 %                 end
             end
             
-            sd
-                
+            % reset here if we've got a new session
+            if isempty(obj.currentSessionId)
+                obj.currentSessionId = obj.parameterStruct.sessionId;
+            else
+                if ~strcmp(obj.parameterStruct.sessionId, obj.currentSessionId)
+                    obj.currentSessionId = obj.parameterStruct.sessionId;
+                    obj.resetPlots();
+                end
+            end
+                    
+            obj.epochIndex = obj.epochIndex + 1;
             obj.epochData{obj.epochIndex, 1} = sd;
-%             obj.epochData{:}
                         
             obj.analysisData = sa_labs.util.shape.processShapeData(obj.epochData);
 
-            clf;
             if strcmp(obj.shapePlotMode, 'plotSpatial_mean') && obj.epochIndex == 1
-                spm = 'temporalResponses';
-            else
-                spm = obj.shapePlotMode;
+                obj.shapePlotMode = 'temporalResponses';
             end
-            sa_labs.util.shape.plotShapeData(obj.analysisData, spm);
+
+            obj.generatePlot();
+            
         end
         
+        function generatePlot(obj)
+            ax = obj.displayBox;
+            sa_labs.util.shape.plotShapeData(ax, obj.analysisData, obj.shapePlotMode);
+%             set(ax,'LooseInset',get(ax,'TightInset')) % remove the blasted whitespace
+        end
         
         function clearFigure(obj)
             obj.resetPlots();

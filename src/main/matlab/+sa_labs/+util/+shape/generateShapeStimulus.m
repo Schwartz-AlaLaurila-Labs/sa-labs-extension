@@ -66,13 +66,14 @@ function runConfig = generateTemporalAlignment(parameters, runConfig)
         runConfig.shapeDataMatrix = vertcat(runConfig.shapeDataMatrix, shape);
         curtime = curtime + dur;
     end
+    curtime = curtime + dur;
     
     % then add smaller spot, long ON, long OFF
     temporalFilterSpotDiam = 100;
     temporalFilterSpotOnTime = 1.5;
     temporalFilterSpotOffTime = 1.5;
-    shape = [0, 0, parameters.valueMax, curtime, curtime + temporalFilterSpotOnTime, temporalFilterSpotDiam, 0];
-    runConfig.shapeDataMatrix = vertcat(runConfig.shapeDataMatrix, shape);
+    filterSpot = [0, 0, parameters.valueMax, curtime, curtime + temporalFilterSpotOnTime, temporalFilterSpotDiam, 0];
+    runConfig.shapeDataMatrix = vertcat(runConfig.shapeDataMatrix, filterSpot);
     curtime = curtime + temporalFilterSpotOnTime + temporalFilterSpotOffTime;
     
     runConfig.shapeDataColumns = {'X','Y','intensity','startTime','endTime','diameter', 'flickerFrequency'};
@@ -116,9 +117,9 @@ function runConfig = generateStandardSearch(parameters, analysisData, runConfig)
 %         center = mod(parameters.epochNum * 2 * [1,1], 10); % a bit of jitter makes the graph look nicer
 %         rotAngle = parameters.epochNum * 0.3; % sure, why not, doesn't matter the real value
         rotAngle = 0;
-%         positions = generatePositions('random', [parameters.numSpots, parameters.spotDiameter, searchDiameterUpdated / 2]);
+%         positions = sa_labs.util.shape.generatePositions('random', [parameters.numSpots, parameters.spotDiameter, searchDiameterUpdated / 2]);
         %             positions = generatePositions('grid', [obj.searchDiameter, round(sqrt(obj.numSpots))]);
-        positions = generatePositions('triangular', [searchDiameterUpdated / 2, parameters.mapResolution, rotAngle]);
+        positions = sa_labs.util.shape.generatePositions('triangular', [searchDiameterUpdated / 2, parameters.mapResolution, rotAngle]);
         
         % add center offset
         positions = bsxfun(@plus, positions, center);
@@ -245,7 +246,7 @@ function runConfig = generateAdaptationRegionStimulus(p, analysisData, runConfig
     % first time setup / all for now
 %     for ai = 1:numAdaptationPositions
     % make array of spot positions around 
-    probePositions = generatePositions('triangular', [p.probeSpotPositionRadius, p.probeSpotSpacing, 0]);
+    probePositions = sa_labs.util.shape.generatePositions('triangular', [p.probeSpotPositionRadius, p.probeSpotSpacing, 0]);
     numProbeSpots = size(probePositions, 1);
     probePositions = probePositions(randperm(numProbeSpots), :); % randomly reorder, but I suppose use the same for each adapt spot
     probePositions_by_adapt = cell(numAdaptationPositions,1);

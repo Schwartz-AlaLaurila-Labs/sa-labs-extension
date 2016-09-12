@@ -69,7 +69,7 @@ classdef ShapeData < handle
                 obj.sessionId = epoch.sessionId;
                 obj.presentationId = epoch.presentationId; 
                 sdc = epoch.shapeDataColumns;
-                sdm = epoch.shapeDataMatrix;
+                sdm = epoch.shapeDataMatrix
                 em = epoch.epochMode;
                 obj.spotTotalTime = epoch.spotTotalTime;
                 obj.spotOnTime = epoch.spotOnTime;
@@ -124,7 +124,8 @@ classdef ShapeData < handle
                 end
             
                 num_cols = length(obj.shapeDataColumns);
-                obj.shapeDataMatrix = reshape(str2num(char(sdm)), [], num_cols); %#ok<*ST2NM>
+%                 obj.shapeDataMatrix = reshape(str2num(char(sdm)), [], num_cols); %#ok<*ST2NM>
+                obj.shapeDataMatrix = reshape(sdm, [], num_cols);
 %                 disp(obj.shapeDataMatrix)
             end
             
@@ -227,6 +228,7 @@ classdef ShapeData < handle
                 obj.spikeRate = 0;
             end
             obj.setResponse(obj.spikeRate)
+            
         end
         
         function processWholeCell(obj)

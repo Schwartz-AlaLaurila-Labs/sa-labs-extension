@@ -40,7 +40,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         runConfig
         pointSetIndex
         
-        responsePlotMode = 'cartesian';
+        responsePlotMode = false;
         responsePlotSplitParameter = 'presentationId';
         
     end
@@ -113,7 +113,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             
             if generateNewStimulus
                 
-                analysisData = obj.responseFigure.analysisData;
+                analysisData = obj.shapeResponseFigure.analysisData;
                 
                 p = struct();
                 p.generatePositions = true;
@@ -148,7 +148,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                         
                         increasedRes = false;
                         while true;
-                            runConfig = generateShapeStimulus(p, analysisData); %#ok<*PROPLC,*PROP>
+                            runConfig = sa_labs.util.shape.generateShapeStimulus(p, analysisData); %#ok<*PROPLC,*PROP>
                             if runConfig.stimTime > 1e3 * obj.epochTimeLimit
                                 p.mapResolution = round(p.mapResolution * 1.1);
                                 increasedRes = true;

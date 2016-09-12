@@ -29,6 +29,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         preTime
         stimTime
         tailTime
+        responsePlotMode
     end
     
     properties(Hidden)
