@@ -76,8 +76,9 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
                 'spatialOffset','temporalComponents'};
             displayModeSelectionControl.Callback = @obj.cbModeSelection;
             
-            obj.displayBox = uix.Panel('Parent',fullBox);
-            
+%             obj.displayBox = uix.Panel('Parent',fullBox);
+            obj.displayBox = uipanel('Parent',fullBox);
+
             set(fullBox, 'Widths', [100, -1]);
             
         end
@@ -148,8 +149,9 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
         end
         
         function generatePlot(obj)
-            ax = obj.displayBox;
-            sa_labs.util.shape.plotShapeData(ax, obj.analysisData, obj.shapePlotMode);
+            delete(obj.displayBox.Children);
+            drawnow
+            sa_labs.util.shape.plotShapeData(obj.displayBox, obj.analysisData, obj.shapePlotMode);
 %             set(ax,'LooseInset',get(ax,'TightInset')) % remove the blasted whitespace
         end
         

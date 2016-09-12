@@ -69,7 +69,7 @@ classdef ShapeData < handle
                 obj.sessionId = epoch.sessionId;
                 obj.presentationId = epoch.presentationId; 
                 sdc = epoch.shapeDataColumns;
-                sdm = epoch.shapeDataMatrix
+                sdm = epoch.shapeDataMatrix;
                 em = epoch.epochMode;
                 obj.spotTotalTime = epoch.spotTotalTime;
                 obj.spotOnTime = epoch.spotOnTime;

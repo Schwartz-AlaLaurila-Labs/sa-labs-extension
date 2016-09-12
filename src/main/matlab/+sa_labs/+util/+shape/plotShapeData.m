@@ -77,12 +77,10 @@ elseif strncmp(mode, 'plotSpatial', 11)
                 end
             end
             
-            a = vi + (ii-1) * num_voltages;
+            plotIndex = vi + (ii-1) * num_voltages;
             
-            axes(ha(a));
-
             if posIndex >= 3
-                plotSpatial(ax, goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
+                plotSpatial(ha(plotIndex), goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
     %             caxis([0, max(vals)]);
     %             colormap(flipud(colormap))
             end
@@ -132,7 +130,7 @@ elseif strcmp(mode, 'subunit')
         goodSlopes = [];
         for p = 1:num_positions
 %             tight_subplot(dim1,dim2,p)
-            axes(ha(p)) %#ok<*LAXES>
+%             h = axes() %#ok<*LAXES>
             hold on
             
             pos = ad.positions(p,:);
@@ -145,10 +143,10 @@ elseif strcmp(mode, 'subunit')
                 responses = obs(obs_sel_v, 5); % peak: 6, mean: 5
                 intensities = obs(obs_sel_v, 3);
 
-                plot(ax, intensities, responses, 'o')
+                plot(ha(p), intensities, responses, 'o')
                 if length(unique(intensities)) > 1
                     pfit = polyfit(intensities, responses, 1);
-                    plot(ax, intensities, polyval(pfit,intensities))
+                    plot(ha(p), intensities, polyval(pfit,intensities))
                     
                     
                     goodPosIndex = goodPosIndex + 1;
@@ -161,14 +159,14 @@ elseif strcmp(mode, 'subunit')
             grid on
             hold off
             
-            set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-            set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+            set(ha(p), 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+            set(ha(p), 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
 
         end
         
         if ~isempty(goodPositions)
             figure(99)
-            plotSpatial(ax, goodPositions, goodSlopes, 'intensity response slope', 1, 0)
+            plotSpatial(ha(p), goodPositions, goodSlopes, 'intensity response slope', 1, 0)
         end
         
 %         set(ha(1:end-dim2),'XTickLabel','');
@@ -179,40 +177,26 @@ elseif strcmp(mode, 'subunit')
     
 elseif strcmp(mode, 'temporalResponses')
     num_plots = length(ad.epochData);
-%     ha = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03);
+    h = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03)
     
-    ax = axes(ax)
+%     ax = axes(ax)
     for ei = 1:num_plots
+        ha = h(ei);
         t = ad.epochData{ei}.t;
         resp = ad.epochData{ei}.response;
-        ha = subplot(num_plots, 1, ax);
-        
-        % play with exponential fitting:
-%         if max(t) > 5
-%             resp = resp - mean(resp((end-100):end)); % set end to 0
-%             startA = mean(resp(1:100))/exp(0);
-%             startB = -0.3;
-%             f = fit(t(1:end), resp(1:end), 'exp1','StartPoint',[startA, startB]);
-%             expFit = f(t);
-%             f
-%         else
-%             expFit = zeros(size(t));
-%         end
+%         ha = subplot(num_plots, 1, ei, 'Parent',ax);
         
         % display original and shifted light On signal
-        ha
         plot(ha, t, resp,'b');
-        hold(ha, 'on');
-        light = ad.epochData{ei}.signalLightOn;
-        if abs(min(resp)) > abs(max(resp))
-            light = light * -1;
-        end
-        light = light * max(abs(resp)) * 0.5;
-        plot(ha, ad.epochData{ei}.timeOffset + t, light,'r')
-        
-%         resp = smooth(resp, 20);
-%         plot(ha, t, resp,'g');
-        hold(ha, 'off');
+%         hold(ha, 'on');
+%         light = ad.epochData{ei}.signalLightOn;
+%         if abs(min(resp)) > abs(max(resp))
+%             light = light * -1;
+%         end
+%         light = light * max(abs(resp)) * 0.5;
+%         plot(ha, ad.epochData{ei}.timeOffset + t, light,'r')
+% 
+%         hold(ha, 'off');
         
         
 %         hold(ha, 'on');
@@ -221,100 +205,9 @@ elseif strcmp(mode, 'temporalResponses')
 %         hold(ha, 'off');
         
         title(ha, sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
-%         disp('Normalization parameters:');
-%         disp(ad.epochData{ei}.signalNormalizationParameters)
     end
     
     
-%     old alignment display is deprecated for now. Use temporal responses
-% elseif strcmp(mode, 'temporalAlignment')
-%     
-%     ha = tight_subplot(2, 1, .1);
-%     
-%     ei = ad.alignmentEpochIndex;
-%     axes(ha(1));
-%     if ~isnan(ei)
-%         t = ad.epochData{ei}.t;
-%         hold on
-%         plot(t, -1 * ad.alignmentRate ./ max(abs(ad.alignmentRate)),'r');
-%         plot(t, ad.alignmentLightOn,'b')
-%         plot(t + ad.timeOffset(1), ad.alignmentLightOn * .8,'g')
-%         legend('rate','light','shifted')
-%         title(ad.timeOffset(1))
-%         hold off
-%     end
-%     
-%     % new format
-% %     obs = ad.observations;
-% %     voltages = sort(unique(obs(:,4)));
-% %     for vi = 1:length(voltages)
-% %         obs_sel = obs(:,4) == voltages(vi);
-% %         indices = find(obs_sel);
-% % 
-% %         for ii = 1:length(indices)
-% %             entry = obs(indices(ii),:)';
-% %             epoch = ad.epochData{entry(9)};
-% % 
-% %             signal = epoch.response(entry(10):entry(11));    
-% %         end
-% %         plot(mean(signal));
-% %     end
-% 
-%     
-%     %% plot time graph
-%     axes(ha(2));
-%     spotOnTime = ad.spotOnTime;
-%     spotTotalTime = ad.spotTotalTime;
-% 
-%     %                 spikeBins = nodeData.spikeBins.value;
-%     
-%     
-%     % get average of all responses
-%     obs = ad.observations;
-%     if isempty(obs)
-%         return;
-%     end
-%     sm = [];
-%     for oi = 1:size(obs, 1)
-%         
-%         entry = obs(oi,:)';
-%         epoch = ad.epochData{entry(9)};
-% 
-%         sm(oi,:) = epoch.response(entry(10):entry(11));
-%     end
-%     spotBinDisplay = mean(sm,1);
-%     
-% %     spotBinDisplay = mean(ad.spikeRate_by_spot, 1);
-%     timeOffset = ad.timeOffset;
-%     
-%     displayTime = (1:length(spotBinDisplay)) ./ ad.sampleRate + timeOffset(1);
-%     
-%     plot(displayTime, spotBinDisplay)
-%     %                 plot(spikeBins(1:end-1), spikeBinsValues);
-%     %                 xlim([0,spikeBins(end-1)])
-% 
-%     title('Temporal offset calculation')
-% 
-%     top = max(spotBinDisplay)*1.1;
-% 
-%     % two light spot patches
-%     p = patch([0 spotOnTime spotOnTime 0],[0 0 top top],'y');
-%     set(p,'FaceAlpha',0.3);
-%     set(p,'EdgeColor','none');
-%     p = patch(spotTotalTime+[0 spotOnTime spotOnTime 0],[0 0 top top],'y');
-%     set(p,'FaceAlpha',0.3);
-%     set(p,'EdgeColor','none');
-% 
-%     % analysis spot patch
-%     p = patch(ad.timeOffset(1)+[0 spotOnTime spotOnTime 0],[0 0 -.1*top -.1*top],'g');
-%     set(p,'FaceAlpha',0.3);
-%     set(p,'EdgeColor','none');
-%     p = patch(ad.timeOffset(1)+[spotOnTime spotTotalTime spotTotalTime spotOnTime],[0 0 -.1*top -.1*top],'r');
-%     set(p,'FaceAlpha',0.3);
-%     set(p,'EdgeColor','none');    
-% 
-%     title(['temporal offset of collection bins (on, off): ' num2str(timeOffset) ' sec'])
-
 elseif strcmp(mode, 'temporalComponents')
     
     warning('off', 'stats:regress:RankDefDesignMat')
@@ -356,15 +249,15 @@ elseif strcmp(mode, 'temporalComponents')
             
 %             kk = cellfun(@(x)size(x,1),signalsThisPos,'UniformOutput',false)
             
-            a = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsThisPos,'UniformOutput',false));
-            signalsByPosition{poi,1} = nanmean(a, 1);
+            plotIndex = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsThisPos,'UniformOutput',false));
+            signalsByPosition{poi,1} = nanmean(plotIndex, 1);
             
         end
         maxLength=max(cellfun(@(x)numel(x),signalsByPosition));
-        a = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsByPosition,'UniformOutput',false));
+        plotIndex = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsByPosition,'UniformOutput',false));
         
-        signalByV = nanmean(a, 1);
-        varByV = nanvar(a, 1);
+        signalByV = nanmean(plotIndex, 1);
+        varByV = nanvar(plotIndex, 1);
         varByV = varByV / max(varByV);
         
         signalsByVoltageByPosition{vi,1} = signalsByPosition;
@@ -455,7 +348,7 @@ elseif strcmp(mode, 'responsesByPosition')
     dim1 = floor(sqrt(num_positions));
     dim2 = ceil(num_positions / dim1);
 
-    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .004, .004, .004);
+    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .006, .006, .006);
     
     max_value = -inf;
     min_value = inf;
