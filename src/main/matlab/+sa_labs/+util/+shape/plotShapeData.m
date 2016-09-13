@@ -5,7 +5,7 @@ if ~isfield(ad,'observations')
     return 
 end
 obs = ad.observations;
-if isempty(obs)
+if isempty(obs) && length(ad.epochData) > 1
     disp('empty observations')
     return
 end

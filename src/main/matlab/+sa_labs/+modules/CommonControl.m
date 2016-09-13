@@ -11,6 +11,8 @@ classdef CommonControl < symphonyui.ui.Module
         blueLED = 100 % 0-255
         greenLED = 100 % 0-255
         
+        spikeThresholdVoltage = 3.5
+        
         % amplifiers
         chan1 = 'Amp1';
         chan1Mode = 'Cell attached'
@@ -33,7 +35,7 @@ classdef CommonControl < symphonyui.ui.Module
         color = 'cyan'       
         colorType = symphonyui.core.PropertyType('char', 'row', {'cyan','blue','green'});
         
-        projectorPropertyNames = {'color','NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
+        projectorPropertyNames = {'spikeThresholdVoltage','color','NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
         ampList
         
         chan1Type
