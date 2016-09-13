@@ -281,7 +281,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             end
             %             legend(obj.responseAxes, obj.channelNames , 'Location', 'east')
             hold(obj.responseAxes, 'off')
-            hold(obj.responseAxesSpikeRate, 'off')
+            if strcmp(obj.responseMode, 'Cell attached')
+                hold(obj.responseAxesSpikeRate, 'off')
+            end
             
             %             then loop through all the epochs we have and plot them
             
@@ -394,7 +396,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             for paramValueIndex = 1:length(paramValues)
                 paramValue = paramValues(paramValueIndex);
                 thisAxis = obj.signalAxes(paramValueIndex);
-                hold(thisAxis, 'off');
+                if thisAxis > 0
+                    hold(thisAxis, 'off');
+                end
 
                 for ci = 1:obj.numChannels
                     signals = [];
@@ -406,13 +410,18 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         t = epoch.t;
                     end
                     plotval = mean(signals, 1);
+                    plotstd = std(signals, 0, 1) / size(signals,1);
 
                     range(1) = min(min(plotval), range(1));
                     range(2) = max(max(plotval), range(2));
 
+                    color = colorOrder(1,:);
                     set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
-                    plot(thisAxis, t, plotval);
+                    plot(thisAxis, t, plotval,'LineWidth',1);
                     hold(thisAxis,'on')
+                    plot(thisAxis, t, plotval+plotstd, 'LineWidth', .5, 'Color', color);
+                    plot(thisAxis, t, plotval-plotstd, 'LineWidth', .5, 'Color', color);
+%                     sa_labs.util.shadedErrorBar(thisAxis, t', plotval', plotstd')
                     xlim(thisAxis, [t(1), t(end)])
                     if ~isempty(obj.epochSplitParameter)
                         titl = title(thisAxis, sprintf('%s: %d', obj.epochSplitParameter,paramValue));
