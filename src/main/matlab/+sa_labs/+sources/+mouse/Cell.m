@@ -16,7 +16,7 @@ classdef Cell < sa_labs.sources.Cell
                     {'S cone', 'M cone', 'rod'}})), ...
                 'description', 'The confirmed type of the recorded cell');
             
-            obj.addAllowableParentType('fi.helsinki.biosci.ala_laurila.sources.mouse.Preparation');
+            obj.addAllowableParentType('sa_labs.sources.Mouse');
         end
         
     end

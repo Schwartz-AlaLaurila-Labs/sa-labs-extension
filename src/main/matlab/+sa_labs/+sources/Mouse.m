@@ -1,4 +1,4 @@
-classdef (Abstract) Cell < symphonyui.core.persistent.descriptions.SourceDescription
+classdef (Abstract) Mouse < symphonyui.core.persistent.descriptions.SourceDescription
     
     methods
         
