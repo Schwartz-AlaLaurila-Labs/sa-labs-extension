@@ -5,8 +5,6 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         devices
         numChannels
         activeFunctionNames
-        measurementRegion
-        baselineRegion
         epochData
         allMeasurementNames = {'mean','var','max','min','sum','std'};
         plotMode
@@ -123,10 +121,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
             
             if strcmp(obj.responseMode, 'Cell attached')
-                set(leftBox, 'Heights', [-.6, -.5, -1, 30])
+                boxHeights = [-.6, -.5];
             else
-                set(leftBox, 'Heights', [-1, -1, 30])
+                boxHeights = -1;
             end
+            set(leftBox, 'Heights', horzcat(boxHeights, -1 * ones(1,length(obj.activeFunctionNames)), 30))
             
             % right side signals over time for each param value
             obj.rightBox = uix.VBox('Parent', fullBox);

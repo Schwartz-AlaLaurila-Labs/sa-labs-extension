@@ -6,8 +6,6 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
         spikeThresholdVoltage
         spikeDetectorMode
         spikeDetector
-        Ntrials
-        baselineRate
         devices
         parameterStruct
         currentSessionId
@@ -27,8 +25,6 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             
             ip = inputParser;
             ip.KeepUnmatched = true;
-            ip.addParameter('startTime', 0, @(x)isnumeric(x));
-            ip.addParameter('endTime', 0, @(x)isnumeric(x));
             ip.addParameter('spikeThresholdVoltage', 4, @(x)isnumeric(x));
             ip.addParameter('spikeDetectorMode', 'Stdev', @(x)ischar(x));
             ip.addParameter('shapePlotMode', 'plotSpatial_mean', @(x)ischar(x));

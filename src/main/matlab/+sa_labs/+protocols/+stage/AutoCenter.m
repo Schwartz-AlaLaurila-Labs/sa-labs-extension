@@ -48,7 +48,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     
     properties (Transient, Hidden)
         shapeResponseFigure
-    end    
+    end
     
     properties (Dependent)
         stimTime

@@ -16,23 +16,52 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 1
         displayName = 'IsoResponse Ramp'
-        epochNum = 0
+        epochIndex = 0
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'epochNum';
+        responsePlotSplitParameter = 'epochIndex';
     end
+    
+    
+    properties (Transient, Hidden)
+        isoResponseFigure
+    end
+    
     
     methods
         
         function prepareRun(obj)
-            obj.epochNum = 0;
-            prepareRun@sa_labs.protocols.StageProtocol(obj);
+            obj.epochIndex = 0;
             
+            % make device list for figure
+            devices = {};
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                if ~strcmp(ampName, 'None');
+                    device = obj.rig.getDevice(ampName);
+                    devices{end+1} = device; %#ok<AGROW>
+                end
+            end            
+            warning('off','MATLAB:structOnObject')
+            propertyStruct = struct(obj);            
+            obj.isoResponseFigure = obj.showFigure('sa_labs.figures.IsoResponseFigure', devices, ...
+                propertyStruct,...
+                'isoResponseMode','continuousRelease',...
+                'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
+                'spikeThresholdVoltage', obj.spikeThresholdVoltage);
+            
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
         end
         
         function prepareEpoch(obj, epoch)
-            obj.epochNum = obj.epochNum + 1;
-            epoch.addParameter('epochNum', obj.epochNum);
+            obj.epochIndex = obj.epochIndex + 1;
+            
+            if obj.epochIndex > 1
+                obj.rampPointsTime = obj.isoResponseFigure.nextRampPointsTime;
+                obj.rampPointsIntensity = obj.isoResponseFigure.nextRampPointsIntensity;
+            end
+                
+            epoch.addParameter('epochIndex', obj.epochIndex);
             epoch.addParameter('rampPointsTime', obj.rampPointsTime);
             epoch.addParameter('rampPointsIntensity', obj.rampPointsIntensity);
             
