@@ -7,6 +7,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         spotDiameter = 22; %um
         searchDiameter = 300; %um
         alignSpotDiam = 150;
+        alignSpotIntensity = 1.0;
         %         numSpots = 100;
         mapResolution = 40; % um
         spotTotalTime = 0.3;
@@ -126,6 +127,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 p.spotTotalTime = obj.spotTotalTime;
                 p.spotOnTime = obj.spotOnTime;
                 p.alignmentSpotDiameter = obj.alignSpotDiam;
+                p.alignmentSpotIntensity = obj.alignSpotIntensity;
                 
                 p.valueMin = obj.valueMin;
                 p.valueMax = obj.valueMax;

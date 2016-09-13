@@ -62,7 +62,7 @@ function runConfig = generateTemporalAlignment(parameters, runConfig)
 
     curtime = 0;
     for dur = durations
-        shape = [0, 0, parameters.valueMax, curtime, curtime + dur / 3, parameters.alignmentSpotDiameter, 0];
+        shape = [0, 0, parameters.alignmentSpotIntensity, curtime, curtime + dur / 3, parameters.alignmentSpotDiameter, 0];
         runConfig.shapeDataMatrix = vertcat(runConfig.shapeDataMatrix, shape);
         curtime = curtime + dur;
     end
@@ -72,7 +72,7 @@ function runConfig = generateTemporalAlignment(parameters, runConfig)
     temporalFilterSpotDiam = 100;
     temporalFilterSpotOnTime = 1.5;
     temporalFilterSpotOffTime = 1.5;
-    filterSpot = [0, 0, parameters.valueMax, curtime, curtime + temporalFilterSpotOnTime, temporalFilterSpotDiam, 0];
+    filterSpot = [0, 0, parameters.alignmentSpotIntensity, curtime, curtime + temporalFilterSpotOnTime, temporalFilterSpotDiam, 0];
     runConfig.shapeDataMatrix = vertcat(runConfig.shapeDataMatrix, filterSpot);
     curtime = curtime + temporalFilterSpotOnTime + temporalFilterSpotOffTime;
     
