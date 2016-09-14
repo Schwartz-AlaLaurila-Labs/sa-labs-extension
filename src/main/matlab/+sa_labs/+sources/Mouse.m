@@ -4,7 +4,7 @@ classdef (Abstract) Mouse < symphonyui.core.persistent.descriptions.SourceDescri
         
         function obj = Mouse()
             import symphonyui.core.*;
-            
+            obj.addAllowableParentType([]);
         end
         
     end

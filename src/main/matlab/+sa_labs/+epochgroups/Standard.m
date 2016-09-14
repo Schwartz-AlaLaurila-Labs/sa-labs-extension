@@ -5,6 +5,7 @@ classdef Standard < symphonyui.core.persistent.descriptions.EpochGroupDescriptio
         function obj = Standard()
             import symphonyui.core.*;
 
+            obj.addAllowableParentType([]);
         end
         
     end
