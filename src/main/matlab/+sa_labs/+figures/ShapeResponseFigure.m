@@ -36,7 +36,6 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             obj.epochIndex = 0;
             obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
             obj.spikeDetectorMode = ip.Results.spikeDetectorMode;
-            obj.Ntrials = 0;
             obj.shapePlotMode = ip.Results.shapePlotMode;
             
             obj.spikeDetector = sa_labs.util.SpikeDetector('Simple threshold');
