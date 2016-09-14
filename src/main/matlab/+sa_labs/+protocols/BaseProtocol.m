@@ -18,7 +18,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Mode = 'Cell attached'
         chan4Hold = 0
         
-        spikeThresholdVoltage = 3.5 % mV
+        spikeThresholdVoltage = -50 % pA
     end
     
     properties (Transient, Hidden)

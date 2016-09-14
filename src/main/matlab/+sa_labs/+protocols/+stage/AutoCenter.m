@@ -41,7 +41,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         runConfig
         pointSetIndex
         
-        responsePlotMode = false;
+        responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'presentationId';
         
     end

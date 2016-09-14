@@ -2,15 +2,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 % this class handles protocol control which is visual stimulus specific
 
     properties
-        meanLevel = 0.5       % Background light intensity (0-1)
+        meanLevel = 0.0       % Background light intensity (0-1)
         offsetX = 0 % um
         offsetY = 0 % um
         
-        NDF = 4 % Filter wheel position
+        NDF = 5 % Filter wheel position
         frameRate = 60;% Hz
         patternRate = 60;% Hz
-        blueLED = 100 % 0-255
-        greenLED = 100 % 0-255
+        blueLED = 10 % 0-255
+        greenLED = 0 % 0-255
     end
     
     properties (Dependent)
@@ -19,7 +19,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        color = 'cyan';
+        color = 'blue';
         bitDepth = 8;
         numPatternsPerFrame = 1
         

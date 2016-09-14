@@ -25,7 +25,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             
             ip = inputParser;
             ip.KeepUnmatched = true;
-            ip.addParameter('spikeThresholdVoltage', 4, @(x)isnumeric(x));
+            ip.addParameter('spikeThresholdVoltage', -50, @(x)isnumeric(x));
             ip.addParameter('spikeDetectorMode', 'Stdev', @(x)ischar(x));
             ip.addParameter('shapePlotMode', 'plotSpatial_mean', @(x)ischar(x));
             
@@ -67,7 +67,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             
             uicontrol(leftBox, 'Style','text','String','Plot mode:')
             displayModeSelectionControl = uicontrol(leftBox, 'Style', 'popupmenu');
-            displayModeSelectionControl.String = {'plotSpatial_mean','plotSpatial_peak','temporalResponses','responsesByPosition',...
+            displayModeSelectionControl.String = {'temporalResponses','plotSpatial_mean','plotSpatial_peak','responsesByPosition',...
                 'subunit','spatialDiagnostics','wholeCell',...
                 'printParameters','adaptationRegion',...
                 'spatialOffset','temporalComponents'};
