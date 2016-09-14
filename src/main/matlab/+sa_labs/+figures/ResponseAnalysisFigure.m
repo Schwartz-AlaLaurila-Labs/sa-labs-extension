@@ -437,9 +437,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 
             if strcmp(obj.responseMode, 'Cell attached')
                 range(1) = 0;
-            end                
-            for i = 1:length(paramValues)
-                ylim(obj.signalAxes(i), range);
+            end        
+            if sum(abs(range)) > 0
+                for i = 1:length(paramValues)
+                    ylim(obj.signalAxes(i), range);
+                end
             end
         end
     end
