@@ -16,10 +16,10 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             obj.serialPortObject = serial(comPort, 'BaudRate', 115200, 'DataBits', 8, 'StopBits', 1, 'Terminator', 'CR');
            
             % some defaults that shouldn't be used
-            filterWheelValidPositions = [1,2];
+            filterWheelNdfValues = [1,2];
 
             obj.addConfigurationSetting('comPort', comPort, 'isReadOnly', true);
-            obj.addConfigurationSetting('filterWheelValidPositions', filterWheelValidPositions);
+            obj.addConfigurationSetting('filterWheelNdfValues', filterWheelNdfValues);
         end
         
         function position = getPosition(obj)
@@ -38,13 +38,20 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             fclose(obj.serialPortObject);
         end
         
-        function setPosition(obj, newPosition)
-            if ~any(obj.getConfigurationSetting('filterWheelValidPositions') == newPosition)
-                error(['Error: filter value ' num2str(newPosition) ' not found']);
+        function value = getValue(obj)
+            valuesByPosition = obj.getConfigurationSetting('filterWheelNdfValues');
+            value = valuesByPosition(obj.getPosition());
+        end
+        
+        function setNdfValue(obj, newValue)
+            valuesByPosition = obj.getConfigurationSetting('filterWheelNdfValues');
+            if ~any(valuesByPosition == newValue)
+                error(['Error: filter value ' num2str(newValue) ' not found']);
             end
             
-            oldPosition = obj.getPosition();
-            if newPosition ~= oldPosition
+            oldValue = obj.getValue();
+            if newValue ~= oldValue
+                newPosition = find(valuesByPosition == newValue, 1);
                 fopen(obj.serialPortObject);
                 fprintf(obj.serialPortObject, 'pos=%s\n', num2str(newPosition));
                 pause(3);

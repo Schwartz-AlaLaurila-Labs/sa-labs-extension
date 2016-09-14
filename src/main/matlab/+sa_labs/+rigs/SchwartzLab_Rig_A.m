@@ -4,7 +4,7 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
         % properties not accessible here; have to be fed into a device to work
         rigName = 'Schwartz Lab Rig A';
         testMode = false;
-        filterWheelValidPositions = [2, 4, 5, 6, 7, 8];
+        filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
         filterWheelAttentuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
         micronsPerPixel = 1.6;
         frameTrackerPosition = [40,40];
@@ -38,7 +38,7 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
             
             
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
-            neutralDensityFilterWheel.setConfigurationSetting('filterWheelValidPositions', obj.filterWheelValidPositions);
+            neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
             neutralDensityFilterWheel.addResource('filterWheelAttentuationValues', obj.filterWheelAttentuationValues);
             obj.addDevice(neutralDensityFilterWheel);
             

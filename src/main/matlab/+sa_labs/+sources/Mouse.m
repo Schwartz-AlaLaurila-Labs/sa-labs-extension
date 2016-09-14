@@ -2,7 +2,7 @@ classdef (Abstract) Mouse < symphonyui.core.persistent.descriptions.SourceDescri
     
     methods
         
-        function obj = Cell()
+        function obj = Mouse()
             import symphonyui.core.*;
             
         end
