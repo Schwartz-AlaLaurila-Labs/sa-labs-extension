@@ -66,8 +66,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             % set the NDF filter wheel
             if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheel.setPosition(obj.NDF);
-                obj.NDF = filterWheel.getPosition();
+                filterWheel.setNdfValue(obj.NDF);
+                obj.NDF = filterWheel.getValue();
             end
             
             
@@ -133,15 +133,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 return
             end
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                filterWheelPositions = 1:7;
+                filterWheelNdfValues = 1:7;
                 filterWheelAttentuationValues = [1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6];
             else
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheelPositions = filterWheel.getConfigurationSetting('filterWheelValidPositions');                
+                filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');                
                 filterWheelAttentuationValues = filterWheel.getResource('filterWheelAttentuationValues');
             end
 
-            filterIndex = filterWheelPositions == obj.NDF;
+            filterIndex = find(filterWheelNdfValues == obj.NDF, 1);
 
             NDF_attenuation = filterWheelAttentuationValues(filterIndex);
             lightCrafter = obj.rig.getDevice('LightCrafter');
