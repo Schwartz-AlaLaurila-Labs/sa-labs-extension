@@ -82,37 +82,17 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             
             % only gratings in center
             if obj.apertureDiameter > 0
-                apertureDiameterRel = obj.um2pix(obj.apertureDiameter) / max(obj.gratingLength, obj.gratingWidth);
+                apertureDiameterRel = obj.apertureDiameter / max(obj.gratingLength, obj.gratingWidth);
                 mask = stage.core.Mask.createAnnulus(-1, apertureDiameterRel, 2048);
                 grat.setMask(mask);
             end
             
             % only gratings outside center
             if obj.apertureDiameter < 0
-                apertureDiameterRel = -1 * obj.um2pix(obj.apertureDiameter) / max(obj.gratingLength, obj.gratingWidth);
+                apertureDiameterRel = -1 * obj.apertureDiameter / max(obj.gratingLength, obj.gratingWidth);
                 mask = stage.core.Mask.createAnnulus(apertureDiameterRel, 10, 2048);
                 grat.setMask(mask);
-            end            
-            
-            %             circular block mask (only gratings outside center)
-%             function opacity = onDuringStim(state, preTime, stimTime)
-%                 if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-%                     opacity = 1;
-%                 else
-%                     opacity = 0;
-%                 end
-%             end
-%             if obj.apertureDiameter < 0
-%                 spot = stage.builtin.stimuli.Ellipse();
-%                 spot.radiusX = round(obj.um2pix(obj.apertureDiameter) / 2); %convert to pixels
-%                 spot.radiusY = spot.radiusX;
-%                 spot.color = obj.meanLevel;
-%                 spot.position = centerPos;
-%                 p.addStimulus(spot);
-%                 centerCircleController = stage.builtin.controllers.PropertyController(spot, 'opacity', @(s)onDuringStim(s, obj.preTime, obj.stimTime));
-%                 p.addController(centerCircleController);
-%             end
-            
+            end
             
             % Gratings drift controller
             function pos = posController(state, duration, preTime, tailTime, centerPos)
