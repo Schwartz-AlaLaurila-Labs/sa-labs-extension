@@ -74,7 +74,6 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            
             fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
             leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
             
@@ -116,12 +115,12 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 set(plotControlBoxes(measi), 'Heights', [-1, 30])
                 
                 set(rowBoxes(measi), 'Widths', [-3 80]);
-                
             end
             
             buttonArea = uix.HButtonBox('Parent',leftBox,'ButtonSize', [100, 30]);
             newPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'new plot','Callback',@obj.addPlotCallback);
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
+            resetPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'reset plot','Callback',@obj.resetPlotCallback);
             
             if strcmp(obj.responseMode, 'Cell attached')
                 boxHeights = [-.6, -.5];
@@ -134,6 +133,16 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.rightBox = uix.VBox('Parent', fullBox);
             obj.signalAxes = [];
             
+        end
+        
+        function refreshUi(obj)
+            % split out the parts needed to add an analysis graph from the rest, so they don't get deleted so much
+        end
+        
+        function resetPlotCallback(obj, ~, ~)
+            obj.epochData = {};
+            obj.createUi();
+            obj.redrawPlots()
         end
         
         function redrawPlotCallback(obj, ~, ~)
@@ -150,11 +159,13 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         function deletePlotCallback(obj, ~, ~, measi)
             obj.activeFunctionNames(measi) = [];
             obj.createUi();
+            obj.redrawPlots()
         end
         
         function addPlotCallback(obj, ~, ~)
             obj.activeFunctionNames{end+1} = obj.allMeasurementNames{1};
             obj.createUi();
+            obj.redrawPlots()
         end
         
         function setTitle(obj, t)
@@ -275,6 +286,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     
                     plot(obj.responseAxesSpikeRate, epoch.t, epoch.signal, 'Color', color)
                     hold(obj.responseAxesSpikeRate, 'on')
+                    ylim(obj.responseAxesSpikeRate, [0, max(epoch.signal) * 1.1 + .1]);
+                    ylabel(obj.responseAxesSpikeRate, '/sec');
                     
                     set(obj.responseAxesSpikeRate,'LooseInset',get(obj.responseAxesSpikeRate,'TightInset'))
                 end
@@ -379,7 +392,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 end
             end
 
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % right side, where mean signal is plotted over time for each parameter
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ci = 1;
             paramByEpoch = [];
             for ei = 1:length(obj.epochData)
@@ -389,7 +405,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             paramValues = sort(unique(paramByEpoch));
 
             % add a new plot to the end if we need one
-            if length(obj.signalAxes) < length(paramValues)
+            while length(obj.signalAxes) < length(paramValues)
                 newAxis = axes('Parent', obj.rightBox);
                 obj.signalAxes(length(paramValues)) = newAxis;
             end
@@ -418,7 +434,6 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     range(2) = max(max(plotval), range(2));
 
                     color = colorOrder(1,:);
-                    set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
                     plot(thisAxis, t, plotval,'LineWidth',1);
                     hold(thisAxis,'on')
                     plot(thisAxis, t, plotval+plotstd, 'LineWidth', .5, 'Color', color);
@@ -429,6 +444,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         titl = title(thisAxis, sprintf('%s: %d', obj.epochSplitParameter,paramValue));
 %                         text(thisAxis, 0.5, .5, 0, 'test')
                     end
+                    if paramValueIndex < length(paramValues)
+                        set(thisAxis, 'XTickLabel', '');
+                    end
+                    set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
+
                 end
                 hold(thisAxis,'off')
 

@@ -88,7 +88,7 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             
             % analyze timing
             sampleRate = response.sampleRate.quantityInBaseUnits;
-            indices = getFlipIndices(quantities, ~isa(obj.stageDevice, 'edu.washington.riekelab.devices.LightCrafterDevice'));
+            indices = getFlipIndices(quantities, ~isa(obj.stageDevice, 'sa_labs.devices.LightCrafterDevice'));
             durations = diff(indices(:) ./ sampleRate);
             
             minDuration = min(durations);

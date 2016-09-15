@@ -73,9 +73,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             % Set the projector configuration
             lightCrafter = obj.rig.getDevice('LightCrafter');
-%             attr = lightCrafter.setPatternRate(obj.patternRate);
             lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
-%             lightCrafter.setLedEnables(0, 0, obj.greenLED > 0, obj.blueLED > 0); % auto, r, g, b
             lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
             lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
         end
