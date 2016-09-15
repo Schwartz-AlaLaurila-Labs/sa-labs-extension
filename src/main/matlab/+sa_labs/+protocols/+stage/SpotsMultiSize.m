@@ -29,6 +29,10 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         responsePlotSplitParameter = 'curSpotSize';
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
         
         function prepareRun(obj)
@@ -92,12 +96,8 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         end
         
         
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfCycles * obj.numberOfSizeSteps;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfCycles * obj.numberOfSizeSteps;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfSizeSteps;
         end
         
         

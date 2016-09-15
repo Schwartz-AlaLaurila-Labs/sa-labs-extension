@@ -12,6 +12,10 @@ classdef SetMeanLevel < sa_labs.protocols.StageProtocol
         responsePlotMode = false;
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
       
         function p = createPresentation(obj)
@@ -23,12 +27,8 @@ classdef SetMeanLevel < sa_labs.protocols.StageProtocol
         end
         
         
-        function tf = shouldContinuePreparingEpochs(~)
-            tf = false;
-        end
-        
-        function tf = shouldContinueRun(~)
-            tf = false;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = 1;
         end
         
         

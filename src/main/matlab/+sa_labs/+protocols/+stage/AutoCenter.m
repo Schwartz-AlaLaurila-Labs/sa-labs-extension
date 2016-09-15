@@ -50,6 +50,10 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         shapeResponseFigure
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     properties (Dependent)
         stimTime
         intensity
@@ -397,6 +401,10 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         function intensity = get.intensity(obj)
             intensity = obj.valueMax;
         end
+        
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = 0;
+        end        
         
         function tf = shouldContinuePreparingEpochs(obj)
             tf = obj.autoContinueRun;

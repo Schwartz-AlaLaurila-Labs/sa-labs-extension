@@ -33,7 +33,6 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     end
     
     properties(Hidden)
-
         chan1Type
         chan2Type
         chan3Type
@@ -114,6 +113,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             if obj.responsePlotMode ~= false
                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', devices, ...
                     'activeFunctionNames', {'mean'}, ...
+                    'totalNumEpochs',obj.totalNumEpochs,...
                     'epochSplitParameter',obj.responsePlotSplitParameter,...
                     'plotMode',obj.responsePlotMode,... 
                     'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
@@ -135,6 +135,14 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 epoch.addResponse(ampDevice);
             end
                         
+        end
+        
+        function tf = shouldContinuePreparingEpochs(obj)
+            tf = obj.numEpochsPrepared < obj.totalNumEpochs;
+        end
+        
+        function tf = shouldContinueRun(obj)
+            tf = obj.numEpochsCompleted < obj.totalNumEpochs;
         end
         
         function addGaussianLoopbackSignals(obj, epoch)

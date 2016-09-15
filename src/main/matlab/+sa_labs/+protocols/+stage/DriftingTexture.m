@@ -36,6 +36,10 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
        responsePlotSplitParameter = 'textureAngle';
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
         function prepareRun(obj)
             % Call the base method.
@@ -183,12 +187,8 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
 %             obj.addFrameTracker(p);
         end
 
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfCycles * obj.numberOfAngles;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfCycles * obj.numberOfAngles;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
         end
 
     end

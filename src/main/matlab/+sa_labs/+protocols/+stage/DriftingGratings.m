@@ -24,6 +24,7 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
     properties (Dependent)
         spatialFreq %cycles/degree
         temporalFreq %cycles/s (Hz)
+        totalNumEpochs
     end
     
     properties (Hidden)
@@ -141,13 +142,9 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             
             %             obj.addFrameTracker(p);
         end
-        
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfCycles * obj.numberOfAngles;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfCycles * obj.numberOfAngles;
+                
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
         end
         
         function spatialFreq = get.spatialFreq(obj)

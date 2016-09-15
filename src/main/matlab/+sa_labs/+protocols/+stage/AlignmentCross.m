@@ -8,14 +8,17 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
         width = 10                      % Width of the cross in (um)
         length = 200                    % Length of the cross in  (um)
         numberOfEpochs = 5              % Number of epochs
-        interpulseInterval = 0          % Duration between spots (s)
         asymmetricShape = false         % Display asymmetric cross
     end
     
     properties(Hidden)
         responsePlotMode = false
     end
-        
+    
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
                 
         function p = createPresentation(obj)
@@ -33,25 +36,25 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
                 asymmHbar = stage.builtin.stimuli.Rectangle();
                 asymmHbar.color = obj.intensity;
                 asymmHbar.size = [armWidthPix * .6, armLengthPix];
-                asymmHbar.position = [canvasSize(1)/2, canvasSize(1)/2 + armLengthPix / 2];
+                asymmHbar.position = canvasSize/2 + [0, armLengthPix / 2];
                 p.addStimulus(asymmHbar);
                 
                 hbar = stage.builtin.stimuli.Rectangle();
                 hbar.color = obj.intensity;
                 hbar.size = [armWidthPix, armLengthPix];
-                hbar.position = [canvasSize(1)/2, canvasSize(2)/2 - armLengthPix / 2];
+                hbar.position = canvasSize/2 + [0, -armLengthPix / 2];
                 p.addStimulus(hbar);
                 
                 asymmVbar = stage.builtin.stimuli.Rectangle();
                 asymmVbar.color = obj.intensity;
                 asymmVbar.size = [armLengthPix, armWidthPix * 1.5];
-                asymmVbar.position = [canvasSize(1)/2 + armLengthPix / 2, canvasSize(2)/2];
+                asymmVbar.position = canvasSize/2 + [armLengthPix / 2, 0];
                 p.addStimulus(asymmVbar);
                 
                 vbar = stage.builtin.stimuli.Rectangle();
                 vbar.color = obj.intensity;
                 vbar.size = [armLengthPix, armWidthPix];
-                vbar.position = [canvasSize(1)/2 - armLengthPix / 2, canvasSize(2)/2];
+                vbar.position = canvasSize/2 + [-armLengthPix / 2, 0];
                 p.addStimulus(vbar);
             else
                 
@@ -70,12 +73,8 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
             
         end
         
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfEpochs;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfEpochs;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
         end
         
     end

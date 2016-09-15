@@ -28,6 +28,10 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
     end
     
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
         
         function prepareRun(obj)
@@ -104,12 +108,8 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
         end
         
         
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfEpochs;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfEpochs;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
         end
 
     end

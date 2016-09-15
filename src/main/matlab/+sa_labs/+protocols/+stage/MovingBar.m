@@ -7,7 +7,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         barLength = 300                 % Bar length size (um)
         barWidth = 50                   % Bar Width size (um)
         barSpeed = 1000                 % Bar speed (um / s)
-        distance = 1000                 % Bar distance (um)
+        distance = 2000                 % Bar distance (um)
         numberOfAngles = 12
         numberOfCycles = 2
     end
@@ -24,6 +24,10 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
     
     properties (Dependent)
         stimTime                        % Bar duration (ms)
+    end
+    
+    properties (Hidden, Dependent)
+        totalNumEpochs
     end
     
     methods
@@ -81,13 +85,9 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         end
         
         
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfCycles * obj.numberOfAngles;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfCycles * obj.numberOfAngles;
-        end
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
+        end        
 
         function stimTime = get.stimTime(obj)
             pixelSpeed = obj.um2pix(obj.barSpeed);

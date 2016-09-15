@@ -21,6 +21,10 @@ classdef FlashedBar < sa_labs.protocols.StageProtocol
         responsePlotSplitParameter = 'barAngle';
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
                
         function prepareRun(obj)
@@ -67,12 +71,8 @@ classdef FlashedBar < sa_labs.protocols.StageProtocol
         end
         
         
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfCycles * obj.numberOfAngles;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfCycles * obj.numberOfAngles;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
         end
 
     end

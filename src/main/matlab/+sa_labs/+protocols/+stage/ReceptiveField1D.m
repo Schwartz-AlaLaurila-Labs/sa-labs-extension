@@ -33,6 +33,10 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         responsePlotSplitParameter; % to be set manually in prepareRun
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
         
         function prepareRun(obj)
@@ -116,12 +120,8 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             p.addController(controller);
         end
         
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfCycles * obj.numberOfPositions;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfCycles * obj.numberOfPositions;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfPositions;
         end
         
         function stimTime = get.stimTime(obj)

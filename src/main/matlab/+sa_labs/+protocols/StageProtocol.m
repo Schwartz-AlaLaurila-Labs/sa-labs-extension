@@ -61,7 +61,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
 
-%             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
+            obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
             % set the NDF filter wheel
             if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
@@ -75,8 +75,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             lightCrafter = obj.rig.getDevice('LightCrafter');
 %             attr = lightCrafter.setPatternRate(obj.patternRate);
             lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
-%             obj.bitDepth = attr{1};
-            lightCrafter.setLedEnables(0, 0, obj.greenLED > 0, obj.blueLED > 0); % auto, r, g, b
+%             lightCrafter.setLedEnables(0, 0, obj.greenLED > 0, obj.blueLED > 0); % auto, r, g, b
             lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
             lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
         end
@@ -137,7 +136,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 filterWheelAttentuationValues = [1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6];
             else
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');                
+                filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
                 filterWheelAttentuationValues = filterWheel.getResource('filterWheelAttentuationValues');
             end
 

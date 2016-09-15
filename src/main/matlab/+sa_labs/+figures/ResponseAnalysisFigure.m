@@ -15,6 +15,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         epochSplitParameter
         channelNames
         analysisData % just for autocenter for now
+        totalNumEpochs
         
         responseMode % 'Whole cell' or 'Cell attached'
         spikeThresholdVoltage % in mV
@@ -44,6 +45,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('responseMode','Whole cell', @(x)ischar(x));
             ip.addParameter('spikeThresholdVoltage', 0, @(x)isnumeric(x));
             ip.addParameter('spikeRateBinLength', 0.05, @(x)isnumeric(x));
+            ip.addParameter('totalNumEpochs',1,@(x)isnumeric(x));
             ip.parse(varargin{:});
             
             obj.devices = devices;
@@ -54,6 +56,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.responseMode = ip.Results.responseMode;
             obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
             obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
+            obj.totalNumEpochs = ip.Results.totalNumEpochs;
             
             obj.createUi();
             
@@ -275,7 +278,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     
                     set(obj.responseAxesSpikeRate,'LooseInset',get(obj.responseAxesSpikeRate,'TightInset'))
                 end
-                title(obj.responseAxes, sprintf('Previous: %s: %d', obj.epochSplitParameter, epoch.splitParameter))
+                title(obj.responseAxes, sprintf('Previous: %s: %d (%d of %d)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
                 ylabel(obj.responseAxes, epoch.units, 'Interpreter', 'none');
             end
             %             legend(obj.responseAxes, obj.channelNames , 'Location', 'east')
