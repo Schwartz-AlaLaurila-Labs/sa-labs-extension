@@ -34,23 +34,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.lightCrafter = LightCrafter4500(obj.stageClient.getMonitorRefreshRate());
             obj.lightCrafter.connect();
             obj.lightCrafter.setMode('pattern');
-            obj.lightCrafter.setLedEnables(true, false, false, false);
             [auto, red, green, blue] = obj.lightCrafter.getLedEnables();
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
-            obj.patternRatesToAttributes = containers.Map('KeyType', 'double', 'ValueType', 'any');
-            obj.patternRatesToAttributes(1 * monitorRefreshRate)  = {8, 'white', 1};
-            obj.patternRatesToAttributes(2 * monitorRefreshRate)  = {8, 'white', 2};
-            obj.patternRatesToAttributes(4 * monitorRefreshRate)  = {6, 'white', 4};
-            obj.patternRatesToAttributes(6 * monitorRefreshRate)  = {4, 'white', 6};
-            obj.patternRatesToAttributes(8 * monitorRefreshRate)  = {3, 'white', 8};
-            obj.patternRatesToAttributes(12 * monitorRefreshRate) = {2, 'white', 12};
-            obj.patternRatesToAttributes(24 * monitorRefreshRate) = {1, 'white', 24};
-
-            attributes = obj.patternRatesToAttributes(monitorRefreshRate);
-            obj.lightCrafter.setPatternAttributes(attributes{:});
-            
-            renderer = stage.builtin.renderers.PatternRenderer(attributes{3}, attributes{1});
+            renderer = stage.builtin.renderers.PatternRenderer(1, 8);
             obj.stageClient.setCanvasRenderer(renderer);
             
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
@@ -168,26 +155,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             [auto, red, green, blue] = obj.lightCrafter.getLedEnables();
         end
         
-        function r = availablePatternRates(obj)
-            r = obj.patternRatesToAttributes.keys;
-        end
-        
         function setPatternAttributes(obj, bitDepth, color, numPatterns)
             obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
         end
-        
-        function attributes = setPatternRate(obj, rate)
-            if ~obj.patternRatesToAttributes.isKey(rate)
-                error([num2str(rate) ' is not an available pattern rate']);
-            end
-            attributes = obj.patternRatesToAttributes(rate);
-            obj.lightCrafter.setPatternAttributes(attributes{:});
-            obj.setReadOnlyConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate());
-            
-            renderer = stage.builtin.renderers.PatternRenderer(attributes{3}, attributes{1});
-            obj.stageClient.setCanvasRenderer(renderer);
-        end
-        
+                
         function r = getPatternRate(obj)
             r = obj.lightCrafter.currentPatternRate();
         end

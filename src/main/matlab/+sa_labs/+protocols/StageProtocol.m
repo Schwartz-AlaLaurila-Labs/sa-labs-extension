@@ -59,7 +59,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function prepareRun(obj)
-            prepareRun@sa_labs.protocols.BaseProtocol(obj);
 
             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
@@ -76,6 +75,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
             lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
             lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
+            pause(0.2); % let the projector get setup            
+            
+            prepareRun@sa_labs.protocols.BaseProtocol(obj);
         end
 
         function prepareEpoch(obj, epoch)
