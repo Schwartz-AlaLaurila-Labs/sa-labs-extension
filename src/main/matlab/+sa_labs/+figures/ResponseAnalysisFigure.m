@@ -8,14 +8,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         epochData
         allMeasurementNames = {'mean','var','max','min','sum','std'};
         plotMode
-        responseAxes
-        responseAxesSpikeRate
+        responseAxis
+        responseAxisSpikeRate
         signalAxes
         rightBox
         epochSplitParameter
         channelNames
-        analysisData % just for autocenter for now
         totalNumEpochs
+        analysisRegion
         
         responseMode % 'Whole cell' or 'Cell attached'
         spikeThresholdVoltage % in mV
@@ -46,6 +46,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('spikeThresholdVoltage', 0, @(x)isnumeric(x));
             ip.addParameter('spikeRateBinLength', 0.05, @(x)isnumeric(x));
             ip.addParameter('totalNumEpochs',1,@(x)isnumeric(x));
+            ip.addParameter('analysisRegion',[0,inf]);
             ip.parse(varargin{:});
             
             obj.devices = devices;
@@ -57,6 +58,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
             obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
             obj.totalNumEpochs = ip.Results.totalNumEpochs;
+            obj.analysisRegion = ip.Results.analysisRegion;
             
             obj.createUi();
             
@@ -78,9 +80,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
             
             % top left response (w/ spike rate too)
-            obj.responseAxes = axes('Parent', leftBox);%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
+            obj.responseAxis = axes('Parent', leftBox);%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
             if strcmp(obj.responseMode, 'Cell attached')
-                obj.responseAxesSpikeRate = axes('Parent', leftBox);
+                obj.responseAxisSpikeRate = axes('Parent', leftBox);
             end
             
             % bottom left analysis over param
@@ -120,7 +122,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             buttonArea = uix.HButtonBox('Parent',leftBox,'ButtonSize', [100, 30]);
             newPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'new plot','Callback',@obj.addPlotCallback);
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
-            resetPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'reset plot','Callback',@obj.resetPlotCallback);
+            resetDataButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'reset plot','Callback',@obj.resetDataCallback);
             
             if strcmp(obj.responseMode, 'Cell attached')
                 boxHeights = [-.6, -.5];
@@ -139,13 +141,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             % split out the parts needed to add an analysis graph from the rest, so they don't get deleted so much
         end
         
-        function resetPlotCallback(obj, ~, ~)
+        function resetDataCallback(obj, ~, ~)
             obj.epochData = {};
             obj.createUi();
             obj.redrawPlots()
         end
         
         function redrawPlotCallback(obj, ~, ~)
+            obj.createUi();
             obj.redrawPlots()
         end
         
@@ -241,9 +244,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 
                 % make analysis measurements
                 e.measurements = containers.Map();
+                signalInAnalysisRegion = e.signal(e.t > obj.analysisRegion(1) & e.t < obj.analysisRegion(2));
                 for i = 1:numel(obj.allMeasurementNames)
                     fcn = str2func(obj.allMeasurementNames{i});
-                    result = fcn(e.signal);
+                    result = fcn(signalInAnalysisRegion);
                     e.measurements(obj.allMeasurementNames{i}) = result;
                 end
 
@@ -263,18 +267,18 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             colorOrder = get(groot, 'defaultAxesColorOrder');
             
             %plot the most recent response at the top
-            hold(obj.responseAxes, 'off')
+            hold(obj.responseAxis, 'off')
             if strcmp(obj.responseMode, 'Cell attached')
-                hold(obj.responseAxesSpikeRate, 'off')
+                hold(obj.responseAxisSpikeRate, 'off')
             end
             
             for ci = 1:obj.numChannels
                 color = colorOrder(mod(ci - 1, size(colorOrder, 1)) + 1, :);
                 epoch = obj.epochData{end}{ci};
                 signal = epoch.responseObject.getData();
-                plot(obj.responseAxes, epoch.t, signal, 'Color', color);
-                hold(obj.responseAxes, 'on');
-                set(obj.responseAxes,'LooseInset',get(obj.responseAxes,'TightInset'))
+                plot(obj.responseAxis, epoch.t, signal, 'Color', color);
+                hold(obj.responseAxis, 'on');
+                set(obj.responseAxis,'LooseInset',get(obj.responseAxis,'TightInset'))
                 
                 
                 if strcmp(obj.responseMode, 'Cell attached')
@@ -282,22 +286,24 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     spikeTimes = epoch.spikeTimes;
                     [~, spikeFrames] = ismember(spikeTimes, epoch.t);
                     spikeHeights = signal(spikeFrames);
-                    plot(obj.responseAxes, spikeTimes, spikeHeights, '.');
+                    plot(obj.responseAxis, spikeTimes, spikeHeights, '.');
                     
-                    plot(obj.responseAxesSpikeRate, epoch.t, epoch.signal, 'Color', color)
-                    hold(obj.responseAxesSpikeRate, 'on')
-                    ylim(obj.responseAxesSpikeRate, [0, max(epoch.signal) * 1.1 + .1]);
-                    ylabel(obj.responseAxesSpikeRate, '/sec');
+                    plot(obj.responseAxisSpikeRate, epoch.t, epoch.signal, 'Color', color)
+                    hold(obj.responseAxisSpikeRate, 'on')
+                    ylim(obj.responseAxisSpikeRate, [0, max(epoch.signal) * 1.1 + .1]);
+                    ylabel(obj.responseAxisSpikeRate, '/sec');
                     
-                    set(obj.responseAxesSpikeRate,'LooseInset',get(obj.responseAxesSpikeRate,'TightInset'))
+                    set(obj.responseAxisSpikeRate,'LooseInset',get(obj.responseAxisSpikeRate,'TightInset'))
                 end
-                title(obj.responseAxes, sprintf('Previous: %s: %d (%d of %d)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
-                ylabel(obj.responseAxes, epoch.units, 'Interpreter', 'none');
+                title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
+                ylabel(obj.responseAxis, epoch.units, 'Interpreter', 'none');
             end
-            %             legend(obj.responseAxes, obj.channelNames , 'Location', 'east')
-            hold(obj.responseAxes, 'off')
+            %             legend(obj.responseAxis, obj.channelNames , 'Location', 'east')
+            line(obj.responseAxis, [obj.analysisRegion(1), obj.analysisRegion(1)], ylim(obj.responseAxis),'Color','g')
+            line(obj.responseAxis, [obj.analysisRegion(2), obj.analysisRegion(2)], ylim(obj.responseAxis),'Color','r')
+            hold(obj.responseAxis, 'off')
             if strcmp(obj.responseMode, 'Cell attached')
-                hold(obj.responseAxesSpikeRate, 'off')
+                hold(obj.responseAxisSpikeRate, 'off')
             end
             
             %             then loop through all the epochs we have and plot them
@@ -441,7 +447,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 %                     sa_labs.util.shadedErrorBar(thisAxis, t', plotval', plotstd')
                     xlim(thisAxis, [t(1), t(end)])
                     if ~isempty(obj.epochSplitParameter)
-                        titl = title(thisAxis, sprintf('%s: %d', obj.epochSplitParameter,paramValue));
+                        titl = title(thisAxis, sprintf('%s: %g', obj.epochSplitParameter,paramValue));
 %                         text(thisAxis, 0.5, .5, 0, 'test')
                     end
                     if paramValueIndex < length(paramValues)
