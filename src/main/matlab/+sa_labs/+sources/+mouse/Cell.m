@@ -9,6 +9,8 @@ classdef Cell < symphonyui.core.persistent.descriptions.SourceDescription
                 'description', 'The number of the cell')
             obj.addProperty('type', '', ...
                 'description', 'The type of the recorded cell');
+            obj.addProperty('location',[0,0],...
+                'description', 'coordinates of the cell on the retina');
             
             obj.addAllowableParentType('sa_labs.sources.Mouse');
         end
