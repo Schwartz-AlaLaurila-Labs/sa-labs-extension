@@ -30,6 +30,10 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         responsePlotSplitParameter = '';
     end
     
+    properties (Dependent, Hidden)
+        totalNumEpochs
+    end
+    
     methods
          
         
@@ -137,12 +141,8 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             end
 
         end
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfEpochs;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfEpochs;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
         end
     end
     
