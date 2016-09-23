@@ -1,7 +1,6 @@
 classdef SealAndLeak < sa_labs.protocols.BaseProtocol
     
     properties
-        amp                             % Output amplifier
         mode = 'seal'                   % Current mode of protocol
         alternateMode = true            % Alternate from seal to leak to seal etc., on each successive run
         preTime = 15                    % Pulse leading duration (ms)
@@ -9,6 +8,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         tailTime = 15                   % Pulse trailing duration (ms)
         pulseAmplitude = 5              % Pulse amplitude (mV or pA)
         leakAmpHoldSignal = -60         % Amplifier hold signal to use while in leak mode
+        ampNumber = 1;                  % Which amplifier to use
     end
     
     properties (Hidden, Dependent)
@@ -107,10 +107,10 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
                 end
             end
             
-            epoch.addStimulus(obj.rig.getDevice(obj.amp), obj.createAmpStimulus());
+            epoch.addStimulus(obj.rig.getDevice(sprintf('amp%g', obj.ampNumber)), obj.createAmpStimulus());
             
             triggers = obj.rig.getDevices('Oscilloscope Trigger');
-            if ~isempty(triggers)            
+            if ~isempty(triggers)
                 epoch.addStimulus(triggers{1}, obj.createOscilloscopeTriggerStimulus());
             end
             

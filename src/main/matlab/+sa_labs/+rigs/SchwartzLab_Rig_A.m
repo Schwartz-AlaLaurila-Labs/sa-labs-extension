@@ -27,10 +27,10 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
             daq = HekaDaqController(HekaDeviceType.USB18);
             obj.daqController = daq;
 
-            amp1 = MultiClampDevice('Amp1', 1, 834077).bindStream(daq.getStream('ANALOG_OUT.0')).bindStream(daq.getStream('ANALOG_IN.0'));
+            amp1 = MultiClampDevice('Amp1', 1, 834077).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
             obj.addDevice(amp1);
             
-            amp2 = MultiClampDevice('Amp2', 2, 834077).bindStream(daq.getStream('ANALOG_OUT.1')).bindStream(daq.getStream('ANALOG_IN.1'));
+            amp2 = MultiClampDevice('Amp2', 2, 834077).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
             obj.addDevice(amp2);
             
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);

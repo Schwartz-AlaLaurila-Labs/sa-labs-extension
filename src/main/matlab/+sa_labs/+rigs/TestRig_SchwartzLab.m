@@ -25,10 +25,10 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
             daq = HekaSimulationDaqController();
             obj.daqController = daq;
             
-            amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ANALOG_OUT.0')).bindStream(daq.getStream('ANALOG_IN.0'));
+            amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
             obj.addDevice(amp1);
             
-            amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ANALOG_OUT.1')).bindStream(daq.getStream('ANALOG_IN.1'));
+            amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
             obj.addDevice(amp2);
             
 %             amp3 = MultiClampDevice('Amp3', 3).bindStream(daq.getStream('ANALOG_OUT.2')).bindStream(daq.getStream('ANALOG_IN.2'));
@@ -37,9 +37,9 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
 %             amp4 = MultiClampDevice('Amp4', 4).bindStream(daq.getStream('ANALOG_OUT.3')).bindStream(daq.getStream('ANALOG_IN.3'));
 %             obj.addDevice(amp4);
                         
-%             trigger1 = UnitConvertingDevice('Trigger1', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('DIGITAL_OUT.1'));
-%             daq.getStream('DIGITAL_OUT.1').setBitPosition(trigger1, 0);
-%             obj.addDevice(trigger1);
+            oscopeTrigger = UnitConvertingDevice('Oscilloscope_Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
+            daq.getStream('doport0').setBitPosition(oscopeTrigger, 0);
+            obj.addDevice(oscopeTrigger);
 
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
