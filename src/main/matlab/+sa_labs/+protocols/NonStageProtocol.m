@@ -11,10 +11,9 @@ classdef NonStageProtocol < sa_labs.protocols.BaseProtocol
     
     properties (Hidden)
         version = 1
-        displayName = 'non stage prot'
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = '';        
+        responsePlotSplitParameter = '';
     end
     
     methods

@@ -76,7 +76,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         end 
         
         
-        function prepareRun(obj)
+        function prepareRun(obj, setAmpHoldSignals)
             prepareRun@symphonyui.core.Protocol(obj);
 %             obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.chan));
 %             obj.showFigure('symphonyui.builtin.figures.MeanResponseFigure', obj.rig.getDevice(obj.chan));
@@ -84,20 +84,25 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             % TODO: check that two channels don't use the same amp (makes settings collision)
 
 %             Set amp hold signals.
-            for ci = 1:4
-                channelName = sprintf('chan%d', ci);
-%                 modeName = sprintf('chan%dMode', ci);
-                holdName = sprintf('chan%dHold', ci);
-                signal = obj.(holdName);
-                
-                if strcmp(obj.(channelName),'None')
-                    continue
+            if nargin < 2
+                setAmpHoldSignals = true;
+            end
+            if setAmpHoldSignals
+                for ci = 1:4
+                    channelName = sprintf('chan%d', ci);
+    %                 modeName = sprintf('chan%dMode', ci);
+                    holdName = sprintf('chan%dHold', ci);
+                    signal = obj.(holdName);
+
+                    if strcmp(obj.(channelName),'None')
+                        continue
+                    end
+                    ampName = obj.(channelName);
+                    device = obj.rig.getDevice(ampName);
+
+                    device.background = symphonyui.core.Measurement(signal, device.background.displayUnits);
+                    device.applyBackground();
                 end
-                ampName = obj.(channelName);
-                device = obj.rig.getDevice(ampName);
-                
-                device.background = symphonyui.core.Measurement(signal, device.background.displayUnits);
-                device.applyBackground();
             end
 
             % make device list for analysis figure
