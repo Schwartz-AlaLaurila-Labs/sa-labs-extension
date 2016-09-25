@@ -2,15 +2,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 % this class handles protocol control which is visual stimulus specific
 
     properties
-        meanLevel = 0.0       % Background light intensity (0-1)
-        offsetX = 0 % um
-        offsetY = 0 % um
+        meanLevel = 0.0     % Background light intensity (0-1)
+        offsetX = 0         % um
+        offsetY = 0         % um
         
-        NDF = 5 % Filter wheel position
-        frameRate = 60;% Hz
-        patternRate = 60;% Hz
-        blueLED = 10 % 0-255
-        greenLED = 0 % 0-255
+        NDF = 5             % Filter wheel position
+        frameRate = 60;     % Hz
+        patternRate = 60;   % Hz
+        blueLED = 10        % 0-255
+        greenLED = 0        % 0-255
     end
     
     properties (Dependent)
@@ -63,20 +63,20 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             obj.showFigure('io.github.stage_vss.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
             % set the NDF filter wheel
-            if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 filterWheel.setNdfValue(obj.NDF);
                 obj.NDF = filterWheel.getValue();
             end
             
-            
-            % Set the projector configuration
-            lightCrafter = obj.rig.getDevice('LightCrafter');
-            lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
-            lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
-            lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
-            pause(0.2); % let the projector get set up
-            
+            if ~ isempty(obj.rig.getDevices('LightCrafter'))
+                % Set the projector configuration
+                lightCrafter = obj.rig.getDevice('LightCrafter');
+                lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
+                lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
+                lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
+                pause(0.2); % let the projector get set up
+            end
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
         end
 
@@ -152,11 +152,14 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
          
         function RstarMean = get.RstarMean(obj)
-            RstarMean = obj.convertRelativeToRStar(obj.meanLevel);
+            RstarMean = [];
+            if ~ isempty(obj.rig.getDevices('LightCrafter'))
+                RstarMean = obj.convertRelativeToRStar(obj.meanLevel);
+            end
         end
     
         function RstarIntensity = get.RstarIntensity(obj)
-            if isprop(obj, 'intensity')
+            if isprop(obj, 'intensity') && ~ isempty(obj.rig.getDevices('LightCrafter'))
                 RstarIntensity = obj.convertRelativeToRStar(obj.intensity);
             else
                 RstarIntensity = [];

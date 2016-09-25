@@ -38,13 +38,13 @@ classdef SimulatedDaqWithMultiClamp < symphonyui.core.descriptions.RigDescriptio
             daq.getStream('DIGITAL_OUT.1').setBitPosition(trigger2, 2);
             obj.addDevice(trigger2);
             
-            %stage = io.github.stage_vss.devices.StageDevice('localhost');
-            %stage.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
-            %obj.addDevice(stage);
+            stage = io.github.stage_vss.devices.StageDevice('localhost');
+            stage.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
+            obj.addDevice(stage);
             
-            lightCrafter = fi.helsinki.biosci.ala_laurila.devices.LightCrafterDevice();
-            lightCrafter.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
-            obj.addDevice(lightCrafter);
+            %lightCrafter = fi.helsinki.biosci.ala_laurila.devices.LightCrafterDevice();
+            %lightCrafter.addConfigurationSetting('micronsPerPixel', 1.6, 'isReadOnly', true);
+            %obj.addDevice(lightCrafter);
         end
         
     end
