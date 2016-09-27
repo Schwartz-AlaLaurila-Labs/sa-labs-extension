@@ -1,5 +1,5 @@
 classdef NonStageProtocol < sa_labs.protocols.BaseProtocol
-
+    
     properties
         %times in ms
         preTime = 250	% Spot leading duration (ms)
@@ -16,9 +16,13 @@ classdef NonStageProtocol < sa_labs.protocols.BaseProtocol
         responsePlotSplitParameter = '';
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
-      
-
+        
+        
         function stim = createAmpStimulus(obj)
             gen = symphonyui.builtin.stimuli.PulseGenerator();
             
@@ -35,9 +39,8 @@ classdef NonStageProtocol < sa_labs.protocols.BaseProtocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
-            
             epoch.addStimulus(obj.rig.getDevice(obj.chan1), obj.createAmpStimulus());
-%             epoch.addResponse(obj.rig.getDevice(obj.chan1));
+            %epoch.addResponse(obj.rig.getDevice(obj.chan1));
         end
         
         
@@ -49,7 +52,9 @@ classdef NonStageProtocol < sa_labs.protocols.BaseProtocol
             tf = obj.numEpochsCompleted < obj.numberOfEpochs;
         end
         
-        
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
+        end
     end
     
 end

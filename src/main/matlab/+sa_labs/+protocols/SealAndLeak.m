@@ -16,9 +16,9 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        ampType
         modeType = symphonyui.core.PropertyType('char', 'row', {'seal', 'leak'})
         modeFigure
+        responsePlotMode = false;
     end
     
     methods
@@ -33,8 +33,6 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.BaseProtocol(obj);
-            
-            [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
         end
         
         function p = getPreview(obj, panel)
@@ -78,7 +76,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
             gen.amplitude = obj.pulseAmplitude;
             gen.mean = obj.ampHoldSignal;
             gen.sampleRate = obj.sampleRate;
-            gen.units = obj.rig.getDevice(obj.amp).background.displayUnits;
+            gen.units = obj.rig.getDevice(obj.chan1).background.displayUnits;
             
             stim = gen.generate();
         end
@@ -114,7 +112,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
                 epoch.addStimulus(triggers{1}, obj.createOscilloscopeTriggerStimulus());
             end
             
-            device = obj.rig.getDevice(obj.amp);
+            device = obj.rig.getDevice(obj.chan1);
             device.background = symphonyui.core.Measurement(obj.ampHoldSignal, device.background.displayUnits);
         end
         
