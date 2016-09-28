@@ -363,7 +363,13 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         hold(thisAxis, 'off');
                     else
                         %                     axes(obj.axesHandlesAnalysis(measi));
+                        
                         X_rad = deg2rad(X);
+                        % compute DSI
+                        vects = sum(Y .* exp(sqrt(-1) * X_rad)) / sum(Y);
+                        dsi = abs(vects);
+                        dsang = rad2deg(angle(vects));
+                        
                         X_rad(end+1) = X_rad(1);
                         Y(end+1) = Y(1);
                         Y_std(end+1) = Y_std(1);
@@ -371,6 +377,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         hold(thisAxis, 'on');
                         polarplot(thisAxis, X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
                         polarplot(thisAxis, X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
+                        title(thisAxis, sprintf('DSI: %g Angle: %g deg', dsi, dsang));
                         hold(thisAxis, 'off');
                     end
                     %                 boxplot(thisAxis, allMeasurementsByEpoch, paramByEpoch);
