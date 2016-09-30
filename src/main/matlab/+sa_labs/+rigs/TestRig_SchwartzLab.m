@@ -37,7 +37,7 @@ classdef TestRig_SchwartzLab < symphonyui.core.descriptions.RigDescription
 %             amp4 = MultiClampDevice('Amp4', 4).bindStream(daq.getStream('ANALOG_OUT.3')).bindStream(daq.getStream('ANALOG_IN.3'));
 %             obj.addDevice(amp4);
                         
-            oscopeTrigger = UnitConvertingDevice('Oscilloscope_Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
+            oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
             daq.getStream('doport0').setBitPosition(oscopeTrigger, 0);
             obj.addDevice(oscopeTrigger);
 
