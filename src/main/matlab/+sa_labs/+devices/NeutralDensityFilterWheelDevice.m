@@ -40,7 +40,8 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
         
         function value = getValue(obj)
             valuesByPosition = obj.getConfigurationSetting('filterWheelNdfValues');
-            value = valuesByPosition(obj.getPosition());
+            position = obj.getPosition();
+            value = valuesByPosition(position);
         end
         
         function setNdfValue(obj, newValue)
@@ -51,7 +52,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             
             oldValue = obj.getValue();
             if newValue ~= oldValue
-                newPosition = find(valuesByPosition == newValue, 1)
+                newPosition = find(valuesByPosition == newValue, 1);
                 fopen(obj.serialPortObject);
                 fprintf(obj.serialPortObject, 'pos=%s\n', num2str(newPosition));
                 pause(3);

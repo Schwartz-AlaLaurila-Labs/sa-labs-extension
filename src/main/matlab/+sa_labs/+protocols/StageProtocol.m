@@ -6,7 +6,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetX = 0         % um
         offsetY = 0         % um
         
-        NDF = 5             % Filter wheel position
+        NDF = 5             % Filter NDF value
         frameRate = 60;     % Hz
         patternRate = 60;   % Hz
         blueLED = 10        % 0-255
@@ -66,7 +66,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 filterWheel.setNdfValue(obj.NDF);
-                obj.NDF = filterWheel.getValue();
+%                 obj.NDF = filterWheel.getValue();
             end
             
             if ~ isempty(obj.rig.getDevices('LightCrafter'))
@@ -83,6 +83,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
+            % uses the frame tracker on the monitor to inform the HEKA that
+            % the stage presentation has begun. Improves temporal alignment
+            epoch.shouldWaitForTrigger = true;
+            
             testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
             if testMode
                 % gaussian noise for analysis testing
@@ -93,7 +97,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
                 epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
             end
-
+            
         end
             
         function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>
