@@ -78,8 +78,6 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         
         function prepareRun(obj, setAmpHoldSignals)
             prepareRun@symphonyui.core.Protocol(obj);
-%             obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.chan));
-%             obj.showFigure('symphonyui.builtin.figures.MeanResponseFigure', obj.rig.getDevice(obj.chan));
 
             % TODO: check that two channels don't use the same amp (makes settings collision)
 
@@ -140,7 +138,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
             end
-                        
+                                    
         end
         
         function tf = shouldContinuePreparingEpochs(obj)
