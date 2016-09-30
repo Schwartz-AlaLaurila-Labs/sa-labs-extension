@@ -437,8 +437,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         epoch = obj.epochData{ei}{ci};
                         if paramValue == epoch.splitParameter
                             signals(end+1, :) = epoch.signal;
+                            t = epoch.t;
                         end
-                        t = epoch.t;
                     end
                     plotval = mean(signals, 1);
                     plotstd = std(signals, 0, 1) / size(signals,1);
@@ -474,7 +474,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             if strcmp(obj.responseMode, 'Cell attached')
                 range(1) = 0;
             end        
-            if sum(abs(range)) > 0
+            if abs(diff(range)) > 0
                 for i = 1:length(paramValues)
                     ylim(obj.signalAxes(i), range);
                 end

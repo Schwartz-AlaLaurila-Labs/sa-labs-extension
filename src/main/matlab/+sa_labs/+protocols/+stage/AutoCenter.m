@@ -106,13 +106,17 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             generateNewStimulus = true;
             
             % alternate ex/in for same spots and settings
-            if obj.alternateVoltage
-                obj.ampHoldSignal = obj.voltages(obj.currentVoltageIndex);
+            if obj.alternateVoltage && strcmp(obj.chan1Mode, 'Whole cell')
+                obj.chan1Hold = obj.voltages(obj.currentVoltageIndex);
                 if obj.currentVoltageIndex ~= 1 % only generate a new stim if we're on the first voltage
                     generateNewStimulus = false;
                 end
-                fprintf('setting amp voltage: %d mV; waiting 5 sec for stability\n', obj.ampHoldSignal);
-                obj.setDeviceBackground(obj.amp, obj.ampHoldSignal, 'mV'); % actually set it
+                fprintf('setting chan 1 voltage: %d mV; waiting 5 sec for stability\n', obj.chan1Hold);
+                
+                epoch.addParameter('chan1Hold',obj.chan1Hold);
+                device = obj.rig.getDevice(obj.chan1);
+                device.background = symphonyui.core.Measurement(obj.chan1Hold, device.background.displayUnits);
+                device.applyBackground();
                 pause(5)
             end
             
