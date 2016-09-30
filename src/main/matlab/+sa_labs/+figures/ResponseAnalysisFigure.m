@@ -111,16 +111,16 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     'String', obj.allMeasurementNames, 'Value',thisFuncIndex, 'Back', 'w',...
                     'Callback',{@obj.functionSelectorCallback, measi});
                 
-                delPlotButtons(measi) = uicontrol('Style','pushbutton', 'Parent', plotControlBoxes(measi),...
-                    'String', 'del', 'Callback',{@obj.deletePlotCallback, measi});
+%                 delPlotButtons(measi) = uicontrol('Style','pushbutton', 'Parent', plotControlBoxes(measi),...
+%                     'String', 'del', 'Callback',{@obj.deletePlotCallback, measi});
                 
-                set(plotControlBoxes(measi), 'Heights', [-1, 30])
+%                 set(plotControlBoxes(measi), 'Heights', [-1, 30])
                 
                 set(rowBoxes(measi), 'Widths', [-3 80]);
             end
             
             buttonArea = uix.HButtonBox('Parent',leftBox,'ButtonSize', [100, 30]);
-            newPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'new plot','Callback',@obj.addPlotCallback);
+%             newPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'new plot','Callback',@obj.addPlotCallback);
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
             resetDataButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'reset plot','Callback',@obj.resetDataCallback);
             
