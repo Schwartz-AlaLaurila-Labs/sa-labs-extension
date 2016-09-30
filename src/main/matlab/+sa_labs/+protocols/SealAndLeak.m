@@ -44,7 +44,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         end
         
         function prepareRun(obj)
-            prepareRun@sa_labs.protocols.BaseProtocol(obj);
+            prepareRun@sa_labs.protocols.BaseProtocol(obj, false); % don't change the hold signal
             
             if isempty(obj.modeFigure) || ~isvalid(obj.modeFigure)
                 obj.modeFigure = obj.showFigure('symphonyui.builtin.figures.CustomFigure', @null);
@@ -76,7 +76,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
             gen.amplitude = obj.pulseAmplitude;
             gen.mean = obj.ampHoldSignal;
             gen.sampleRate = obj.sampleRate;
-            gen.units = obj.rig.getDevice(obj.chan1).background.displayUnits;
+            gen.units = obj.rig.getDevice(sprintf('amp%g', obj.ampNumber)).background.displayUnits;
             
             stim = gen.generate();
         end
@@ -90,7 +90,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
             gen.amplitude = 1;
             gen.mean = 0;
             gen.sampleRate = obj.sampleRate;
-            gen.units = symphonyui.core.Measurement.UNITLESS;
+            gen.units = obj.rig.getDevice('Oscilloscope Trigger').background.displayUnits;
             
             stim = gen.generate();
         end
@@ -110,9 +110,11 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
             triggers = obj.rig.getDevices('Oscilloscope Trigger');
             if ~isempty(triggers)
                 epoch.addStimulus(triggers{1}, obj.createOscilloscopeTriggerStimulus());
+            else
+                disp('no trigger device found')
             end
             
-            device = obj.rig.getDevice(obj.chan1);
+            device = obj.rig.getDevice(sprintf('amp%g', obj.ampNumber));
             device.background = symphonyui.core.Measurement(obj.ampHoldSignal, device.background.displayUnits);
         end
         

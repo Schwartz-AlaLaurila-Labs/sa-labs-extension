@@ -7,7 +7,7 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
         filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
         filterWheelAttentuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
         micronsPerPixel = 1.6;
-        frameTrackerPosition = [40,40];
+        frameTrackerPosition = [80,120];
         frameTrackerSize = [80,80];
         filterWheelComPort = 'COM8';
         projectorAngleOffset = 180;
@@ -35,7 +35,10 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
             
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
-            
+
+            oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+            daq.getStream('doport1').setBitPosition(oscopeTrigger, 0);
+            obj.addDevice(oscopeTrigger);
             
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
             neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
