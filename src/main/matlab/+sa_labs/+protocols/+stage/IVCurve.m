@@ -45,13 +45,13 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
             % Randomize sizes if this is a new set
-            index = mod(obj.numEpochsPrepared - 1, obj.numberOfHoldSignalSteps);
-            if index == 0
+            index = mod(obj.numEpochsPrepared, obj.numberOfHoldSignalSteps);
+            if index == 1
                 obj.holdValues = obj.holdValues(randperm(obj.numberOfHoldSignalSteps)); 
             end
                         
             %get current position
-            obj.curHoldValue = obj.holdValues(index+1);
+            obj.curHoldValue = obj.holdValues(index);
             epoch.addParameter('holdSignal', obj.curHoldValue);
             
             % Call the base method.

@@ -19,7 +19,6 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        displayName = 'Spots Multiple Sizes'
         version = 3
         curSize
         sizes
