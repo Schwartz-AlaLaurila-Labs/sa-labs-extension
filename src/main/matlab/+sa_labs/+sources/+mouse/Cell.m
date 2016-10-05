@@ -9,7 +9,10 @@ classdef Cell < symphonyui.core.persistent.descriptions.SourceDescription
                 'description', 'The number of the cell (just the number)')
             
             obj.addProperty('type', '', ...
-                'description', 'The type of the recorded cell');
+                'description', 'The guessed type of the recorded cell');
+            
+            obj.addProperty('confirmedType', '', ...
+                'description', 'The confirmed type of the recorded cell');            
             
             obj.addProperty('location',[0,0],...
                 'description', 'coordinates of the cell on the retina');
