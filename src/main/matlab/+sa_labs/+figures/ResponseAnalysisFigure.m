@@ -442,6 +442,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     end
                     plotval = mean(signals, 1);
                     plotstd = std(signals, 0, 1) / size(signals,1);
+                    numSignalsCombined = size(signals, 1);
 
                     range(1) = min(min(plotval), range(1));
                     range(2) = max(max(plotval), range(2));
@@ -454,7 +455,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 %                     sa_labs.util.shadedErrorBar(thisAxis, t', plotval', plotstd')
                     xlim(thisAxis, [t(1), t(end)])
                     if ~isempty(obj.epochSplitParameter)
-                        titl = title(thisAxis, sprintf('%s: %g', obj.epochSplitParameter,paramValue));
+                        titl = title(thisAxis, sprintf('%s: %g, %g repeats', obj.epochSplitParameter,paramValue,numSignalsCombined));
 %                         text(thisAxis, 0.5, .5, 0, 'test')
                     end
                     if paramValueIndex < length(paramValues)

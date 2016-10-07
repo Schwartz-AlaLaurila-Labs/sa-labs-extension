@@ -41,7 +41,11 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
         function value = getValue(obj)
             valuesByPosition = obj.getConfigurationSetting('filterWheelNdfValues');
             position = obj.getPosition();
-            value = valuesByPosition(position);
+            if isnan(position)
+                value = -1;
+            else
+                value = valuesByPosition(position);
+            end
         end
         
         function setNdfValue(obj, newValue)

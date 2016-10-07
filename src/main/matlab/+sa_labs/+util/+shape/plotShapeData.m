@@ -786,13 +786,13 @@ end
 %             hi = 20;%round(length(values) / 2);
 %             positions(hi,:)
 %             values(hi) = 1;
-            gfit = fit2DGaussian(positions, fitValues);
+            gfit = sa_labs.util.shape.fit2DGaussian(positions, fitValues);
             fprintf('gaussian fit center: %d um, %d um\n', round(gfit('centerX')), round(gfit('centerY')))
             v = fitValues - min(fitValues);
 %             centerOfMass = mean(bsxfun(@times, positions, v ./ mean(v)), 1);
 %             plot(centerOfMass(1), centerOfMass(2),'green','MarkerSize',20, 'Marker','+')
             plot(ax, gfit('centerX'), gfit('centerY'),'red','MarkerSize',20, 'Marker','+')
-            ellipse(ax, gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red');
+            sa_labs.util.shape.ellipse(ax, gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red');
             hold(ax,'off');
         else
             gfit = nan;
@@ -804,12 +804,12 @@ end
         % set axis limits
         axis(ax, largestDistanceOffset * [-1 1 -1 1])
         
-%         set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-%         set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+        set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+        set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
         
         % plot with no axis labels
-        set(ax, 'XTick', [], 'XColor', 'none')
-        set(ax, 'YTick', [], 'YColor', 'none')
+%         set(ax, 'XTick', [], 'XColor', 'none')
+%         set(ax, 'YTick', [], 'YColor', 'none')
         set(ax,'LooseInset',get(ax,'TightInset'))
     end
 
