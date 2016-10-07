@@ -13,3 +13,5 @@ target/
 *.log
 logs/
 *.m~
+startStageServer.m
+startSymphony.m
