@@ -792,7 +792,7 @@ end
 %             centerOfMass = mean(bsxfun(@times, positions, v ./ mean(v)), 1);
 %             plot(centerOfMass(1), centerOfMass(2),'green','MarkerSize',20, 'Marker','+')
             plot(ax, gfit('centerX'), gfit('centerY'),'red','MarkerSize',20, 'Marker','+')
-            sa_labs.util.shape.ellipse(ax, gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red');
+            sa_labs.util.shape.ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red', ax);
             hold(ax,'off');
         else
             gfit = nan;

@@ -1,5 +1,6 @@
-function h=ellipse(ra,rb,ang,x0,y0,C,Nb)
+function h=ellipse(ra,rb,ang,x0,y0,C,Nb,ax)
 % Ellipse adds ellipses to the current plot
+% with Sam Cooler additions to enable a parent
 %
 % ELLIPSE(ra,rb,ang,x0,y0) adds an ellipse with semimajor axis of ra,
 % a semimajor axis of radius rb, a semimajor axis of ang, centered at
@@ -65,6 +66,10 @@ end
 
 if nargin<7,
   Nb=[];
+end
+
+if nargin<8,
+  ax=gca;
 end
 
 % set up the default values
@@ -142,7 +147,7 @@ for k=1:maxk
   the=linspace(0,2*pi,Nb(rem(k-1,size(Nb,1))+1,:)+1);
 %  x=radm*cos(the)*co-si*radn*sin(the)+xpos;
 %  y=radm*cos(the)*si+co*radn*sin(the)+ypos;
-  h(k)=line(radm*cos(the)*co-si*radn*sin(the)+xpos,radm*cos(the)*si+co*radn*sin(the)+ypos);
+  h(k)=line(radm*cos(the)*co-si*radn*sin(the)+xpos,radm*cos(the)*si+co*radn*sin(the)+ypos,'Parent',ax);
   set(h(k),'color',C(rem(k-1,size(C,1))+1,:));
 
 end;
