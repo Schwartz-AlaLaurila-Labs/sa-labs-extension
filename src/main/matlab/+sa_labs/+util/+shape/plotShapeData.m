@@ -5,10 +5,6 @@ if ~isfield(ad,'observations')
     return 
 end
 obs = ad.observations;
-if isempty(obs) && length(ad.epochData) > 1
-    disp('empty observations')
-    return
-end
 
 
 if strcmp(mode, 'printParameters')
@@ -30,6 +26,11 @@ if strcmp(mode, 'printParameters')
     
 elseif strncmp(mode, 'plotSpatial', 11)
 % elseif strcmp(mode, 'plotSpatial_tHalfMax')
+
+    if isempty(obs)
+        disp('empty observations')
+        return
+    end
 
     if strfind(mode, 'mean')
         mode_col = 5;
