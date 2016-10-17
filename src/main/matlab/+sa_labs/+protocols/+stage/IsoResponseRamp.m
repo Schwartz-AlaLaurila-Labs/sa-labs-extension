@@ -11,7 +11,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
         
         exponentialMode = false;
         exponentialPolarity = 1;
-        timeConstant = 1.0; % sec
+        timeConstant = 5.0; % sec
         
         spotSize = 150; % um
         numberOfEpochs = 50;
@@ -50,7 +50,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
                 end
             end            
             warning('off','MATLAB:structOnObject')
-            propertyStruct = struct(obj);            
+            propertyStruct = struct(obj);
             obj.isoResponseFigure = obj.showFigure('sa_labs.figures.IsoResponseFigure', devices, ...
                 propertyStruct,...
                 'isoResponseMode','continuousRelease',...
@@ -71,7 +71,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
             epoch.addParameter('epochIndex', obj.epochIndex);
             epoch.addParameter('rampPointsTime', obj.rampPointsTime);
             epoch.addParameter('rampPointsIntensity', obj.rampPointsIntensity);
-            epoch.addParameter('timeConstant', obj.timeConstant)
+            epoch.addParameter('timeConstant', obj.timeConstant) 
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
@@ -93,9 +93,9 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
                 if state.time>obj.preTime*1e-3 && state.time<=(obj.preTime+obj.stimTime)*1e-3
                     
                     value = interp1(obj.rampPointsTime, obj.rampPointsIntensity, state.time - obj.preTime/1000, 'linear', 0);
-                    c = meanLevel + value;
+                    c = obj.meanLevel + value;
                 else
-                    c = meanLevel;
+                    c = obj.meanLevel;
                 end
                 if c > 1
                     c = 1;

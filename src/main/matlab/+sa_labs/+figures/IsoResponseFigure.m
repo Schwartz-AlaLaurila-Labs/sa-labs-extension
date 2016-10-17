@@ -13,10 +13,14 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
         isoResponseMode
         idealOutputCurve
         epochData
+        allSettings % cell array of structs: rampPointsTime, rampPointsIntensity, epochIndices
         parameterStruct
         t
         
-        displayBox
+        figureBox
+        displayBoxes
+        responsePlots
+        inputPlots
         timePointsBox
         intensityPointsBox
     end
@@ -54,6 +58,13 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             obj.resetPlots();
             
             obj.createUi();
+            
+            obj.allSettings = {};
+            s = obj.storedSettings()
+            if ~isempty(s)
+                obj.allSettings = s{1};
+                obj.epochData = s{2};
+            end
         end
         
         
@@ -65,20 +76,21 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
-            leftBox = uix.VBox('Parent', fullBox, 'Spacing', 10);
+            obj.figureBox = uix.VBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
+%             leftBox = uix.VBox('Parent', fullBox, 'Spacing', 10);
                         
-            uicontrol(leftBox, 'Style','text','String','Times:')
-            obj.timePointsBox = uicontrol(leftBox, 'Style','edit','String','','Callback',@obj.cbSetPoints);
-            
-            uicontrol(leftBox, 'Style','text','String','Intensities:')
-            obj.intensityPointsBox = uicontrol(leftBox, 'Style','edit','String','','Callback',@obj.cbSetPoints);
+%             uicontrol(leftBox, 'Style','text','String','Times:')
+%             obj.timePointsBox = uicontrol(leftBox, 'Style','edit','String','','Callback',@obj.cbSetPoints);
+%             
+%             uicontrol(leftBox, 'Style','text','String','Intensities:')
+%             obj.intensityPointsBox = uicontrol(leftBox, 'Style','edit','String','','Callback',@obj.cbSetPoints);
             
 %             obj.displayBox = uix.Panel('Parent',fullBox);
-            obj.displayBox = uipanel('Parent',fullBox);
+            obj.displayBoxes = [];%uipanel('Parent',fullBox);
+            obj.responsePlots = [];
 
-            fullBox.Widths = [160, -1];
-            leftBox.Heights = [20,20,20,20];
+%             fullBox.Widths = [160, -1];
+%             leftBox.Heights = [20,20,20,20];
         end
         
 %         function cbModeSelection(obj, hObject, ~)
@@ -136,6 +148,34 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             obj.epochIndex = obj.epochIndex + 1;
             obj.epochData{obj.epochIndex, 1} = e;
             
+            % add these ramp settings to the list
+            settingAlreadyPresent = false;
+            for si = 1:size(obj.allSettings,1)
+                s = obj.allSettings{si,1};
+                times = s.rampPointsTime;
+                ints = s.rampPointsIntensity;
+                if isequal(times, e.parameters('rampPointsTime')) && isequal(ints, e.parameters('rampPointsIntensity'))
+                    obj.allSettings{si,1}.epochIndices = [obj.allSettings{si,1}.epochIndices, obj.epochIndex];
+                    settingAlreadyPresent = true;
+                    disp('found this setting already present')
+                end
+            end
+            if ~settingAlreadyPresent
+                s = struct();
+                s.rampPointsTime = e.parameters('rampPointsTime');
+                s.rampPointsIntensity = e.parameters('rampPointsIntensity');
+                s.epochIndices = [obj.epochIndex];
+%                 if ~isempty(obj.allSettings)                 
+                obj.allSettings{end+1, 1} = s;
+                disp('adding new setting')
+            end
+            
+            allsettings = obj.allSettings
+
+            
+            % store data for the future
+            obj.storedSettings({obj.allSettings, obj.epochData});
+            
             obj.analyzeData();
             obj.updateDialogs();
             obj.generatePlot();
@@ -149,29 +189,64 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
                 
                 obj.nextRampPointsTime = thisEpoch.parameters('rampPointsTime');
                 obj.nextRampPointsIntensity = thisEpoch.parameters('rampPointsIntensity');
+                obj.nextRampPointsIntensity(end) = obj.nextRampPointsIntensity(end) - 0.1;
             end
         end
         
         function generatePlot(obj)
-            delete(obj.displayBox.Children);
-            drawnow
-            if strcmp(obj.isoResponseMode, 'continuousRelease')
+%             for si = 1:length(obj.displayBoxes)
+%                 a = obj.displayBoxes(si)
+%                 delete(obj.displayBoxes(si).Children);
+%             end
+%             delete(obj.displayBoxes);
+            
+            % add new rows if needed
+            while size(obj.allSettings, 1) > length(obj.displayBoxes)
+                n = length(obj.displayBoxes) + 1;
+                obj.displayBoxes(n) = uix.HBoxFlex('Parent',obj.figureBox);
                 
-                ax = axes(obj.displayBox);
-                hold(ax, 'on')
-                plot(ax, obj.t, obj.idealOutputCurve, 'LineWidth', 2)
-                for ei = 1:length(obj.epochData)
-                    epoch = obj.epochData{ei};
-                    plot(ax, epoch.t, epoch.signal)
-                end
-                hold(ax, 'off')
+                ax = axes('Parent', obj.displayBoxes(n));
+                obj.inputPlots(n) = ax;   
+                
+                ax = axes('Parent', obj.displayBoxes(n));
+                obj.responsePlots(n) = ax;
+             
+                disp('adding new display box')
             end
+            
+            
+            if strcmp(obj.isoResponseMode, 'continuousRelease')
+                for si = 1:size(obj.allSettings, 1)
+                    sprintf('displaying setting %g', si);
+
+%                     plot(ax, obj.t, obj.idealOutputCurve, 'LineWidth', 2)
+                    s = obj.allSettings{si};
+                    ax = obj.inputPlots(si);
+                    cla(ax);
+                    plot(ax, s.rampPointsTime, s.rampPointsIntensity, 'o-');
+
+                    signals = [];
+                    ax = obj.responsePlots(si);
+                    cla(ax);
+                    hold(ax, 'on')
+                    title(length(s.epochIndices));
+                    for ei = s.epochIndices
+                        epoch = obj.epochData{ei};
+                        plot(ax, epoch.t, epoch.signal)
+                        signals(end+1,:) = epoch.signal; %#ok<*AGROW>
+                        tt = epoch.t;
+                    end
+                    plot(ax, tt, mean(signals))
+                    hold(ax, 'off')
+                end
+            end
+            drawnow
         end
         
         function updateDialogs(obj)
-            disp('updating dialogs')
+%             disp('updating dialogs')
             obj.intensityPointsBox.String = num2str(obj.nextRampPointsIntensity);
-            obj.timePointsBox.String = num2str(obj.nextRampPointsTime);         
+            obj.timePointsBox.String = num2str(obj.nextRampPointsTime);
         end
         
         function clearFigure(obj)
@@ -183,6 +258,19 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
 %             delete(obj.displayBox.Children);
             obj.epochData = {};
             obj.epochIndex = 0;
+        end
+    end
+    
+    
+    methods (Static)
+        function settings = storedSettings(stuffToStore)
+            % This method stores means across figure handlers.
+
+            persistent stored;
+            if nargin > 0
+                stored = stuffToStore
+            end
+            settings = stored
         end
         
     end
