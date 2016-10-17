@@ -3,11 +3,15 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
     properties
         %times in ms
         preTime = 250	% Spot leading duration (ms)
-        stimTime = 2000	% Spot duration (ms)
+        stimTime = 5000	% Spot duration (ms)
         tailTime = 500	% Spot trailing duration (ms)
         
-        rampPointsTime = [0,1.0,2.0]
-        rampPointsIntensity = [0,.2,1]
+        rampPointsTime = [0,5.0] % sec
+        rampPointsIntensity = [0,1]
+        
+        exponentialMode = false;
+        exponentialPolarity = 1;
+        timeConstant = 1.0; % sec
         
         spotSize = 150; % um
         numberOfEpochs = 50;
@@ -15,7 +19,6 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 1
-        displayName = 'IsoResponse Ramp'
         epochIndex = 0
         
         responsePlotMode = 'cartesian';
@@ -41,7 +44,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
             devices = {};
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
-                if ~strcmp(ampName, 'None');
+                if ~strcmp(ampName, 'None')
                     device = obj.rig.getDevice(ampName);
                     devices{end+1} = device; %#ok<AGROW>
                 end
@@ -68,6 +71,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
             epoch.addParameter('epochIndex', obj.epochIndex);
             epoch.addParameter('rampPointsTime', obj.rampPointsTime);
             epoch.addParameter('rampPointsIntensity', obj.rampPointsIntensity);
+            epoch.addParameter('timeConstant', obj.timeConstant)
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
@@ -81,15 +85,14 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
             spot.radiusY = spot.radiusX;
-            %spot.color = obj.intensity;
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-            function c = onDuringStim(state, preTime, stimTime, meanLevel,rampPointsTime,rampPointsIntensity)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
+            function c = onDuringStim(state)
+                if state.time>obj.preTime*1e-3 && state.time<=(obj.preTime+obj.stimTime)*1e-3
                     
-                    value = interp1(rampPointsTime, rampPointsIntensity, state.time, 'linear', 0);
+                    value = interp1(obj.rampPointsTime, obj.rampPointsIntensity, state.time - obj.preTime/1000, 'linear', 0);
                     c = meanLevel + value;
                 else
                     c = meanLevel;
@@ -102,7 +105,26 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
                 end
             end
             
-            controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.meanLevel,obj.rampPointsTime, obj.rampPointsIntensity));
+            function c = exponentialColor(state)
+                if state.time>obj.preTime*1e-3 && state.time<=(obj.preTime+obj.stimTime)*1e-3
+                    c = obj.exponentialPolarity * exp((state.time - obj.preTime/1000) / obj.timeConstant) + obj.meanLevel;
+                else
+                    c = obj.meanLevel;
+                end
+                
+                if c > 1
+                    c = 1;
+                end
+                if c < 0
+                    c = 0;
+                end
+            end
+            
+            if ~obj.exponentialMode
+                controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s));
+            else
+                controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)exponentialColor(s));
+            end
             p.addController(controller);
 
         end
