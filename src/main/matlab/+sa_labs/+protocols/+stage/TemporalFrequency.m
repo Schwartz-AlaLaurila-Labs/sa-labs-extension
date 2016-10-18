@@ -7,12 +7,12 @@ classdef TemporalFrequency < sa_labs.protocols.StageProtocol
         tailTime = 250	% Spot trailing duration (ms)
         
         %mean (bg) and amplitude of pulse
-        contrast = 0.1;
+        contrast = 1;
         spotSize = 200; %um
         
         %stim size in microns, use rigConfig to set microns per pixel
-        minFrequency = 50
-        maxFrequency = 1500
+        minFrequency = 1
+        maxFrequency = 20
 
         numberOfFrequencySteps = 10
         numberOfCycles = 2;
@@ -21,7 +21,6 @@ classdef TemporalFrequency < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        displayName = 'tem'
         version = 1
         curFrequency
         frequencies

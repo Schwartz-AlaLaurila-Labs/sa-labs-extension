@@ -5,13 +5,13 @@ classdef CommonControl < symphonyui.ui.Module
         offsetX = 0 % um
         offsetY = 0 % um
         
-        NDF = 4 % Filter wheel position
+        NDF = 5 % Filter wheel position
         frameRate = 60;% Hz
         patternRate = 60;% Hz
-        blueLED = 100 % 0-255
-        greenLED = 100 % 0-255
+        blueLED = 20 % 0-255
+        greenLED = 0 % 0-255
         
-        spikeThresholdVoltage = 3.5
+        spikeThresholdVoltage = -30
         
         % amplifiers
         chan1 = 'Amp1';

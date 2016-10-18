@@ -6,15 +6,14 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         stimTime = 1000	% Spot duration (ms)
         tailTime = 500	% Spot trailing duration (ms)
         
-        intensity = 0.1;
+        intensity = 0.5;
         
         spotSize = 200; % um
-        numberOfEpochs = 50;
+        numberOfEpochs = 500;
     end
     
     properties (Hidden)
         version = 4
-        displayName = 'Light Step'
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = '';
