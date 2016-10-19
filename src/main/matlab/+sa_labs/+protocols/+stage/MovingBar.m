@@ -4,8 +4,8 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         preTime = 250                   % Bar leading duration (ms)
         tailTime = 500                  % Bar trailing duration (ms)
         intensity = 1.0                 % Bar light intensity (0-1)
-        barLength = 300                 % Bar length size (um)
-        barWidth = 50                   % Bar Width size (um)
+        barLength = 600                 % Bar length size (um)
+        barWidth = 200                   % Bar Width size (um)
         barSpeed = 1000                 % Bar speed (um / s)
         distance = 2000                 % Bar distance (um)
         numberOfAngles = 12

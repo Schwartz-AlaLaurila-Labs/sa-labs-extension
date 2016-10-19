@@ -8,7 +8,7 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
         minContrast = 0.02              % Minimum contrast (0-1)
         maxContrast = 1                 % Maximum contrast (0-1)
         contrastDirection = 'positive'  % Direction of contrast
-        spotDiameter = 300              % Spot diameter (um)
+        spotDiameter = 200              % Spot diameter (um)
         numberOfCycles = 2               % Number of cycles through all contrasts
     end
     

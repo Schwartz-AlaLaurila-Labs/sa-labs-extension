@@ -60,11 +60,11 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             obj.createUi();
             
             obj.allSettings = {};
-            s = obj.storedSettings()
-            if ~isempty(s)
-                obj.allSettings = s{1};
-                obj.epochData = s{2};
-            end
+%             s = obj.storedSettings()
+%             if ~isempty(s)
+%                 obj.allSettings = s{1};
+%                 obj.epochData = s{2};
+%             end
         end
         
         
@@ -189,7 +189,7 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
                 
                 obj.nextRampPointsTime = thisEpoch.parameters('rampPointsTime');
                 obj.nextRampPointsIntensity = thisEpoch.parameters('rampPointsIntensity');
-                obj.nextRampPointsIntensity(end) = obj.nextRampPointsIntensity(end) - 0.1;
+%                 obj.nextRampPointsIntensity(end) = obj.nextRampPointsIntensity(end) - 0.1;
             end
         end
         
@@ -202,7 +202,7 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             
             % add new rows if needed
             while size(obj.allSettings, 1) > length(obj.displayBoxes)
-                n = length(obj.displayBoxes) + 1;
+                n = length(obj.displayBoxes) + 1
                 obj.displayBoxes(n) = uix.HBoxFlex('Parent',obj.figureBox);
                 
                 ax = axes('Parent', obj.displayBoxes(n));
@@ -217,7 +217,7 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             
             if strcmp(obj.isoResponseMode, 'continuousRelease')
                 for si = 1:size(obj.allSettings, 1)
-                    sprintf('displaying setting %g', si);
+                    fprintf('displaying setting %g', si);
 
 %                     plot(ax, obj.t, obj.idealOutputCurve, 'LineWidth', 2)
                     s = obj.allSettings{si};
@@ -231,16 +231,15 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
                     hold(ax, 'on')
                     title(length(s.epochIndices));
                     for ei = s.epochIndices
-                        epoch = obj.epochData{ei};
+                        epoch = obj.epochData{ei}
                         plot(ax, epoch.t, epoch.signal)
                         signals(end+1,:) = epoch.signal; %#ok<*AGROW>
                         tt = epoch.t;
                     end
-                    plot(ax, tt, mean(signals))
+                    plot(ax, tt, mean(signals, 1))
                     hold(ax, 'off')
                 end
             end
-            drawnow
         end
         
         function updateDialogs(obj)

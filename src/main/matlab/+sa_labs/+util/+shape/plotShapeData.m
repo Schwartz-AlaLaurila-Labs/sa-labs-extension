@@ -539,9 +539,9 @@ elseif strcmp(mode, 'spatialOffset')
     
     axes(axisHandles(3))
     hold(axisHandles(3),'on')
-    ellipse(g_ex('sigma2X'), g_ex('sigma2Y'), -g_ex('angle'), g_ex('centerX'), g_ex('centerY'), 'magenta');
+    sa_labs.util.shape.ellipse(g_ex('sigma2X'), g_ex('sigma2Y'), -g_ex('angle'), g_ex('centerX'), g_ex('centerY'), 'magenta', [], axisHandles(3));
     
-    ellipse(g_in('sigma2X'), g_in('sigma2Y'), -g_in('angle'), g_in('centerX'), g_in('centerY'), 'cyan');
+    sa_labs.util.shape.ellipse(g_in('sigma2X'), g_in('sigma2Y'), -g_in('angle'), g_in('centerX'), g_in('centerY'), 'cyan', [], axisHandles(3));
     
     legend('Exc','Inh')
     
@@ -787,13 +787,14 @@ end
 %             hi = 20;%round(length(values) / 2);
 %             positions(hi,:)
 %             values(hi) = 1;
+            fitValues(fitValues < 0) = 0;
             gfit = sa_labs.util.shape.fit2DGaussian(positions, fitValues);
             fprintf('gaussian fit center: %d um, %d um\n', round(gfit('centerX')), round(gfit('centerY')))
             v = fitValues - min(fitValues);
 %             centerOfMass = mean(bsxfun(@times, positions, v ./ mean(v)), 1);
 %             plot(centerOfMass(1), centerOfMass(2),'green','MarkerSize',20, 'Marker','+')
             plot(ax, gfit('centerX'), gfit('centerY'),'red','MarkerSize',20, 'Marker','+')
-            sa_labs.util.shape.ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red', ax);
+            sa_labs.util.shape.ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red', [], ax);
             hold(ax,'off');
         else
             gfit = nan;

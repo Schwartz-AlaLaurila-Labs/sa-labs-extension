@@ -9,21 +9,21 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
         %times in ms
         preTime = 250;
         tailTime = 250;
-        stimTime = 1000;
+        stimTime = 5000;
         
         movementDelay = 200;
         
         %in microns, use rigConfig to set microns per pixel
         apertureDiameter = 0; %um
         textureScale = 60; %um
-        speed = 300; %um/s
-        uniformDistribution = false;
+        speed = 1000; %um/s
+        uniformDistribution = true;
         randomSeed = 1;
 
         numberOfAngles = 12;
         numberOfCycles = 2;
         
-        resScaleFactor = 4; % factor to decrease computational load
+        resScaleFactor = 2; % factor to decrease computational load
     end
     
     properties (Hidden)

@@ -4,26 +4,26 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         preTime = 250
         tailTime = 250
         
-        spotDiameter = 22; %um
-        searchDiameter = 300; %um
+        spotDiameter = 30; %um
+        searchDiameter = 400; %um
         alignSpotDiam = 150;
         alignSpotIntensity = 1.0;
         %         numSpots = 100;
         mapResolution = 40; % um
-        spotTotalTime = 0.3;
-        spotOnTime = 0.1;
+        spotTotalTime = 0.35;
+        spotOnTime = 0.15;
         
-        numPointSets = 2;
+        numPointSets = 1;
         
         voltages = [-60,20];
         alternateVoltage = false; % WC only
         interactiveMode = false;
-        epochTimeLimit = 80; %s
+        epochTimeLimit = 100; %s
         
         valueMin = 0.1;
         valueMax = 1.0;
         numValues = 1;
-        numValueRepeats = 2;
+        numValueRepeats = 1;
     end
     
     properties (Hidden)

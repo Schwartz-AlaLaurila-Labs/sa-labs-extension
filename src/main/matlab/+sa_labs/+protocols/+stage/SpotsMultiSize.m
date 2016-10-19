@@ -6,20 +6,19 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         tailTime = 250	% Spot trailing duration (ms)
         
         %mean (bg) and amplitude of pulse
-        intensity = 0.1;
+        intensity = 0.5;
         
         %stim size in microns, use rigConfig to set microns per pixel
-        minSize = 50
-        maxSize = 1500
+        minSize = 30
+        maxSize = 1200
 
-        numberOfSizeSteps = 10
+        numberOfSizeSteps = 12
         numberOfCycles = 2;
         
-        logScaling = false % scale spot size logarithmically (more precision in smaller sizes)
+        logScaling = true % scale spot size logarithmically (more precision in smaller sizes)
     end
     
     properties (Hidden)
-        version = 3
         curSize
         sizes
         
