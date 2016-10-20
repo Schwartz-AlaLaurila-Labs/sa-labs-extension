@@ -2,9 +2,9 @@ classdef LightStep < sa_labs.protocols.StageProtocol
 
     properties
         %times in ms
-        preTime = 250	% Spot leading duration (ms)
+        preTime = 500	% Spot leading duration (ms)
         stimTime = 1000	% Spot duration (ms)
-        tailTime = 500	% Spot trailing duration (ms)
+        tailTime = 1000	% Spot trailing duration (ms)
         
         intensity = 0.5;
         

@@ -1,9 +1,9 @@
 classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 250	% Spot leading duration (ms)
+        preTime = 500	% Spot leading duration (ms)
         stimTime = 1000	% Spot duration (ms)
-        tailTime = 250	% Spot trailing duration (ms)
+        tailTime = 1000	% Spot trailing duration (ms)
         
         %mean (bg) and amplitude of pulse
         intensity = 0.5;
