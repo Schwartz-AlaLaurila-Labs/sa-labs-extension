@@ -24,9 +24,9 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
     properties (Hidden)
         displayName = 'Receptive Field 1D'
         version = 3
-        curPosX
-        curPosY
-        positions
+        curPosXPx
+        curPosYPx
+        positions % in microns
         probeAxisType = symphonyui.core.PropertyType('char', 'row', {'horizontal', 'vertical'})
         
         responsePlotMode = 'cartesian';
@@ -43,19 +43,14 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             % delay base method to below:
             
             %set positions
-            pixelStep = round(obj.um2pix(obj.barSeparation));
-            canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             if strcmp(obj.probeAxis, 'horizontal')
-                firstPos = round(canvasSize(1)/2) - floor(obj.numberOfPositions/2) * pixelStep;
-                epochSplitParameter = 'positionX';
+                obj.responsePlotSplitParameter = 'positionX';
             else
-                firstPos = round(canvasSize(2)/2) - floor(obj.numberOfPositions/2) * pixelStep;
-                epochSplitParameter = 'positionY';
+                obj.responsePlotSplitParameter = 'positionY';
             end
-            obj.positions = firstPos:pixelStep:firstPos+(obj.numberOfPositions-1)*pixelStep;
-    
-            obj.responsePlotSplitParameter = epochSplitParameter;
-            
+            firstPos = round(floor(obj.numberOfPositions/2)) * obj.barSeparation;
+            obj.positions = firstPos:obj.barSeparation:(firstPos+(obj.numberOfPositions-1)*obj.barSeparation);
+                
             % Call the base method later to let me set the split param
             % first
             prepareRun@sa_labs.protocols.StageProtocol(obj);
@@ -68,20 +63,24 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             if index == 0
                 obj.positions = obj.positions(randperm(obj.numberOfPositions));
             end
+            index = index + 1;
             
             %get current position
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+            centerPx = canvasSize / 2;
             
             if strcmp(obj.probeAxis, 'horizontal')
-                obj.curPosX = obj.positions(index+1);
-                obj.curPosY = canvasSize(2)/2;
+                obj.curPosXPx = centerPx(1) + obj.um2pix(obj.positions(index));
+                obj.curPosYPx = centerPx(2);
+                epoch.addParameter('positionX', obj.positions(index));
+                epoch.addParameter('positionY', 0);
             else
-                obj.curPosX = canvasSize(1)/2;
-                obj.curPosY = obj.positions(index+1);
+                obj.curPosXPx = centerPx(1);
+                obj.curPosYPx = centerPx(2) + obj.um2pix(obj.positions(index));
+                epoch.addParameter('positionX', 0);
+                epoch.addParameter('positionY', obj.positions(index));
             end
-            epoch.addParameter('positionX', obj.um2pix(obj.curPosX - canvasSize(1)/2));
-            epoch.addParameter('positionY', obj.um2pix(obj.curPosY - canvasSize(2)/2));
-            
+
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
                         
@@ -98,7 +97,7 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             else
                 rect.size = obj.um2pix([obj.barLength, obj.barWidth]);
             end
-            rect.position = [obj.curPosX, obj.curPosY];
+            rect.position = [obj.curPosXPx, obj.curPosYPx];
             p.addStimulus(rect);
             
             function c = sineWaveStim(state, preTime, stimTime, contrast, meanLevel, freq)
