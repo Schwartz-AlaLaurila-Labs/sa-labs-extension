@@ -1,19 +1,17 @@
 classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
-
+    
     properties
         %times in ms
         preTime = 250	% Spot leading duration (ms)
-        stimTime = 5000	% Spot duration (ms)
-        tailTime = 500	% Spot trailing duration (ms)
+        tailTime = 1000	% Spot trailing duration (ms)
         
-        rampPointsTime = [0,5.0] % sec
+        rampPointsTime = [0,2] % sec
         rampPointsIntensity = [0,1]
-        
-        exponentialMode = false;
-        exponentialPolarity = 1;
-        timeConstant = 5.0; % sec
+        exponentialMode = false; % Overwrites ramp points with an exponential curve, uses max value in the time vector
+        exponentBase = 4;
         
         spotSize = 150; % um
+        numRampsPerEpoch = 20;
         numberOfEpochs = 50;
     end
     
@@ -30,6 +28,9 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
         isoResponseFigure
     end
     
+    properties (Dependent)
+        stimTime
+    end
     
     properties (Hidden, Dependent)
         totalNumEpochs
@@ -48,7 +49,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
                     device = obj.rig.getDevice(ampName);
                     devices{end+1} = device; %#ok<AGROW>
                 end
-            end            
+            end
             warning('off','MATLAB:structOnObject')
             propertyStruct = struct(obj);
             obj.isoResponseFigure = obj.showFigure('sa_labs.figures.IsoResponseFigure', devices, ...
@@ -63,22 +64,29 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
             obj.epochIndex = obj.epochIndex + 1;
             
-            if obj.epochIndex > 1
+            if obj.epochIndex == 1
+                if obj.exponentialMode
+                    endTime = max(obj.rampPointsTime);
+                    obj.rampPointsTime = 0:0.2:endTime;
+                    obj.rampPointsIntensity = power(obj.exponentBase, obj.rampPointsTime) - 1;
+                    obj.rampPointsIntensity = obj.rampPointsIntensity / max(obj.rampPointsIntensity);
+                end
+            
+            else
                 obj.rampPointsTime = obj.isoResponseFigure.nextRampPointsTime;
                 obj.rampPointsIntensity = obj.isoResponseFigure.nextRampPointsIntensity;
             end
-                
+            
             epoch.addParameter('epochIndex', obj.epochIndex);
             epoch.addParameter('rampPointsTime', obj.rampPointsTime);
             epoch.addParameter('rampPointsIntensity', obj.rampPointsIntensity);
-            epoch.addParameter('timeConstant', obj.timeConstant) 
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
-      
+        
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-
+            
             %set bg
             p.setBackgroundColor(obj.meanLevel);
             
@@ -91,8 +99,9 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
             
             function c = onDuringStim(state)
                 if state.time>obj.preTime*1e-3 && state.time<=(obj.preTime+obj.stimTime)*1e-3
-                    
-                    value = interp1(obj.rampPointsTime, obj.rampPointsIntensity, state.time - obj.preTime/1000, 'linear', 0);
+                    t = state.time - obj.preTime/1000;
+                    t = mod(t, max(obj.rampPointsTime));
+                    value = interp1(obj.rampPointsTime, obj.rampPointsIntensity, t, 'linear', 0);
                     c = obj.meanLevel + value;
                 else
                     c = obj.meanLevel;
@@ -105,35 +114,21 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
                 end
             end
             
-            function c = exponentialColor(state)
-                if state.time>obj.preTime*1e-3 && state.time<=(obj.preTime+obj.stimTime)*1e-3
-                    c = obj.exponentialPolarity * exp((state.time - obj.preTime/1000) / obj.timeConstant) + obj.meanLevel;
-                else
-                    c = obj.meanLevel;
-                end
-                
-                if c > 1
-                    c = 1;
-                end
-                if c < 0
-                    c = 0;
-                end
-            end
-            
-            if ~obj.exponentialMode
-                controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s));
-            else
-                controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)exponentialColor(s));
-            end
-            p.addController(controller);
 
+        
+            controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s));
+            p.addController(controller);
+            
         end
         
-        
+        function stimTime = get.stimTime(obj)
+            stimTime = obj.numRampsPerEpoch * max(obj.rampPointsTime);
+        end
+            
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochs;
         end
-
+            
+        end
+        
     end
-    
-end
