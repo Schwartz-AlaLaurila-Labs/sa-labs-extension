@@ -8,7 +8,8 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
         rampPointsTime = [0,2] % sec
         rampPointsIntensity = [0,1]
         exponentialMode = false; % Overwrites ramp points with an exponential curve, uses max value in the time vector
-        exponentBase = 4;
+        exponentBase = 4; % higher number is sharper knee, later rise
+        offPauseTime = 0.1; % sec, stays off for a moment each ramp to let current stabilize
         
         spotSize = 150; % um
         numRampsPerEpoch = 20;
@@ -67,9 +68,13 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
             if obj.epochIndex == 1
                 if obj.exponentialMode
                     endTime = max(obj.rampPointsTime);
-                    obj.rampPointsTime = 0:0.2:endTime;
-                    obj.rampPointsIntensity = power(obj.exponentBase, obj.rampPointsTime) - 1;
+                    expTime = 0:0.2:(endTime - obj.offPauseTime); %shorten by the dark pause time
+                    obj.rampPointsIntensity = power(obj.exponentBase, expTime) - 1;
                     obj.rampPointsIntensity = obj.rampPointsIntensity / max(obj.rampPointsIntensity);
+                    
+                    % add the dark pause at the start
+                    obj.rampPointsTime = horzcat(0, expTime + obj.offPauseTime);
+                    obj.rampPointsIntensity = horzcat(0, obj.rampPointsIntensity);
                 end
             
             else
