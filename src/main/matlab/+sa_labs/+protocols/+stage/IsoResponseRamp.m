@@ -107,7 +107,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
                     t = state.time - obj.preTime/1000;
                     t = mod(t, max(obj.rampPointsTime));
                     value = interp1(obj.rampPointsTime, obj.rampPointsIntensity, t, 'linear', 0);
-                    c = obj.meanLevel + value;
+                    c = obj.meanLevel + (value / (1-obj.meanLevel)); % keep it always ramping to 1.0 no matter the meanLevel
                 else
                     c = obj.meanLevel;
                 end
