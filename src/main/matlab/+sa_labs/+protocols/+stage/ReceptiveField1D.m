@@ -48,7 +48,7 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             else
                 obj.responsePlotSplitParameter = 'positionY';
             end
-            firstPos = round(floor(obj.numberOfPositions/2)) * obj.barSeparation;
+            firstPos = -1*round(floor(obj.numberOfPositions/2)) * obj.barSeparation;
             obj.positions = firstPos:obj.barSeparation:(firstPos+(obj.numberOfPositions-1)*obj.barSeparation);
                 
             % Call the base method later to let me set the split param

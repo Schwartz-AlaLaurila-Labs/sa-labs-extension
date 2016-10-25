@@ -5,7 +5,7 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
         stimTime = 500                  % Cross duration (ms)
         tailTime = 0                    % Cross trailing duration (ms)
         intensity = 1.0                 % Cross light intensity (0-1)
-        width = 10                      % Width of the cross in (um)
+        width = 20                      % Width of the cross in (um)
         length = 200                    % Length of the cross in  (um)
         numberOfEpochs = 5              % Number of epochs
         asymmetricShape = false         % Display asymmetric cross

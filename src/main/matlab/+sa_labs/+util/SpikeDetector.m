@@ -17,20 +17,28 @@ classdef SpikeDetector < handle
         
         function obj = SpikeDetector(spikeDetectorMode)
             obj.spikeDetectorMode = spikeDetectorMode;
-            if ~strcmp(obj.spikeDetectorMode, 'Simple threshold')
+%             if ~strcmp(obj.spikeDetectorMode, 'Simple threshold')
 
-                [b,a] = butter(21, obj.freq_spikeLowerThreshold / (.5/obj.sampleInterval), 'high');
-                obj.highPassFilter = {b,a};
+            [b,a] = butter(21, obj.freq_spikeLowerThreshold / (.5/obj.sampleInterval), 'high');
+            obj.highPassFilter = {b,a};
 
-                [b,a] = butter(21, [obj.freq_driftAndNoise, obj.freq_spikeLowerThreshold] / (.5/obj.sampleInterval));
-                obj.bandPassFilter = {b,a};
-            end
+            [b,a] = butter(21, [obj.freq_driftAndNoise, obj.freq_spikeLowerThreshold] / (.5/obj.sampleInterval));
+            obj.bandPassFilter = {b,a};
+%             end
         end
         
-        function Ind = getThresCross(obj, V, threshold, direction)
+        function Ind = getThresCross(obj, signal, threshold, direction)
+%             disp(obj.highPassFilter{1})
+%             figure(77)
+%             signalf = filtfilt(obj.highPassFilter{1}, obj.highPassFilter{2}, signal);
+%             subplot(2,1,1)
+%             plot(signal)
+%             subplot(2,1,2)
+%             plot(signalf)
+            
             %dir 1 = up, -1 = down
-            Vorig = V(1:end-1);
-            Vshift = V(2:end);
+            Vorig = signal(1:end-1);
+            Vshift = signal(2:end);
             
             if direction>0
                 Ind = find(Vorig<threshold & Vshift>=threshold) + 1;

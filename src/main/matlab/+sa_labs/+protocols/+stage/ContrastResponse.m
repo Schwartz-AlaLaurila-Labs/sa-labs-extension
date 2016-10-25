@@ -27,6 +27,10 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
         realNumberOfContrastSteps       % compensate for "both" directions having double steps
     end
     
+    properties (Hidden, Dependent)
+        totalNumEpochs
+    end
+    
     methods
         
 %         function set.realNumberOfContrastSteps(obj,k)
@@ -94,14 +98,10 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
 %             obj.addFrameTracker(p);
         end
         
-        
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.realNumberOfContrastSteps * obj.numberOfCycles;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.realNumberOfContrastSteps * obj.numberOfCycles;
         end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.realNumberOfContrastSteps * obj.numberOfCycles;
-        end
+
         
         function r = get.realNumberOfContrastSteps(obj)
             if strcmp(obj.contrastDirection, 'both')

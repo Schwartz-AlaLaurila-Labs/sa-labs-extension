@@ -4,9 +4,9 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
         %times in ms
         preTime = 250; %ms
         tailTime = 250; %ms
-        stimTime = 1000; %ms
+        stimTime = 5000; %ms
         
-        movementDelay = 250;
+        movementDelay = 200;
         
         %in microns, use rigConfig to set microns per pixel
         gratingWidth = 3000; %um
@@ -14,7 +14,7 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
         gratingSpeed = 1200; %um/s
         cycleHalfWidth = 300; %um
         apertureDiameter = 0; %um, pos: gratings in center, neg: gratings outside center
-        gratingProfile = 'sine'; %sine, square, or sawtooth
+        gratingProfile = 'square'; %sine, square, or sawtooth
         contrast = 1;
         
         numberOfAngles = 12;
@@ -29,7 +29,6 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 4
-        displayName = 'Drifting Gratings'
         curAngle
         angles
         gratingProfileType = symphonyui.core.PropertyType('char', 'row', {'sine', 'square', 'sawtooth'})

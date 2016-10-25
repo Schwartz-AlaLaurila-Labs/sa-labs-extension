@@ -127,7 +127,7 @@ classdef IsoResponseRamp < sa_labs.protocols.StageProtocol
         end
         
         function stimTime = get.stimTime(obj)
-            stimTime = obj.numRampsPerEpoch * max(obj.rampPointsTime);
+            stimTime = obj.numRampsPerEpoch * max(obj.rampPointsTime) * 1000;
         end
             
         function totalNumEpochs = get.totalNumEpochs(obj)

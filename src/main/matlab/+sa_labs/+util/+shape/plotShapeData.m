@@ -806,8 +806,8 @@ end
         % set axis limits
         axis(ax, largestDistanceOffset * [-1 1 -1 1])
         
-        set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-        set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+        set(ax, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+        set(ax, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
         
         % plot with no axis labels
 %         set(ax, 'XTick', [], 'XColor', 'none')
