@@ -11,7 +11,8 @@ classdef CommonControl < symphonyui.ui.Module
         blueLED = 20 % 0-255
         greenLED = 0 % 0-255
         
-        spikeThresholdVoltage = -30
+        spikeDetectorMode = 'Filtered Threshold';
+        spikeThreshold = 15 % pA or std
         
         % amplifiers
         chan1 = 'Amp1';
@@ -46,6 +47,8 @@ classdef CommonControl < symphonyui.ui.Module
         chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
         chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
+        
+        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold'});       
     
         protocolPropertyGrid
     end
