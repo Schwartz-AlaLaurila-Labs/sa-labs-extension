@@ -1,40 +1,115 @@
 classdef SpikeDetector < handle
     
     properties
-        freq_driftAndNoise = 70; %Hz, in order to remove drift and 60Hz noise
-        freq_spikeLowerThreshold = 500; %Hz, in order to remove everything but spikes
-        highPassFilter
-        bandPassFilter
-        ref_period = 2E-3; %s
-        searchInterval = 1E-3; %s
-        sampleInterval = 1E-4;
-        thres_std
+%         freq_driftAndNoise = 70; %Hz, in order to remove drift and 60Hz noise
+%         freq_spikeLowerThreshold = 500; %Hz, in order to remove everything but spikes
+%         highPassFilter
+%         bandPassFilter
+%         ref_period = 2E-3; %s
+%         searchInterval = 1E-3; %s
+%         sampleInterval = 1E-4;
+%         thres_std
         spikeDetectorMode
         spikeThreshold
     end
     
     methods
         
-        function obj = SpikeDetector(spikeDetectorMode)
+        function obj = SpikeDetector(spikeDetectorMode, spikeThreshold)
+            obj.spikeThreshold = spikeThreshold;
             obj.spikeDetectorMode = spikeDetectorMode;
-%             if ~strcmp(obj.spikeDetectorMode, 'Simple threshold')
-
-            [b,a] = butter(21, obj.freq_spikeLowerThreshold / (.5/obj.sampleInterval), 'high');
-            obj.highPassFilter = {b,a};
-
-            [b,a] = butter(21, [obj.freq_driftAndNoise, obj.freq_spikeLowerThreshold] / (.5/obj.sampleInterval));
-            obj.bandPassFilter = {b,a};
-%             end
+            %             if ~strcmp(obj.spikeDetectorMode, 'Simple threshold')
+            
+            %             [b,a] = butter(21, obj.freq_spikeLowerThreshold / (.5/obj.sampleInterval), 'high');
+            %             obj.highPassFilter = {b,a};
+            %
+            %             [b,a] = butter(21, [obj.freq_driftAndNoise, obj.freq_spikeLowerThreshold] / (.5/obj.sampleInterval));
+            %             obj.bandPassFilter = {b,a};
+            %             end
         end
         
-        function Ind = getThresCross(obj, signal, threshold, direction)
-%             disp(obj.highPassFilter{1})
-%             figure(77)
-%             signalf = filtfilt(obj.highPassFilter{1}, obj.highPassFilter{2}, signal);
-%             subplot(2,1,1)
-%             plot(signal)
-%             subplot(2,1,2)
-%             plot(signalf)
+        function Xfilt = BandPassFilter(obj, X,low,high,SampleInterval)
+            %this is not really correct
+            Xfilt = obj.LowPassFilter(obj.HighPassFilter(X,low,SampleInterval),high,SampleInterval);
+        end
+        
+        function Xfilt = HighPassFilter(~, X,F,SampleInterval)
+            % %F is in Hz
+            % %Sample interval is in seconds
+            % %X is a vector or a matrix of row vectors
+            L = size(X,2);
+            if L == 1 %flip if given a column vector
+                X=X';
+                L = size(X,2);
+            end
+            
+            FreqStepSize = 1/(SampleInterval * L);
+            FreqKeepPts = round(F / FreqStepSize);
+            
+            % eliminate frequencies beyond cutoff (middle of matrix given fft
+            % representation)
+            
+            FFTData = fft(X, [], 2);
+            FFTData(:,1:FreqKeepPts) = 0;
+            FFTData(end-FreqKeepPts:end) = 0;
+            Xfilt = real(ifft(FFTData, [], 2));
+            
+            % Wn = F*SampleInterval; %normalized frequency cutoff
+            % [z, p, k] = butter(1,Wn,'high');
+            % [sos,g]=zp2sos(z,p,k);
+            % myfilt=dfilt.df2sos(sos,g);
+            % Xfilt = filter(myfilt,X');
+            % Xfilt = Xfilt';
+        end
+        
+        function Xfilt = LowPassFilter(~, X,F,SampleInterval)
+            %F is in Hz
+            %Sample interval is in seconds
+            %X is a vector or a matrix of row vectors
+            
+            L = size(X,2);
+            if L == 1 %flip if given a column vector
+                X=X';
+                L = size(X,2);
+            end
+            
+            FreqStepSize = 1/(SampleInterval * L);
+            FreqCutoffPts = round(F / FreqStepSize);
+            
+            % eliminate frequencies beyond cutoff (middle of matrix given fft
+            % representation)
+            FFTData = fft(X, [], 2);
+            FFTData(:,FreqCutoffPts:size(FFTData,2)-FreqCutoffPts) = 0;
+            Xfilt = real(ifft(FFTData, [], 2));
+            
+            
+            % Wn = F*SampleInterval; %normalized frequency cutoff
+            % [z, p, k] = butter(1,Wn,'low');
+            % [sos,g]=zp2sos(z,p,k);
+            % myfilt=dfilt.df2sos(sos,g);
+            % Xfilt = filter(myfilt,X');
+            % Xfilt = Xfilt';
+            
+        end
+        
+        
+        function [peaks,Ind] = getPeaks(~, X,dir)
+            if dir > 0 %local max
+                Ind = find(diff(diff(X)>0)<0)+1;
+            else %local min
+                Ind = find(diff(diff(X)>0)>0)+1;
+            end
+            peaks = X(Ind);
+        end
+        
+        function Ind = getThresCross(~, signal, threshold, direction)
+            %             disp(obj.highPassFilter{1})
+            %             figure(77)
+            %             signalf = filtfilt(obj.highPassFilter{1}, obj.highPassFilter{2}, signal);
+            %             subplot(2,1,1)
+            %             plot(signal)
+            %             subplot(2,1,2)
+            %             plot(signalf)
             
             %dir 1 = up, -1 = down
             Vorig = signal(1:end-1);
@@ -47,7 +122,7 @@ classdef SpikeDetector < handle
             end
         end
         
-        function r = getRebounds(obj, trace, peaks_ind)
+        function r = getRebounds(obj, peaks_ind,trace,searchInterval)
             %get rebound as fraction of peak amplitude
             
             %trace = abs(trace);
@@ -55,11 +130,11 @@ classdef SpikeDetector < handle
             r = zeros(size(peaks));
             
             for i=1:length(peaks)
-                endPoint = min(peaks_ind(i)+obj.searchInterval, length(trace));
-                nextMin = getPeaks(trace(peaks_ind(i):endPoint),-1);
+                endPoint = min(peaks_ind(i)+searchInterval,length(trace));
+                nextMin = obj.getPeaks(trace(peaks_ind(i):endPoint),-1);
                 if isempty(nextMin), nextMin = peaks(i);
                 else nextMin = nextMin(1); end
-                nextMax = getPeaks(trace(peaks_ind(i):endPoint),1);
+                nextMax = obj.getPeaks(trace(peaks_ind(i):endPoint),1);
                 if isempty(nextMax), nextMax = 0;
                 else nextMax = nextMax(1); end
                 
@@ -75,28 +150,39 @@ classdef SpikeDetector < handle
         function results = detectSpikes(obj, data)
             results = struct();
             
-            if strcmp(obj.spikeDetectorMode, 'Simple threshold')
+            if strcmp(obj.spikeDetectorMode, 'Simple Threshold')
                 data = data - mean(data);
                 sp = obj.getThresCross(data, obj.spikeThreshold, sign(obj.spikeThreshold));
                 results.sp = sp;
                 
             else
                 
-                ref_period_points = round(obj.ref_period./obj.sampleInterval);
-                searchInterval_points = round(obj.searchInterval./obj.sampleInterval);
                 
-                [Ntraces,~] = size(data);
-                DnoSpikes = filtfilt(obj.bandPassFilter{1}, obj.bandPassFilter{2}, data);
-                Dhighpass = filtfilt(obj.highPassFilter{1}, obj.highPassFilter{2}, data);
+                HighPassCut_drift = 70; %Hz, in order to remove drift and 60Hz noise
+                HighPassCut_spikes = 500; %Hz, in order to remove everything but spikes
+                ref_period = 2E-3; %s
+                searchInterval = 1E-3; %s
+                SampleInterval = 1E-4;                
+                
+                results = [];
+                
+                ref_period_points = round(ref_period./SampleInterval);
+                searchInterval_points = round(searchInterval./SampleInterval);
+                
+                [Ntraces,L] = size(data);
+                % plot(ha(1), D)
+                signal_noise = obj.BandPassFilter(data,HighPassCut_drift,HighPassCut_spikes,SampleInterval);
+                % plot(ha(2), signal_noise)
+                signal_filtered = obj.HighPassFilter(data,HighPassCut_spikes,SampleInterval);
+                % plot(ha(3), signal_filtered)
                 
                 sp = cell(Ntraces,1);
                 spikeAmps = cell(Ntraces,1);
                 violation_ind = cell(Ntraces,1);
                 minSpikePeakInd = zeros(Ntraces,1);
-                
                 for i=1:Ntraces
                     %get the trace and noise_std
-                    trace = Dhighpass(i,:);
+                    trace = signal_filtered(i,:);
                     trace(1:20) = data(i,1:20) - mean(data(i,1:20));
                     %     plot(trace);
                     %     pause;
@@ -105,21 +191,20 @@ classdef SpikeDetector < handle
                     end
                     
                     
-                    trace_noise = DnoSpikes(i,:);
+                    trace_noise = signal_noise(i,:);
                     noise_std = std(trace_noise);
                     
                     %get peaks
-                    [peaks,peak_times] = getPeaks(trace,-1); %-1 for negative peaks
+                    [peaks,peak_times] = obj.getPeaks(trace,-1); %-1 for negative peaks
                     peak_times = peak_times(peaks<0); %only negative deflections
                     peaks = trace(peak_times);
                     
                     %add a check for rebounds on the other side
-                    r = getRebounds(peak_times,trace,searchInterval_points);
+                    r = obj.getRebounds(peak_times,trace,searchInterval_points);
                     peaks = abs(peaks);
                     peakAmps = peaks+r;
-                    
                     if ~isempty(peaks) && max(data(i,:)) > min(data(i,:)) %make sure we don't have bad/empty trace
-                        spike_ind = find(peakAmps > obj.thres_std*noise_std);
+                        spike_ind = find(peakAmps > abs(obj.spikeThreshold) * noise_std);
                         
                         if isempty(spike_ind)
                             disp(['Epoch ' num2str(i) ': no spikes']);
@@ -148,13 +233,14 @@ classdef SpikeDetector < handle
                     spikeAmps = spikeAmps{1};
                     violation_ind = violation_ind{1};
                 end
-                
                 results.sp = sp;
                 results.spikeAmps = spikeAmps;
                 results.minSpikePeakInd = minSpikePeakInd;
                 results.violation_ind = violation_ind;
+                
             end
         end
     end
+    
 end
 

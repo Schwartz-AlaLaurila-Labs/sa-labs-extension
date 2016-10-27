@@ -6,19 +6,20 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan1Mode = 'Cell attached'
         chan1Hold = 0
         
-        chan2 = 'None';   
+        chan2 = 'None';
         chan2Mode = 'Cell attached'
         chan2Hold = 0
         
-        chan3  = 'None';  
+        chan3  = 'None';
         chan3Mode = 'Cell attached'
         chan3Hold = 0
         
-        chan4  = 'None';  
+        chan4  = 'None';
         chan4Mode = 'Cell attached'
         chan4Hold = 0
         
-        spikeThresholdVoltage = -35 % pA
+        spikeDetectorMode = 'Filtered Threshold';
+        spikeThreshold = -35 % pA or std
     end
     
     properties (Transient, Hidden)
@@ -41,6 +42,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
+        
+        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold'});
     end
     
     methods
@@ -64,7 +67,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     d.category = '1 Basic';
                 case {'stimTime','preTime','tailTime'}
                     d.category = '2 Timing';
-                case {'sampleRate', 'spikeThresholdVoltage'}
+                case {'sampleRate', 'spikeThreshold','spikeDetectorMode'}
                     d.category = '9 Amplifiers';
                 otherwise
                     d.category = '4 Other';
@@ -121,7 +124,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     'plotMode',obj.responsePlotMode,... 
                     'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime + 0.5],...
                     'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
-                    'spikeThresholdVoltage', obj.spikeThresholdVoltage);
+                    'spikeThreshold', obj.spikeThreshold, ...
+                    'spikeDetectorMode', obj.spikeDetectorMode);
             end
             
         end
@@ -159,7 +163,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 g = sa_labs.stimuli.GaussianNoiseGeneratorV2();
                 g.freqCutoff = 100;
                 g.numFilters = 1;
-                g.stDev = 10;
+                g.stDev = 2;
                 g.mean = 0;
                 g.seed = randi(100000);
                 g.preTime = obj.preTime;

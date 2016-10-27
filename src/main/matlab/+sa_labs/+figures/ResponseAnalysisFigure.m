@@ -18,7 +18,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         analysisRegion
         
         responseMode % 'Whole cell' or 'Cell attached'
-        spikeThresholdVoltage % in mV
+        spikeThreshold
+        spikeDetectorMode
         spikeRateBinLength
     end
     
@@ -43,7 +44,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('epochSplitParameter', '', @(x)ischar(x));
             ip.addParameter('plotMode', 'cartesian', @(x)ischar(x));
             ip.addParameter('responseMode','Whole cell', @(x)ischar(x));
-            ip.addParameter('spikeThresholdVoltage', 0, @(x)isnumeric(x));
+            ip.addParameter('spikeDetectorMode',@(x)ischar(x));
+            ip.addParameter('spikeThreshold', 0, @(x)isnumeric(x));
             ip.addParameter('spikeRateBinLength', 0.05, @(x)isnumeric(x));
             ip.addParameter('totalNumEpochs',1,@(x)isnumeric(x));
             ip.addParameter('analysisRegion',[0,inf]);
@@ -55,7 +57,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.epochSplitParameter = ip.Results.epochSplitParameter;
             obj.plotMode = ip.Results.plotMode;
             obj.responseMode = ip.Results.responseMode;
-            obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
+            obj.spikeThreshold = ip.Results.spikeThreshold;
+            obj.spikeDetectorMode = ip.Results.spikeDetectorMode;
             obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
             obj.totalNumEpochs = ip.Results.totalNumEpochs;
             obj.analysisRegion = ip.Results.analysisRegion;
@@ -64,14 +67,14 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             
             obj.epochData = {};
             
-            obj.spikeDetector = sa_labs.util.SpikeDetector('Simple threshold');
-            obj.spikeDetector.spikeThreshold = obj.spikeThresholdVoltage;
-            obj.spikeDetector.sampleInterval = 1E-4;
+            obj.spikeDetector = sa_labs.util.SpikeDetector(obj.spikeDetectorMode, obj.spikeThreshold);
+%             obj.spikeDetector.sampleInterval = 1E-4;
         end
         
         function createUi(obj)
             import appbox.*;
             
+            set(obj.figureHandle, 'Name', 'Response Analysis Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
