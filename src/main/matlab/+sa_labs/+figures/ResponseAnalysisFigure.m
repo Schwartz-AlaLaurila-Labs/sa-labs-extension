@@ -284,7 +284,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 ylim(obj.responseAxis, [min(signal) - 0.1 * signalHeight, max(signal) + 0.1 * signalHeight]);
                 hold(obj.responseAxis, 'on');
                 set(obj.responseAxis,'LooseInset',get(obj.responseAxis,'TightInset'))
-                
+                title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
+                ylabel(obj.responseAxis, epoch.units, 'Interpreter', 'none');                
                 
                 if strcmp(obj.responseMode, 'Cell attached')
                     % plot spikes detected
@@ -293,15 +294,19 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     spikeHeights = signal(spikeFrames);
                     plot(obj.responseAxis, spikeTimes, spikeHeights, '.');
                     
-                    plot(obj.responseAxisSpikeRate, epoch.t, epoch.signal, 'Color', color)
+                    h = plot(obj.responseAxisSpikeRate, epoch.t, epoch.signal, 'Color', color, 'LineWidth', 3);
                     hold(obj.responseAxisSpikeRate, 'on')
                     ylim(obj.responseAxisSpikeRate, [0, max(epoch.signal) * 1.1 + .1]);
                     ylabel(obj.responseAxisSpikeRate, '/sec');
                     
+                    for si = 1:length(spikeTimes)
+                        line(obj.responseAxisSpikeRate, [spikeTimes(si), spikeTimes(si)], ylim(obj.responseAxisSpikeRate), 'Color', [.8, .8, .8], 'LineWidth', 0.1);
+                    end
+                    
+                    uistack(h, 'top');
                     set(obj.responseAxisSpikeRate,'LooseInset',get(obj.responseAxisSpikeRate,'TightInset'))
                 end
-                title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
-                ylabel(obj.responseAxis, epoch.units, 'Interpreter', 'none');
+
             end
             %             legend(obj.responseAxis, obj.channelNames , 'Location', 'east')
             line(obj.responseAxis, [obj.analysisRegion(1), obj.analysisRegion(1)], ylim(obj.responseAxis),'Color','g')
