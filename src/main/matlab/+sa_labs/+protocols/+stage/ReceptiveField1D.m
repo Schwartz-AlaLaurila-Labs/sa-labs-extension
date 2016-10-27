@@ -1,19 +1,19 @@
 classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         
     properties
-        preTime = 500 %will be rounded to account for frame rate
-        tailTime = 500 %will be rounded to account for frame rate
+        preTime = 250
+        tailTime = 500
         
         contrast = 0.5
-        frequency = 4; %hz
-        numberOfContrastPulses = 4;
+        frequency = 5; %hz
+        numberOfContrastPulses = 5;
         
         probeAxis = 'vertical';
-        barSeparation = 40; %microns
-        barWidth = 40; %microns
-        barLength = 300; %microns
+        barSeparation = 30; %microns
+        barWidth = 30; %microns
+        barLength = 200; %microns
         
-        numberOfPositions = 9;
+        numberOfPositions = 11;
         numberOfCycles = 2;
     end
     
@@ -22,7 +22,6 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        displayName = 'Receptive Field 1D'
         version = 3
         curPosXPx
         curPosYPx
@@ -50,6 +49,9 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             end
             firstPos = -1*round(floor(obj.numberOfPositions/2)) * obj.barSeparation;
             obj.positions = firstPos:obj.barSeparation:(firstPos+(obj.numberOfPositions-1)*obj.barSeparation);
+            
+            [~, sortIndices] = sort(abs(obj.positions));
+            obj.positions = obj.positions(sortIndices);
                 
             % Call the base method later to let me set the split param
             % first
@@ -58,11 +60,12 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
 
-            % Randomize angles if this is a new set
+            % For typical use of this stimulus, it makes sense to have a fixed center-out ordering
+            % so skip the randomization
             index = mod(obj.numEpochsPrepared, obj.numberOfPositions);
-            if index == 0
-                obj.positions = obj.positions(randperm(obj.numberOfPositions));
-            end
+%             if index == 0
+%                 obj.positions = obj.positions(randperm(obj.numberOfPositions));
+%             end
             index = index + 1;
             
             %get current position
@@ -124,8 +127,7 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         end
         
         function stimTime = get.stimTime(obj)
-            %4 cycles
-            stimTime = 1E3*(obj.numberOfContrastPulses/obj.frequency); %ms
+            stimTime = 1E3*(obj.numberOfContrastPulses/obj.frequency);
         end
     end
     
