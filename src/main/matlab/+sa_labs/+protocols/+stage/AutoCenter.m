@@ -94,7 +94,8 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 propertyStruct,...
                 'shapePlotMode','plotSpatial_mean',...
                 'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
-                'spikeThresholdVoltage', obj.spikeThresholdVoltage);
+                'spikeThreshold', obj.spikeThreshold, ...
+                'spikeDetectorMode', obj.spikeDetectorMode);
             
             prepareRun@sa_labs.protocols.StageProtocol(obj);
         end

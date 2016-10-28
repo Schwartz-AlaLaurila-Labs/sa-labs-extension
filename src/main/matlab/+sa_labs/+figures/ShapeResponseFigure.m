@@ -3,7 +3,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
     properties
         deviceName
         epochIndex
-        spikeThresholdVoltage
+        spikeThreshold
         spikeDetectorMode
         spikeDetector
         devices
@@ -25,8 +25,8 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             
             ip = inputParser;
             ip.KeepUnmatched = true;
-            ip.addParameter('spikeThresholdVoltage', -50, @(x)isnumeric(x));
-            ip.addParameter('spikeDetectorMode', 'Stdev', @(x)ischar(x));
+            ip.addParameter('spikeThreshold', -50, @(x)isnumeric(x));
+            ip.addParameter('spikeDetectorMode', '', @(x)ischar(x));
             ip.addParameter('shapePlotMode', 'plotSpatial_mean', @(x)ischar(x));
             
             ip.parse(varargin{:});
@@ -34,13 +34,12 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             obj.devices = devices;
             obj.parameterStruct = parameterStruct;
             obj.epochIndex = 0;
-            obj.spikeThresholdVoltage = ip.Results.spikeThresholdVoltage;
+            obj.spikeThreshold = ip.Results.spikeThreshold;
             obj.spikeDetectorMode = ip.Results.spikeDetectorMode;
             obj.shapePlotMode = ip.Results.shapePlotMode;
             
-            obj.spikeDetector = sa_labs.util.SpikeDetector('Simple threshold');
-            obj.spikeDetector.spikeThreshold = obj.spikeThresholdVoltage;
-            obj.spikeDetector.sampleInterval = 1E-4;            
+            obj.spikeDetector = sa_labs.util.SpikeDetector(obj.spikeDetectorMode, obj.spikeThreshold);
+%             obj.spikeDetector.sampleInterval = 1E-4;            
                   
             %remove menubar
 %             set(obj.figureHandle, 'MenuBar', 'none');
