@@ -2,19 +2,18 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
 
     properties
         preTime = 250                   % Bar leading duration (ms)
-        tailTime = 500                  % Bar trailing duration (ms)
+        tailTime = 250                  % Bar trailing duration (ms)
         intensity = 1.0                 % Bar light intensity (0-1)
         barLength = 600                 % Bar length size (um)
         barWidth = 200                   % Bar Width size (um)
         barSpeed = 1000                 % Bar speed (um / s)
-        distance = 2000                 % Bar distance (um)
+        distance = 3000                 % Bar distance (um)
         numberOfAngles = 12
         numberOfCycles = 2
     end
     
     properties (Hidden)
         version = 3
-        displayName = 'Moving Bar'
         angles                          % Moving bar with Number of angles range between [0 - 360]
         barAngle                        % Moving bar angle for the current epoch @see prepareEpoch 
         

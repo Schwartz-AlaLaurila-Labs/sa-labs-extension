@@ -92,8 +92,13 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             durations = diff(indices(:) ./ sampleRate);
             
             minDuration = min(durations);
-            maxDuration = max(durations);
-            refreshDuration = 1 / obj.stageDevice.getMonitorRefreshRate();
+            maxDuration = max(durations)
+            
+            refreshDuration = 1 / obj.stageDevice.getMonitorRefreshRate()
+            
+            if maxDuration > 3 * refreshDuration
+                warning('Long frame!');
+            end
             
             if abs(refreshDuration - minDuration) / refreshDuration > 0.10 || abs(refreshDuration - maxDuration) / refreshDuration > 0.10;
                 epoch.addKeyword('badFrameTiming');

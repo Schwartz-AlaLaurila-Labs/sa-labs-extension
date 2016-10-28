@@ -1,9 +1,5 @@
 classdef DriftingTexture < sa_labs.protocols.StageProtocol
-    
-    properties (Hidden)
-        version = 4
-        displayName = 'Drifting Texture'
-    end
+   
     
     properties
         %times in ms
@@ -127,30 +123,48 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
             p.addStimulus(im);
             
             % circular aperture mask (only gratings in center)
+%             if obj.apertureDiameter > 0
+%                 apertureDiameterRel = obj.apertureDiameter / max(im.size);
+%                 mask = stage.core.Mask.createCircularEnvelope(2048, apertureDiameterRel);
+% %                 mask = stage.core.Mask.createCircularEnvelope();
+%                 im.setMask(mask);
+%             end
+            
             if obj.apertureDiameter > 0
-                apertureDiameterRel = obj.apertureDiameter / max(im.size);
-                mask = stage.core.Mask.createCircularEnvelope(2048, apertureDiameterRel);
-%                 mask = stage.core.Mask.createCircularEnvelope();
-                im.setMask(mask);
-            end
+                % this is a gray square over the center of the display,
+                % with a circle open in the middle
+                maskRes = max(canvasSize) + 500;
+                apertureDiameterRel = obj.um2pix(obj.apertureDiameter) / maskRes;
+%                 mask = Mask.createCircularEnvelope(max(im.size), apertureDiameterRel);
+                mask = stage.core.Mask.createAnnulus(apertureDiameterRel, 10, maskRes);
+%                 mask.invert();
+
+                aperture = stage.builtin.stimuli.Rectangle();
+                aperture.color = obj.meanLevel;
+                aperture.size = [maskRes, maskRes];
+                aperture.position = canvasSize/2;
+                aperture.setMask(mask);
+                p.addStimulus(aperture);
+            end        
 
 %             circular block mask (only texture outside center)
-            function opacity = onDuringStim(state, preTime, stimTime)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    opacity = 1;
-                else
-                    opacity = 0;
-                end
-            end
+%             function opacity = onDuringStim(state, preTime, stimTime, tailTime)
+%                 if state.time>preTime*1e-3 && state.time<=(preTime+stimTime+tailTime)*1e-3
+%                     opacity = 1;
+%                 else
+%                     opacity = 0;
+%                 end
+%             end
             if obj.apertureDiameter < 0
                 spot = stage.builtin.stimuli.Ellipse();
                 spot.radiusX = round(obj.um2pix(obj.apertureDiameter) / 2); %convert to pixels
                 spot.radiusY = spot.radiusX;
                 spot.color = obj.meanLevel;
-                spot.position = centerPos;
+                spot.position = canvasSize/2;
+                spot.opacity = 1;
                 p.addStimulus(spot);
-                centerCircleController = stage.builtin.controllers.PropertyController(spot, 'opacity', @(s)onDuringStim(s, obj.preTime, obj.stimTime));
-                p.addController(centerCircleController);
+%                 centerCircleController = stage.builtin.controllers.PropertyController(spot, 'opacity', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.tailTime));
+%                 p.addController(centerCircleController);
             end
 
 

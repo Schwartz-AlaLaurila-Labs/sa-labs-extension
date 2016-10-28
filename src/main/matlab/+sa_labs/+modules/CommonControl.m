@@ -36,7 +36,7 @@ classdef CommonControl < symphonyui.ui.Module
         color = 'cyan'       
         colorType = symphonyui.core.PropertyType('char', 'row', {'cyan','blue','green'});
         
-        projectorPropertyNames = {'spikeThresholdVoltage','color','NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
+        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode','color','NDF','frameRate','patternRate','blueLED','greenLED','offsetX','offsetY'};
         ampList
         
         chan1Type

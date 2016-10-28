@@ -93,16 +93,21 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     channelName = sprintf('chan%d', ci);
     %                 modeName = sprintf('chan%dMode', ci);
                     holdName = sprintf('chan%dHold', ci);
-                    signal = obj.(holdName);
+                    newBackground = obj.(holdName);
 
                     if strcmp(obj.(channelName),'None')
                         continue
                     end
                     ampName = obj.(channelName);
                     device = obj.rig.getDevice(ampName);
+                    prevBackground = device.background;
 
-                    device.background = symphonyui.core.Measurement(signal, device.background.displayUnits);
+                    device.background = symphonyui.core.Measurement(newBackground, device.background.displayUnits);
                     device.applyBackground();
+                    
+                    if prevBackground ~= newBackground
+                        pause(3);
+                    end
                 end
             end
 

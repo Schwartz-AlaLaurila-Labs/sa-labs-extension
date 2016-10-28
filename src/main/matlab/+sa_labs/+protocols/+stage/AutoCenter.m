@@ -18,7 +18,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         voltages = [-60,20];
         alternateVoltage = false; % WC only
         interactiveMode = false;
-        epochTimeLimit = 100; %s
+        epochTimeLimit = 200; %s
         
         valueMin = 0.1;
         valueMax = 1.0;
