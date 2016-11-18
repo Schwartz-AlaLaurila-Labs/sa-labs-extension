@@ -8,23 +8,24 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         preTime = 500 % ms
         stimTime = 8000 % ms
         tailTime = 500 % ms
-        centerDiameter = 200 % um
+        centerDiameter = 150 % um
         annulusInnerDiameter = 300 % um
         annulusOuterDiameter = 600 % um
-        noiseStdv = 0.3 %contrast, as fraction of mean
         frameDwell = 1 % Frames per noise update
-        useRandomSeed = true % false = repeated noise trajectory (seed 0)
+        contrastValues = [0.3] %contrast, as fraction of mean
+        seedStartValue = 1
+        locationMode = 'Center';
 
         numberOfEpochs = uint16(30) % number of epochs to queue
     end
 
     properties (Hidden)
-        displayName = 'Center Surround Noise'
         centerNoiseSeed
         surroundNoiseSeed
         centerNoiseStream
         surroundNoiseStream
         currentStimulus
+        currentContrast
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = '';
@@ -35,35 +36,34 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     end
     
     methods
-         
+        
+        
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
-            %determine which stimulus to play this epoch
-            %cycles thru center,surround, center + surround
-            index = mod(obj.numEpochsCompleted,3);
-            if index == 0
-                obj.currentStimulus = 'Center';
-                % Determine seed values.
-                if obj.useRandomSeed
-                    obj.centerNoiseSeed = RandStream.shuffleSeed;
-                    obj.surroundNoiseSeed = RandStream.shuffleSeed;
-                else
-                    obj.centerNoiseSeed = 0;
-                    obj.surroundNoiseSeed = 0;
-                end
-            elseif index == 1
-                obj.currentStimulus = 'Surround';
-            elseif index == 2
-                obj.currentStimulus = 'Center-Surround';
+
+            obj.currentStimulus = 'Center';
+            
+            index = mod(obj.numEpochsCompleted,2)
+            if index == 1
+                seed = obj.seedStartValue;
+            elseif index == 0
+                seed = obj.seedStartValue + obj.numEpochsCompleted / 2;
             end
+            
+            if length(obj.contrastValues) > 1
+                obj.currentContrast = obj.contrastValues(mod(floor(obj.numEpochsCompleted / 2), length(obj.contrastValues)) + 1);
+            end
+                
+            seed
+            obj.centerNoiseSeed = seed;
             %at start of epoch, set random streams using this cycle's seeds
             obj.centerNoiseStream = RandStream('mt19937ar', 'Seed', obj.centerNoiseSeed);
-            obj.surroundNoiseStream = RandStream('mt19937ar', 'Seed', obj.surroundNoiseSeed);
+%             obj.surroundNoiseStream = RandStream('mt19937ar', 'Seed', obj.surroundNoiseSeed);
 
             epoch.addParameter('centerNoiseSeed', obj.centerNoiseSeed);
-            epoch.addParameter('surroundNoiseSeed', obj.surroundNoiseSeed);
+%             epoch.addParameter('surroundNoiseSeed', obj.surroundNoiseSeed);
             epoch.addParameter('currentStimulus', obj.currentStimulus);
         end
 
@@ -121,7 +121,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
                         intensity = obj.meanLevel + ... 
-                            obj.noiseStdv * obj.meanLevel * obj.centerNoiseStream.randn;
+                            obj.currentContrast * obj.meanLevel * obj.centerNoiseStream.randn;
                     end
                 end
                 i = intensity;
@@ -134,7 +134,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
                         intensity = obj.meanLevel + ... 
-                            obj.noiseStdv * obj.meanLevel * obj.surroundNoiseStream.randn;
+                            obj.currentContrast * obj.meanLevel * obj.surroundNoiseStream.randn;
                     end
                 end
                 i = intensity;
