@@ -6,13 +6,13 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 500 % ms
-        stimTime = 8000 % ms
+        stimTime = 30000 % ms
         tailTime = 500 % ms
         centerDiameter = 150 % um
-        annulusInnerDiameter = 300 % um
-        annulusOuterDiameter = 600 % um
+%         annulusInnerDiameter = 300 % um
+%         annulusOuterDiameter = 600 % um
         frameDwell = 1 % Frames per noise update
-        contrastValues = [0.3] %contrast, as fraction of mean
+        contrastValues = [1, .3] %contrast, as fraction of mean
         seedStartValue = 1
         locationMode = 'Center';
 
@@ -37,7 +37,13 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     
     methods
         
-        
+        function prepareRun(obj)
+            if obj.meanLevel == 0
+                warning('Mean Level must be greater than 0 for this to work');
+            end
+            
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
+        end
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -45,7 +51,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
 
             obj.currentStimulus = 'Center';
             
-            index = mod(obj.numEpochsCompleted,2)
+            index = mod(obj.numEpochsCompleted,2);
             if index == 1
                 seed = obj.seedStartValue;
             elseif index == 0
@@ -53,10 +59,12 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             end
             
             if length(obj.contrastValues) > 1
-                obj.currentContrast = obj.contrastValues(mod(floor(obj.numEpochsCompleted / 2), length(obj.contrastValues)) + 1);
+                contrastIndex = mod(floor(obj.numEpochsCompleted / 2), length(obj.contrastValues)) + 1;
+            else
+                contrastIndex = 1;
             end
-                
-            seed
+            obj.currentContrast = obj.contrastValues(contrastIndex);
+
             obj.centerNoiseSeed = seed;
             %at start of epoch, set random streams using this cycle's seeds
             obj.centerNoiseStream = RandStream('mt19937ar', 'Seed', obj.centerNoiseSeed);
