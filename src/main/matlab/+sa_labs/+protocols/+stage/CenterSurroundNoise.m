@@ -66,6 +66,8 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             obj.currentContrast = obj.contrastValues(contrastIndex);
 
             obj.centerNoiseSeed = seed;
+            fprintf('Using center seed %g\n',seed);
+
             %at start of epoch, set random streams using this cycle's seeds
             obj.centerNoiseStream = RandStream('mt19937ar', 'Seed', obj.centerNoiseSeed);
 %             obj.surroundNoiseStream = RandStream('mt19937ar', 'Seed', obj.surroundNoiseSeed);
