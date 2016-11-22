@@ -15,6 +15,9 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
         speed = 1000; %um/s
         uniformDistribution = true;
         randomSeed = 1;
+        singleDimension = true;
+        chirpStart = true;
+        
 
         numberOfAngles = 12;
         numberOfCycles = 2;
@@ -56,7 +59,12 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
             fprintf('making texture (%d x %d) with blur sigma %d pixels\n', res(1), res(2), sigma);
 
             stream = RandStream('mt19937ar','Seed',obj.randomSeed);
-            M = randn(stream, res);
+            if obj.singleDimension
+                M = randn(stream, [res(1), 1]);
+                M = repmat(M, [1, res(2)]);
+            else
+                M = randn(stream, res);
+            end
             defaultSize = 2*ceil(2*sigma)+1;
             M = imgaussfilt(M, sigma, 'FilterDomain','frequency','FilterSize',defaultSize*2+1);
 
@@ -83,16 +91,21 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
                 M(M > 1) = 1;
             end
 
-%             figure(99)
-%             subplot(2,1,2)
-%             imagesc(M)
-% %             caxis([min(M(:)), max(M(:))/2])
-%             colormap gray
+            if obj.chirpStart
+                chirpTime = 4;
+                meanTime = 3;
+                chirpLengthPix = round(obj.um2pix(obj.speed * chirpTime / obj.resScaleFactor));
+                t = linspace(0, chirpTime, chirpLengthPix);
+                ch = chirp(t, .1, chirpTime, 4, 'linear', pi);
+                ch = ch > 0;
+                ch = horzcat(obj.meanLevel * ones(1, round(obj.um2pix(obj.speed * meanTime / obj.resScaleFactor))), ch);
+                ch = repmat(ch, [res(2), 1]);
+                ch = ch';
+                M(1:size(ch,1), 1:size(ch,2)) = ch;
+            end
             
             obj.imageMatrix = uint8(255 * M);
             disp('done');
-     
-
         end
         
         function prepareEpoch(obj, epoch)
@@ -192,7 +205,7 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
                     pos = [NaN, NaN];
                 end
             end
-            pixelSpeed = obj.um2pix(obj.speed);           
+            pixelSpeed = -1*obj.um2pix(obj.speed);
             controller = stage.builtin.controllers.PropertyController(im, ...
                 'position', @(s)movementController(s, obj.stimTime, obj.preTime, ...
                 obj.movementDelay, pixelSpeed, obj.curAngle, canvasSize/2));
