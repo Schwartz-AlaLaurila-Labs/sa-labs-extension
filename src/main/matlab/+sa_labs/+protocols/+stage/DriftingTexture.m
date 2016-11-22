@@ -26,6 +26,7 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
+       version = 2
        curAngle
        angles 
        imageMatrix
