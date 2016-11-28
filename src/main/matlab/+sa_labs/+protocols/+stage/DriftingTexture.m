@@ -15,8 +15,8 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
         speed = 1000; %um/s
         uniformDistribution = true;
         randomSeed = 1;
-        singleDimension = true;
-        chirpStart = true;
+        singleDimension = false;
+        chirpStart = false;
         
 
         numberOfAngles = 12;
