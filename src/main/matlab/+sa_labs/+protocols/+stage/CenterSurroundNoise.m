@@ -70,10 +70,10 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
 
             %at start of epoch, set random streams using this cycle's seeds
             obj.centerNoiseStream = RandStream('mt19937ar', 'Seed', obj.centerNoiseSeed);
-%             obj.surroundNoiseStream = RandStream('mt19937ar', 'Seed', obj.surroundNoiseSeed);
+            obj.surroundNoiseStream = RandStream('mt19937ar', 'Seed', obj.surroundNoiseSeed);
 
             epoch.addParameter('centerNoiseSeed', obj.centerNoiseSeed);
-%             epoch.addParameter('surroundNoiseSeed', obj.surroundNoiseSeed);
+            epoch.addParameter('surroundNoiseSeed', obj.surroundNoiseSeed);
             epoch.addParameter('currentStimulus', obj.currentStimulus);
         end
 
