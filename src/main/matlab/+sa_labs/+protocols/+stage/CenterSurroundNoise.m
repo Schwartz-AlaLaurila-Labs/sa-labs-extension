@@ -9,8 +9,8 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         stimTime = 30000 % ms
         tailTime = 500 % ms
         centerDiameter = 150 % um
-%         annulusInnerDiameter = 300 % um
-%         annulusOuterDiameter = 600 % um
+        annulusInnerDiameter = 300 % um
+        annulusOuterDiameter = 600 % um
         frameDwell = 1 % Frames per noise update
         contrastValues = [1, .3] %contrast, as fraction of mean
         seedStartValue = 1
