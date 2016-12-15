@@ -12,14 +12,18 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         annulusInnerDiameter = 300 % um
         annulusOuterDiameter = 600 % um
         frameDwell = 1 % Frames per noise update
-        contrastValues = [1, .3] %contrast, as fraction of mean
+        contrastValues = 1 %contrast, as fraction of mean
         seedStartValue = 1
+        seedChangeMode = 'repeat only';
         locationMode = 'Center';
 
         numberOfEpochs = uint16(30) % number of epochs to queue
     end
 
     properties (Hidden)
+        seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
+        
+        
         centerNoiseSeed
         surroundNoiseSeed
         centerNoiseStream
@@ -48,14 +52,19 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
-
             obj.currentStimulus = 'Center';
             
-            index = mod(obj.numEpochsCompleted,2);
-            if index == 1
+            if strcmp(obj.seedChangeMode, 'repeat only')
                 seed = obj.seedStartValue;
-            elseif index == 0
-                seed = obj.seedStartValue + obj.numEpochsCompleted / 2;
+            elseif strcmp(obj.seedChangeMode, 'increment only')
+                seed = obj.numEpochsCompleted + obj.seedStartValue;
+            else
+                seedIndex = mod(obj.numEpochsCompleted,2);
+                if seedIndex == 1
+                    seed = obj.seedStartValue;
+                elseif seedIndex == 0
+                    seed = obj.seedStartValue + obj.numEpochsCompleted / 2 + 1;
+                end
             end
             
             if length(obj.contrastValues) > 1
@@ -134,6 +143,11 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                             obj.currentContrast * obj.meanLevel * obj.centerNoiseStream.randn;
                     end
                 end
+                if intensity < 0
+                    intensity = 0;
+                elseif intensity > obj.meanLevel * 2
+                    intensity = obj.meanLevel * 2; % probably important to be symmetrical to whiten the stimulus
+                end
                 i = intensity;
             end
             
@@ -147,6 +161,11 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                             obj.currentContrast * obj.meanLevel * obj.surroundNoiseStream.randn;
                     end
                 end
+                if intensity < 0
+                    intensity = 0;
+                elseif intensity > obj.meanLevel * 2
+                    intensity = obj.meanLevel * 2; % probably important to be symmetrical to whiten the stimulus
+                end                
                 i = intensity;
             end
 
