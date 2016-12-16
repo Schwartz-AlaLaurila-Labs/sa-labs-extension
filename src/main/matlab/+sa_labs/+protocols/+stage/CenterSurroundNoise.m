@@ -32,7 +32,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         currentContrast
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = '';
+        responsePlotSplitParameter = 'centerNoiseSeed';
     end
     
     properties (Dependent, Hidden)
@@ -51,13 +51,13 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-            
+            obj.surroundNoiseSeed = 1;
             obj.currentStimulus = 'Center';
-            
+
             if strcmp(obj.seedChangeMode, 'repeat only')
-                seed = obj.seedStartValue;
+                seed = obj.seedStartValue+1;
             elseif strcmp(obj.seedChangeMode, 'increment only')
-                seed = obj.numEpochsCompleted + obj.seedStartValue;
+                seed = obj.numEpochsCompleted + obj.seedStartValue +1;
             else
                 seedIndex = mod(obj.numEpochsCompleted,2);
                 if seedIndex == 1
@@ -66,14 +66,13 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                     seed = obj.seedStartValue + obj.numEpochsCompleted / 2 + 1;
                 end
             end
-            
+                        
             if length(obj.contrastValues) > 1
                 contrastIndex = mod(floor(obj.numEpochsCompleted / 2), length(obj.contrastValues)) + 1;
             else
                 contrastIndex = 1;
             end
             obj.currentContrast = obj.contrastValues(contrastIndex);
-
             obj.centerNoiseSeed = seed;
             fprintf('Using center seed %g\n',seed);
 

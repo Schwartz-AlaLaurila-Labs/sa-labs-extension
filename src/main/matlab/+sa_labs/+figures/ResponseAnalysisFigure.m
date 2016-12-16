@@ -392,7 +392,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         hold(thisAxis, 'off');
                     end
                     %                 boxplot(thisAxis, allMeasurementsByEpoch, paramByEpoch);
-                    title(thisAxis, funcName);
+%                     title(thisAxis, funcName);
                     set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
 
                     %                 for ei = 1:length(obj.epochData)

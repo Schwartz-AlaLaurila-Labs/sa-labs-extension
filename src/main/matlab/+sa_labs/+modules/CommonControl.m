@@ -48,7 +48,7 @@ classdef CommonControl < symphonyui.ui.Module
         chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
         
-        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold'});       
+        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});       
     
         protocolPropertyGrid
     end

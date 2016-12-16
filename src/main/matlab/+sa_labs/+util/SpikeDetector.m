@@ -150,12 +150,17 @@ classdef SpikeDetector < handle
         function results = detectSpikes(obj, data)
             results = struct();
             
+            if strcmp(obj.spikeDetectorMode, 'none')
+                results.sp = [];
+                return
+            end
+            
             if strcmp(obj.spikeDetectorMode, 'Simple Threshold')
                 data = data - mean(data);
                 sp = obj.getThresCross(data, obj.spikeThreshold, sign(obj.spikeThreshold));
                 results.sp = sp;
                 
-            else
+            elseif strcmp(obj.spikeDetectorMode, 'Filtered Threshold')
                 
                 
                 HighPassCut_drift = 70; %Hz, in order to remove drift and 60Hz noise
@@ -238,6 +243,8 @@ classdef SpikeDetector < handle
                 results.minSpikePeakInd = minSpikePeakInd;
                 results.violation_ind = violation_ind;
                 
+            else
+                warning('unknown spike detector mode')
             end
         end
     end
