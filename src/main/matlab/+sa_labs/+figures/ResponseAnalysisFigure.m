@@ -281,7 +281,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 signal = epoch.responseObject.getData();
                 plot(obj.responseAxis, epoch.t, signal, 'Color', color);
                 signalHeight = max(signal) - min(signal);
-                ylim(obj.responseAxis, [min(signal) - 0.1 * signalHeight, max(signal) + 0.1 * signalHeight]);
+                pax = [min(signal) - 0.1 * signalHeight - eps, max(signal) + 0.1 * signalHeight + eps];
+                ylim(obj.responseAxis, pax);
                 hold(obj.responseAxis, 'on');
                 set(obj.responseAxis,'LooseInset',get(obj.responseAxis,'TightInset'))
                 title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
