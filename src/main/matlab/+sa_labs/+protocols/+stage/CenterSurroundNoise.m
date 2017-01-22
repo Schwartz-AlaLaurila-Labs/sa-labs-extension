@@ -146,6 +146,8 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                     intensity = 0;
                 elseif intensity > obj.meanLevel * 2
                     intensity = obj.meanLevel * 2; % probably important to be symmetrical to whiten the stimulus
+                elseif intensity > 1
+                    intensity = 1;
                 end
                 i = intensity;
             end
@@ -160,11 +162,13 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                             obj.currentContrast * obj.meanLevel * obj.surroundNoiseStream.randn;
                     end
                 end
-                if intensity < 0
+                  if intensity < 0
                     intensity = 0;
                 elseif intensity > obj.meanLevel * 2
                     intensity = obj.meanLevel * 2; % probably important to be symmetrical to whiten the stimulus
-                end                
+                elseif intensity > 1
+                    intensity = 1;
+                end              
                 i = intensity;
             end
 
