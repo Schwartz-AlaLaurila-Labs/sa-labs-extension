@@ -275,14 +275,15 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 hold(obj.responseAxisSpikeRate, 'off')
             end
             
+            ylimRange = [];
             for ci = 1:obj.numChannels
                 color = colorOrder(mod(ci - 1, size(colorOrder, 1)) + 1, :);
                 epoch = obj.epochData{end}{ci};
                 signal = epoch.responseObject.getData();
                 plot(obj.responseAxis, epoch.t, signal, 'Color', color);
                 signalHeight = max(signal) - min(signal);
-                pax = [min(signal) - 0.1 * signalHeight - eps, max(signal) + 0.1 * signalHeight + eps];
-                ylim(obj.responseAxis, pax);
+                ylimRange(ci,:) = [min(signal) - 0.1 * signalHeight - eps, max(signal) + 0.1 * signalHeight + eps];
+                
                 hold(obj.responseAxis, 'on');
                 set(obj.responseAxis,'LooseInset',get(obj.responseAxis,'TightInset'))
                 title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
@@ -316,6 +317,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             if strcmp(obj.responseMode, 'Cell attached')
                 hold(obj.responseAxisSpikeRate, 'off')
             end
+            ylim([min(ylimRange(:,1)),max(ylimRange(:,2))]);
             
             %             then loop through all the epochs we have and plot them
             
@@ -458,8 +460,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     range(1) = min(min(plotval), range(1));
                     range(2) = max(max(plotval), range(2));
 
-                    color = colorOrder(1,:);
-                    plot(thisAxis, t, plotval,'LineWidth',1);
+                    color = colorOrder(mod(ci - 1, size(colorOrder, 1)) + 1, :);
+                    plot(thisAxis, t, plotval,'LineWidth',1, 'Color', color);
                     hold(thisAxis,'on')
                     plot(thisAxis, t, plotval+plotstd, 'LineWidth', .5, 'Color', color);
                     plot(thisAxis, t, plotval-plotstd, 'LineWidth', .5, 'Color', color);

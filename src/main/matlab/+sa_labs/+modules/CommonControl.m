@@ -20,15 +20,15 @@ classdef CommonControl < symphonyui.ui.Module
         chan1Hold = 0
         
         chan2 = 'None';
-        chan2Mode = 'Cell attached'
+        chan2Mode = 'Off'
         chan2Hold = 0
         
         chan3  = 'None';
-        chan3Mode = 'Cell attached'
+        chan3Mode = 'Off'
         chan3Hold = 0
         
         chan4  = 'None';
-        chan4Mode = 'Cell attached'
+        chan4Mode = 'Off'
         chan4Hold = 0
     end
     
@@ -44,9 +44,9 @@ classdef CommonControl < symphonyui.ui.Module
         chan3Type
         chan4Type
         chan1ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
-        chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
-        chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
-        chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
+        chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
+        chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
+        chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         
         spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});       
     

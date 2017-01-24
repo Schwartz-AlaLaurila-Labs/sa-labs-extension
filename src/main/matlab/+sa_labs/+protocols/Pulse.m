@@ -3,7 +3,7 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
     % from the rieke lab with our thanks
     
     properties
-        outputAmpSelection              % Output amplifier (1 or 2)
+        outputAmpSelection = 1          % Output amplifier (1 or 2)
         preTime = 50                    % Pulse leading duration (ms)
         stimTime = 500                  % Pulse duration (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
@@ -12,7 +12,7 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        responsePlotMode = 'cartesian';
+        responsePlotMode = false;
         responsePlotSplitParameter = '';
     end
     
@@ -23,10 +23,10 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
     methods
                 
         
-        function prepareRun(obj)
-            prepareRun@edu.washington.riekelab.protocols.RiekeLabProtocol(obj);
-            
-        end
+%         function prepareRun(obj)
+%             prepareRun@sa_labs.protocols.BaseProtocol(obj, epoch);
+%             
+%         end
         
         function stim = createAmpStimulus(obj, ampName)
             gen = symphonyui.builtin.stimuli.PulseGenerator();
@@ -44,13 +44,6 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
                 
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
-            
-            devices = obj.rig.getInputDevices();
-            for i = 1:numel(devices)
-                if epoch.hasResponse(devices{i})
-                    epoch.removeResponse(devices{i});
-                end
-            end
             
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));

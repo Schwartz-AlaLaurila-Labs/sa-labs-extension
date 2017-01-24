@@ -7,15 +7,15 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan1Hold = 0
         
         chan2 = 'None';
-        chan2Mode = 'Cell attached'
+        chan2Mode = 'Off'
         chan2Hold = 0
         
         chan3  = 'None';
-        chan3Mode = 'Cell attached'
+        chan3Mode = 'Off'
         chan3Hold = 0
         
         chan4  = 'None';
-        chan4Mode = 'Cell attached'
+        chan4Mode = 'Off'
         chan4Hold = 0
         
         spikeDetectorMode = 'Filtered Threshold';
@@ -115,7 +115,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             devices = {};
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
-                if ~strcmp(ampName, 'None');
+                ampMode = obj.(['chan' num2str(ci) 'Mode']);
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
                     device = obj.rig.getDevice(ampName);
                     devices{end+1} = device; %#ok<AGROW>
                 end
@@ -140,8 +141,9 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
+                ampMode = obj.(['chan' num2str(ci) 'Mode']);
                 
-                if strcmp(ampName, 'None')
+                if strcmp(ampName, 'None') || strcmp(ampMode, 'Off')
                    continue
                 end
                 ampDevice = obj.rig.getDevice(ampName);
