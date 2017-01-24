@@ -5,8 +5,8 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         tailTime = 500
         
         contrast = 0.5
-        frequency = 5; %hz
-        numberOfContrastPulses = 5;
+        frequency = 4; %hz
+        numberOfContrastPulses = 4;
         
         probeAxis = 'vertical';
         barSeparation = 30; %microns
