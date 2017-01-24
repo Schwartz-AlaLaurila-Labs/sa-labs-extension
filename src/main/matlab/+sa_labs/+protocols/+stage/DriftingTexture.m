@@ -18,6 +18,10 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
         singleDimension = false;
         chirpStart = false;
         
+        randomMotion = false;
+        smoothMotionScale = 1.0; % sec
+        motionSeed = 1;
+        
 
         numberOfAngles = 12;
         numberOfCycles = 2;
@@ -181,35 +185,49 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
 %                 p.addController(centerCircleController);
             end
 
-
+            if obj.randomMotion
+                motionPath = randi((obj.stimTime + obj.preTime)/1000 * 60 + 200, 1);
+                motionPath = smooth(motionPath);
+            end
+            
+            
             % drift controller
-            function pos = movementController(state, stimTime, preTime, movementDelay, pixelSpeed, angle, center)
+            function pos = movementController(state, stimTime, preTime, movementDelay, pixelSpeed, angle, center, randomMotion, motionPath)
                 t = state.time;
                 duration = stimTime / 1000;
                 shapeOnTime = preTime / 1000;
                 startMovementTime = shapeOnTime + movementDelay/1000;
                 endMovementTime = startMovementTime + stimTime/1000;
                 
-                if t < shapeOnTime
-                    pos = [NaN, NaN];
-                elseif t < startMovementTime
-                    y = pixelSpeed * sind(angle) * (0 - duration/2);
-                    x = pixelSpeed * cosd(angle) * (0 - duration/2);
-                    pos = [x,y] + center;
-%                 else
-                elseif t < endMovementTime
-                    timeFromStartMovement = t - startMovementTime;
-                    y = pixelSpeed * sind(angle) * (timeFromStartMovement - duration/2);
-                    x = pixelSpeed * cosd(angle) * (timeFromStartMovement - duration/2);
-                    pos = [x,y] + center;
+                if ~randomMotion
+                    if t < shapeOnTime
+                        pos = [NaN, NaN];
+                    elseif t < startMovementTime
+                        y = pixelSpeed * sind(angle) * (0 - duration/2);
+                        x = pixelSpeed * cosd(angle) * (0 - duration/2);
+                        pos = [x,y] + center;
+    %                 else
+                    elseif t < endMovementTime
+                        timeFromStartMovement = t - startMovementTime;
+                        y = pixelSpeed * sind(angle) * (timeFromStartMovement - duration/2);
+                        x = pixelSpeed * cosd(angle) * (timeFromStartMovement - duration/2);
+                        pos = [x,y] + center;
+                    else
+                        pos = [NaN, NaN];
+                    end
                 else
-                    pos = [NaN, NaN];
+                    % random motion
+                    k = motionPath(state.frame);
+                    y = sind(angle) * k;
+                    x = cosd(angle) * k;
+                    pos = [x,y] + center;
+                    
                 end
             end
             pixelSpeed = -1*obj.um2pix(obj.speed);
             controller = stage.builtin.controllers.PropertyController(im, ...
                 'position', @(s)movementController(s, obj.stimTime, obj.preTime, ...
-                obj.movementDelay, pixelSpeed, obj.curAngle, canvasSize/2));
+                obj.movementDelay, pixelSpeed, obj.curAngle, canvasSize/2, obj.randomMotion, motionPath));
             p.addController(controller);
  
 %             obj.addFrameTracker(p);
