@@ -30,7 +30,7 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-       version = 2
+       version = 3 % add random motion
        curAngle
        angles 
        imageMatrix
@@ -186,10 +186,12 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
             end
 
             if obj.randomMotion
-                motionPath = randi((obj.stimTime + obj.preTime)/1000 * 60 + 200, 1);
-                motionPath = smooth(motionPath);
+                stream = RandStream('mt19937ar', 'Seed', obj.motionSeed);
+                motionPath = stream.rand((obj.stimTime + obj.preTime)/1000 * 60 + 200, 1);
+                motionPath = smooth(motionPath, 8, 'lowess');
+            else
+                motionPath = [];
             end
-            
             
             % drift controller
             function pos = movementController(state, stimTime, preTime, movementDelay, pixelSpeed, angle, center, randomMotion, motionPath)
@@ -217,7 +219,7 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
                     end
                 else
                     % random motion
-                    k = motionPath(state.frame);
+                    k = pixelSpeed * motionPath(state.frame);
                     y = sind(angle) * k;
                     x = cosd(angle) * k;
                     pos = [x,y] + center;
