@@ -19,7 +19,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Hold = 0
         
         spikeDetectorMode = 'Filtered Threshold';
-        spikeThreshold = 15 % pA or std
+        spikeThreshold = 22 % pA or std
     end
     
     properties (Transient, Hidden)
@@ -106,7 +106,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     device.applyBackground();
                     
                     if prevBackground ~= newBackground
-                        pause(3);
+                        pause(5);
                     end
                 end
             end

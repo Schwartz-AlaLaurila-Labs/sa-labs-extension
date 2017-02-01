@@ -12,7 +12,7 @@ classdef CommonControl < symphonyui.ui.Module
         greenLED = 0 % 0-255
         
         spikeDetectorMode = 'Filtered Threshold';
-        spikeThreshold = 15 % pA or std
+        spikeThreshold = 22 % pA or std
         
         % amplifiers
         chan1 = 'Amp1';
