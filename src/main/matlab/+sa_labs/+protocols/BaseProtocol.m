@@ -19,7 +19,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Hold = 0
         
         spikeDetectorMode = 'Filtered Threshold';
-        spikeThreshold = 22 % pA or std
+        spikeThreshold = 20 % pA or std
     end
     
     properties (Transient, Hidden)

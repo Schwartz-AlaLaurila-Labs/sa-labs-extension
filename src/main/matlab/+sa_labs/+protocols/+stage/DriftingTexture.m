@@ -86,7 +86,11 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
             % generate texture
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             sigma = obj.um2pix(0.5 * obj.textureScale / obj.resScaleFactor);
-            dist = obj.speed * obj.stimTime / 1000; % um / sec
+            if ~obj.randomMotion
+                dist = obj.speed * obj.stimTime / 1000; % um / sec
+            else
+                dist = obj.speed * 5;
+            end
             obj.moveDistance = dist;
             res = [max(canvasSize) * 1.42 + obj.um2pix(dist),...
                 max(canvasSize) * 1.42, ]; % pixels
