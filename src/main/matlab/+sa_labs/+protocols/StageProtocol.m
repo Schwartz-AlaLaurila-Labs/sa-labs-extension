@@ -8,13 +8,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         NDF = 5             % Filter NDF value
         frameRate = 60;     % Hz
-%         patternRate = 60;   % Hz
-        blueLED = 30        % 0-255
-        greenLED = 30        % 0-255
-        redLED = 30
-        color = 'blue';
-        bitDepth = 8;
-        numPatternsPerFrame = 1
+        patternRate = 60;   % Hz
+        blueLED = 20        % 0-255
+        greenLED = 0        % 0-255
     end
     
     properties (Dependent)
@@ -23,7 +19,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        colorType = symphonyui.core.PropertyType('char', 'row', {'blue', 'green', 'blue+uv+green'});
+        color = 'blue';
+        bitDepth = 8;
+        numPatternsPerFrame = 1
+        
+        colorType = symphonyui.core.PropertyType('char', 'row', {'cyan','blue','green'});
     end
        
     methods (Abstract)
@@ -39,7 +39,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 case {'meanLevel', 'intensity'}
                     d.category = '1 Basic';
                     
-                case {'color','offsetX','offsetY','blueLED','greenLED','redLED','uvLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
+                case {'color','offsetX','offsetY','blueLED','greenLED','patternsPerFrame','NDF','frameRate','patternRate','bitDepth','RstarMean','RstarIntensity'}
                     d.category = '8 Projector';
             end
         end
@@ -55,7 +55,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                
         function controllerDidStartHardware(obj)
             controllerDidStartHardware@sa_labs.protocols.BaseProtocol(obj);
-            obj.rig.getDevice('Stage').play(obj.createPresentation());
+            obj.rig.getDevice('Stage').play(obj.createPresentation()); % may need mods for different devices
         end
         
         function prepareRun(obj)
@@ -73,11 +73,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
                 lightCrafter.setPatternAttributes(obj.bitDepth, obj.color, obj.numPatternsPerFrame);
-                lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED);
+                lightCrafter.setLedCurrents(0, obj.greenLED, obj.blueLED);
                 lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
                 pause(0.2); % let the projector get set up
-                [bitDepth, color, numPatterns] = lightCrafter.getPatternAttributes();
-                color
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
         end

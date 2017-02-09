@@ -92,9 +92,9 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             durations = diff(indices(:) ./ sampleRate);
             
             minDuration = min(durations);
-            maxDuration = max(durations);
+            maxDuration = max(durations)
             
-            refreshDuration = 1 / obj.stageDevice.getMonitorRefreshRate();
+            refreshDuration = 1 / obj.stageDevice.getMonitorRefreshRate()
             
             if maxDuration > 3 * refreshDuration
                 warning('Long frame!');
