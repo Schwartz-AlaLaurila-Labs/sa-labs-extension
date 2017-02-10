@@ -1,4 +1,4 @@
-classdef TestRig_SchwartzLab_upperProjector < symphonyui.core.descriptions.RigDescription
+classdef TestRig_SchwartzLab_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
 
     properties
         % properties not accessible here; have to be fed into a device to work
@@ -12,52 +12,17 @@ classdef TestRig_SchwartzLab_upperProjector < symphonyui.core.descriptions.RigDe
         projectorAngleOffset = 180;
         frameTrackerPosition = [40,40];
         frameTrackerSize = [80,80];
-        filterWheelComPort = 'COM8';
+        filterWheelComPort = nan;
+        amp1Id = 1;
+        amp2Id = 2;        
         
-        projectorColorMode = 'BUG';
+        projectorColorMode = 'uv';
     end
     
     methods
         
         function obj = TestRig_SchwartzLab_upperProjector()
-            import symphonyui.builtin.daqs.*;
-            import symphonyui.builtin.devices.*;
-            import symphonyui.core.*;
-                        
-            daq = HekaSimulationDaqController();
-            obj.daqController = daq;
-            
-            amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
-            obj.addDevice(amp1);
-            
-            amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
-            obj.addDevice(amp2);
-            
-%             amp3 = MultiClampDevice('Amp3', 3).bindStream(daq.getStream('ANALOG_OUT.2')).bindStream(daq.getStream('ANALOG_IN.2'));
-%             obj.addDevice(amp3);
-% 
-%             amp4 = MultiClampDevice('Amp4', 4).bindStream(daq.getStream('ANALOG_OUT.3')).bindStream(daq.getStream('ANALOG_IN.3'));
-%             obj.addDevice(amp4);
-                        
-            oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
-            daq.getStream('doport0').setBitPosition(oscopeTrigger, 0);
-            obj.addDevice(oscopeTrigger);
-
-            propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
-            obj.addDevice(propertyDevice);
-            
-%             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
-%             neutralDensityFilterWheel.setConfigurationSetting('filterWheelValidPositions', obj.filterWheelValidPositions);
-%             neutralDensityFilterWheel.addResource('filterWheelAttentuationValues', obj.filterWheelAttentuationValues);
-%             obj.addDevice(neutralDensityFilterWheel);
-            
-            lightCrafter = sa_labs.devices.LightCrafterDevice('micronsPerPixel', obj.micronsPerPixel, 'colorMode', 'tricolor');
-            lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition)
-            lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize)
-            lightCrafter.addResource('fitBlue', obj.fitBlue);
-            lightCrafter.addResource('fitGreen', obj.fitGreen);
-            lightCrafter.addResource('projectorAngleOffset', obj.projectorAngleOffset);
-            obj.addDevice(lightCrafter);
+            obj.initializeRig();
         end
     end
 end

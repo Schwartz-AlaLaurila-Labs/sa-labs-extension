@@ -15,7 +15,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 4
         
-        responsePlotMode = 'cartesian';
+        responsePlotMode = false;%'cartesian';
         responsePlotSplitParameter = '';
     end
     
@@ -28,9 +28,6 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
 
-            %set bg
-            p.setBackgroundColor(obj.meanLevel);
-            
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
             spot.radiusY = spot.radiusX;
