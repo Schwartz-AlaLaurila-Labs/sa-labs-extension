@@ -15,7 +15,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 4
         
-        responsePlotMode = 'cartesian';
+        responsePlotMode = false;%'cartesian';
         responsePlotSplitParameter = '';
     end
     
@@ -28,26 +28,31 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
 
-            %set bg
-            p.setBackgroundColor(obj.meanLevel);
-            
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
             spot.radiusY = spot.radiusX;
-            %spot.color = obj.intensity;
+            spot.color = obj.intensity;
+            spot.opacity = 1;
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-            function c = onDuringStim(state, preTime, stimTime, intensity, meanLevel)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    c = intensity;
-                else
-                    c = meanLevel;
-                end
+            function c = onDuringStim(state, preTime, stimTime)
+                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
             end
             
-            controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.intensity, obj.meanLevel));
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
+            end
+                        
+            if obj.numberOfPatterns > 1
+                pattern = obj.primaryObjectPattern;
+                controller = stage.builtin.controllers.PropertyController(spot, 'color', ...
+                    @(s)(onDuringStim(s, obj.preTime, obj.stimTime) || patternSelect(s, pattern)));
+            else
+                controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
+                    @(s)onDuringStim(s, obj.preTime, obj.stimTime));
+            end
             p.addController(controller);
 
         end

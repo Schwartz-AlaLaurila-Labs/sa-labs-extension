@@ -3,7 +3,6 @@ classdef LightCrafterDevice < symphonyui.core.Device
     properties (Access = private, Transient)
         stageClient
         lightCrafter
-        patternRatesToAttributes
     end
     
     methods
@@ -13,12 +12,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
             ip.addParameter('host', 'localhost', @ischar);
             ip.addParameter('port', 5678, @isnumeric);
             ip.addParameter('micronsPerPixel', @isnumeric);
+            ip.addParameter('colorMode', 'single', @ischar);
             ip.parse(varargin{:});
             
             cobj = Symphony.Core.UnitConvertingExternalDevice(['LightCrafter Stage@' ip.Results.host], 'Texas Instruments', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
             obj@symphonyui.core.Device(cobj);
             obj.cobj.MeasurementConversionTarget = symphonyui.core.Measurement.UNITLESS;
             
+            % Set up Stage
             obj.stageClient = stage.core.network.StageClient();
             obj.stageClient.connect(ip.Results.host, ip.Results.port);
             obj.stageClient.setMonitorGamma(1);
@@ -31,25 +32,34 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionIdentity();
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
             
-            obj.lightCrafter = LightCrafter4500(obj.stageClient.getMonitorRefreshRate());
-            obj.lightCrafter.connect();
-            obj.lightCrafter.setMode('pattern');
-            [auto, red, green, blue] = obj.lightCrafter.getLedEnables();
+            % Set up Lightcrafter
+            colorMode = ip.Results.colorMode;
+%             if strcmp(colorMode, 'uv')
+                prerender = true;
+%             else
+%                 prerender = false;
+%             end
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
-            renderer = stage.builtin.renderers.PatternRenderer(1, 8);
-            obj.stageClient.setCanvasRenderer(renderer);
+            
+            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, colorMode);
+            obj.lightCrafter.connect();
+            obj.lightCrafter.setMode('pattern');
             
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('frameTrackerSize', frameTrackerSize);
             obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPosition);
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
-            obj.addConfigurationSetting('prerender', false, 'isReadOnly', true);
-            obj.addConfigurationSetting('lightCrafterLedEnables',  [auto, red, green, blue], 'isReadOnly', true);
-            obj.addConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate(), 'isReadOnly', true);
-            obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel, 'isReadOnly', true);
+            obj.addConfigurationSetting('prerender', prerender, 'isReadOnly', true);
+            obj.addConfigurationSetting('micronsPerPixel', 1);
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
+            obj.addConfigurationSetting('frameTrackerDuration', 0.2);
+            obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
+            obj.addConfigurationSetting('numberOfPatterns', 1);
+            obj.addConfigurationSetting('backgroundIntensity', 0);
+            obj.addConfigurationSetting('backgroundPattern', 1);
+                        
         end
         
         function close(obj)
@@ -63,6 +73,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             if ~isempty(obj.lightCrafter)
                 obj.lightCrafter.disconnect();
             end
+        end
+        
+        function s = getFrameRate(obj)
+            s = obj.getConfigurationSetting('monitorRefreshRate');
         end
         
         function s = getCanvasSize(obj)
@@ -81,6 +95,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
             s = obj.getConfigurationSetting('frameTrackerPosition');
         end
         
+        function s = getFrameTrackerDuration(obj)
+            s = obj.getConfigurationSetting('frameTrackerDuration');
+        end        
+        
+%         function setFrameTrackerDuration(obj, s)
+%             obj.setConfigurationSetting('frameTrackerDuration', s);
+%         end        
+        
         function s = getCanvasTranslation(obj)
             s = obj.getConfigurationSetting('canvasTranslation');
         end            
@@ -89,10 +111,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             r = obj.getConfigurationSetting('monitorRefreshRate');
         end
         
-        function setPrerender(obj, tf)
-            obj.setReadOnlyConfigurationSetting('prerender', logical(tf));
+        function setBackground(obj, i, p)
+            obj.setConfigurationSetting('backgroundIntensity', i)
+            obj.setConfigurationSetting('backgroundPattern', p)
         end
-        
+                
         function tf = getPrerender(obj)
             tf = obj.getConfigurationSetting('prerender');
         end
@@ -108,22 +131,33 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));            
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
 
+            % BACKGROUND
             background = stage.builtin.stimuli.Rectangle();
             background.size = canvasSize;
             background.position = canvasSize/2 - canvasTranslation;
-            background.color = presentation.backgroundColor;
-            presentation.setBackgroundColor(0);
+            backgroundIntensity = obj.getConfigurationSetting('backgroundIntensity');
+            background.color = backgroundIntensity;
+            backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
+            background.color = backgroundIntensity;
+            if obj.getConfigurationSetting('numberOfPatterns') > 1
+                backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
+                    @(state)(1 * (state.pattern == backgroundPattern - 1)));
+                presentation.addController(backgroundPatternController);
+            end
             presentation.insertStimulus(1, background);
             
+            % FRAME TRACKER
             tracker = stage.builtin.stimuli.Rectangle();
             tracker.size = obj.getFrameTrackerSize();
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
-            
-            frameTrackerDuration = .20;
-            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < frameTrackerDuration));
+            % appears on all patterns
+            duration = obj.getFrameTrackerDuration();
+            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
+                @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration));
             presentation.addController(trackerColor);
             
+            % RENDER
             if obj.getPrerender()
                 player = stage.builtin.players.PrerenderedPlayer(presentation);
             else
@@ -156,9 +190,20 @@ classdef LightCrafterDevice < symphonyui.core.Device
         end
         
         function setPatternAttributes(obj, bitDepth, color, numPatterns)
+            % configure the lightcrafter
             obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            obj.setConfigurationSetting('numberOfPatterns', numPatterns)
+            
+            % configure the stage renderer
+            renderer = stage.builtin.renderers.PatternRenderer(numPatterns, bitDepth);
+            obj.stageClient.setCanvasRenderer(renderer);
         end
-                
+        
+        function [bitDepth, color, numPatterns] = getPatternAttributes(obj)
+            [bitDepth, color, numPatterns] = obj.lightCrafter.getPatternAttributes();
+        end                
+            
+            
         function r = getPatternRate(obj)
             r = obj.lightCrafter.currentPatternRate();
         end

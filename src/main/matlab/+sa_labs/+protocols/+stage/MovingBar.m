@@ -41,10 +41,10 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
             
             bar = stage.builtin.stimuli.Rectangle();
             bar.color = obj.intensity;
+            bar.opacity = 1;
             bar.orientation = obj.barAngle;
             bar.size = round([obj.um2pix(obj.barLength), obj.um2pix(obj.barWidth)]);
             p.addStimulus(bar);

@@ -77,8 +77,6 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         
         function preparePresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-
-            p.setBackgroundColor(obj.meanLevel);
                                     
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize / 2));

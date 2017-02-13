@@ -67,7 +67,6 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             centerPos = obj.rig.getDevice('Stage').getCanvasSize() / 2;
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
             
             grat = stage.builtin.stimuli.Grating(obj.gratingProfile, 1024);
             grat.position = [0,0];

@@ -185,9 +185,7 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
         
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
-            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
-            
+            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);           
             
             im = stage.builtin.stimuli.Image(obj.imageMatrix);
             im.orientation = obj.curAngle + 90;

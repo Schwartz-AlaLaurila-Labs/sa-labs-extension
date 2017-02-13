@@ -82,7 +82,6 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
             spotDiameterPix = obj.um2pix(obj.spotDiameter);
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
             
             spot = stage.builtin.stimuli.Ellipse();
             spot.color = obj.intensity;

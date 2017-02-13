@@ -67,10 +67,7 @@ classdef TemporalFrequency < sa_labs.protocols.StageProtocol
         
         function p = createPresentation(obj)
             %set bg
-            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-
-            p.setBackgroundColor(obj.meanLevel);
-            
+            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);            
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize) / 2);
             spot.radiusY = spot.radiusX;
