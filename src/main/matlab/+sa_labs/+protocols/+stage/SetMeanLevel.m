@@ -20,10 +20,6 @@ classdef SetMeanLevel < sa_labs.protocols.StageProtocol
       
         function p = createPresentation(obj)
             p = stage.core.Presentation(1.0);
-
-            %set bg
-            p.setBackgroundColor(obj.meanLevel);
-
         end
         
         

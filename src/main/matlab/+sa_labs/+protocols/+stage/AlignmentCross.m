@@ -28,7 +28,6 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
             armLengthPix = obj.um2pix(obj.length);
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
             
             if obj.asymmetricShape
                 armLengthPix = armLengthPix / 2;

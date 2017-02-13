@@ -46,7 +46,6 @@ classdef Annulus < sa_labs.protocols.StageProtocol
             spotDiameterPix = obj.um2pix(obj.curOuterDiameter);
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
             
             outerCircle = stage.builtin.stimuli.Ellipse();
             outerCircle.radiusX = spotDiameterPix/2;

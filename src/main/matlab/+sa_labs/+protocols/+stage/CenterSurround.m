@@ -3,7 +3,7 @@ classdef CenterSurround < sa_labs.protocols.StageProtocol
     properties
         preTime = 500	% Spot leading duration (ms)
         stimTime = 1000	% Spot duration (ms)
-        tailTime = 1000	% Spot trailing duration (ms)
+        tailTime = 500	% Spot trailing duration (ms)
         
         %intensity value for green and uv LEDs
         intensityGreen = 0.5;
@@ -83,9 +83,6 @@ classdef CenterSurround < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
 
-%             p.setbackgroundPatternIndex(obj.meanLevel);
-
-%             p.setbackgroundPatternIndex('blue');
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
 
             spotOuter = stage.builtin.stimuli.Ellipse();

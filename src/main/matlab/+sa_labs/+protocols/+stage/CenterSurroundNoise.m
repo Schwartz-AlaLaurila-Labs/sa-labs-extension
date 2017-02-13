@@ -94,7 +94,6 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             annulusOuterDiameterPix = obj.um2pix(obj.annulusOuterDiameter);
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3); %create presentation of specified duration
-            p.setBackgroundColor(obj.meanLevel); % Set background intensity
             preFrames = round(60 * (obj.preTime/1e3));
             if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
                 surroundSpot = stage.builtin.stimuli.Ellipse();

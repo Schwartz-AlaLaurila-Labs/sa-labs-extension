@@ -37,7 +37,6 @@ classdef FlashedBar < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            p.setBackgroundColor(obj.meanLevel);
             
             bar = stage.builtin.stimuli.Rectangle();
             bar.orientation = obj.barAngle;

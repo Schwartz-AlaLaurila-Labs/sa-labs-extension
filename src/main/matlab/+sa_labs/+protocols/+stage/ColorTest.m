@@ -22,9 +22,6 @@ classdef ColorTest < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
 
-%             p.setbackgroundPatternIndex(obj.meanLevel);
-
-%             p.setbackgroundPatternIndex('blue');
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
 
             siz = 500;

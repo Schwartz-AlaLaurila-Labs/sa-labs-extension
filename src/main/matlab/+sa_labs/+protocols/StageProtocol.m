@@ -18,10 +18,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         primaryObjectPattern = 1
         secondaryObjectPattern = 1
         backgroundPattern = 1
-        bitDepth = 8;
     end
     
     properties (Dependent)
+        bitDepth = 8;       
         RstarMean
         RstarIntensity
     end
@@ -176,8 +176,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 %             if isprop(obj, 'intensity') && ~ isempty(obj.rig.getDevices('LightCrafter'))
 %                 RstarIntensity = obj.convertRelativeToRStar(obj.intensity);
 %             end
-        end        
+        end
         
+        function bitDepth = get.bitDepth(obj)
+            if obj.numberOfPatterns == 1
+                bitDepth = 8;
+            else
+                bitDepth = 6;
+            end
+        end
     end
     
     
