@@ -8,15 +8,15 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         baseColor = [0.5, 0.5];
         contrast = 0.9;
         spotDiameter = 200              % Spot diameter (um)
-        numberOfCycles = 2               % Number of cycles through all contrasts
+        numberOfCycles = 3               % Number of cycles through all contrasts
     end
     
     properties (Hidden)
         spotContrasts
         currentColors
     
-        responsePlotMode = false;
-        responsePlotSplitParameter = '';
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = 'sortColors';
     end
     
     properties (Hidden, Dependent)
@@ -24,7 +24,6 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     end
     
     methods
-        
         
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
@@ -40,7 +39,6 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                           [c1,c2];
                           [c2,c1]];
             
-            
         end
 
         function prepareEpoch(obj, epoch)
@@ -49,6 +47,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             obj.currentColors = obj.baseColor .* obj.spotContrasts(index, :);
 
             epoch.addParameter('colors', obj.currentColors);
+            epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100)));
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
@@ -56,9 +55,6 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
-            
-            spotDiameterPix = obj.um2pix(obj.spotDiameter);
-            
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
             surround = stage.builtin.stimuli.Ellipse();
@@ -81,8 +77,8 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             spot = stage.builtin.stimuli.Ellipse();
             spot.color = 1;
             spot.opacity = 1;
-            spot.radiusX = spotDiameterPix/2;
-            spot.radiusY = spotDiameterPix/2;
+            spot.radiusX = obj.um2pix(obj.spotDiameter/2);
+            spot.radiusY = spot.radiusX;
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
@@ -97,8 +93,6 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             spotColorController = stage.builtin.controllers.PropertyController(spot, 'color',...
                 @(s) spotColor(s, obj.currentColors, obj.baseColor));
             p.addController(spotColorController);
-            
-
             
         end
         

@@ -34,11 +34,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             % Set up Lightcrafter
             colorMode = ip.Results.colorMode;
-            if strcmp(colorMode, 'uv')
+%             if strcmp(colorMode, 'uv')
                 prerender = true;
-            else
-                prerender = false;
-            end
+%             else
+%                 prerender = false;
+%             end
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
