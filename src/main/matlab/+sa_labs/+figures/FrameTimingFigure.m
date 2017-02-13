@@ -35,6 +35,10 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
 
         function handleEpoch(obj, epoch) %#ok<INUSD>
             info = obj.device.getPlayInfo();
+            if isa(info, 'MException')
+                disp(getReport(info));
+                error('Stage error');
+            end            
             frameRate = obj.device.getFrameRate();
 
             durations = info.flipDurations;
@@ -47,11 +51,11 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
                 y = [];
             end
             if isempty(obj.sweep)
-                obj.sweep = line(x, y, 'Parent', obj.axesHandle, 'Color', 'r');
                 obj.targetLine = line(x, ytarget, 'Parent', obj.axesHandle, 'Color', 'k');
+                obj.sweep = line(x, y, 'Parent', obj.axesHandle, 'Color', 'r');
             else
-                set(obj.sweep, 'XData', x, 'YData', y);
                 set(obj.targetLine, 'XData', x, 'YData', ytarget);
+                set(obj.sweep, 'XData', x, 'YData', y);
             end
             ylim(obj.axesHandle, [0, max([2/frameRate, 1.25*max(y)])]);
                 

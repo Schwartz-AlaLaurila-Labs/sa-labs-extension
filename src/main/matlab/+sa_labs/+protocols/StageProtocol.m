@@ -27,9 +27,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green'});
-        colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green'});
-        colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green'});
+        colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
+        colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
+        colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
     end
        
     methods (Abstract)
@@ -127,10 +127,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function completeRun(obj)
             completeRun@sa_labs.protocols.BaseProtocol(obj);
-%             playInfo = obj.rig.getDevice('Stage').getPlayInfo();
-%             if isa(playInfo, 'MException')
-%                 disp(getReport(playInfo));
-%             end
+
             obj.rig.getDevice('Stage').clearMemory();
         end
         

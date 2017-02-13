@@ -41,31 +41,21 @@ classdef ColorTest < sa_labs.protocols.StageProtocol
             spot1.color = 1;
             spot1.position = canvasSize / 2;
             p.addStimulus(spot1);
-            
-            spot2 = stage.builtin.stimuli.Ellipse();
-            spot2.radiusX = round(obj.um2pix(siz / 2));
-            spot2.radiusY = spot2.radiusX;
-            spot2.color = 1;
-            spot2.position = canvasSize / 2 + [round(obj.um2pix(siz)/2), 0];
-            p.addStimulus(spot2);
                         
             function c = patternSelect(state, activePatternNumber)
-                c = 1 * (state.pattern == activePatternNumber && state.frame > 10);
-%                 fprintf('current pattern: %g, active pattern %g\n', state.pattern, activePatternNumber);
+                c = 1 * (state.pattern == activePatternNumber - 1);
             end
                         
-            controller0 = stage.builtin.controllers.PropertyController(spot0, 'color', ...
-                @(s)patternSelect(s, 0));
+            pattern = obj.primaryObjectPattern;
+            controller0 = stage.builtin.controllers.PropertyController(spot0, 'opacity', ...
+                @(s)patternSelect(s, pattern));
             
-            controller1 = stage.builtin.controllers.PropertyController(spot1, 'color', ...
-                @(s)patternSelect(s, 1));
-            
-            controller2 = stage.builtin.controllers.PropertyController(spot2, 'color',...
-                @(s)patternSelect(s, 2));
+            pattern = obj.secondaryObjectPattern;
+            controller1 = stage.builtin.controllers.PropertyController(spot1, 'opacity', ...
+                @(s)patternSelect(s, pattern));
             
             p.addController(controller0);
             p.addController(controller1);
-            p.addController(controller2);
             
         end
         

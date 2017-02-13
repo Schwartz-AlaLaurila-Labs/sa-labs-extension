@@ -143,11 +143,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             background.size = canvasSize;
             background.position = canvasSize/2 - canvasTranslation;
             backgroundIntensity = obj.getConfigurationSetting('backgroundIntensity');
+            background.color = backgroundIntensity;
             backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
             background.color = backgroundIntensity;
             if obj.getConfigurationSetting('numberOfPatterns') > 1
-                backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
-                    @(state)(backgroundIntensity*(state.pattern == backgroundPattern)));
+                backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
+                    @(state)(1 * (state.pattern == backgroundPattern - 1)));
                 presentation.addController(backgroundPatternController);
             end
             presentation.insertStimulus(1, background);
@@ -158,8 +159,13 @@ classdef LightCrafterDevice < symphonyui.core.Device
             presentation.addStimulus(tracker);
             
             duration = obj.getFrameTrackerDuration();
-            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration));
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
+            end            
+            if obj.getConfigurationSetting('numberOfPatterns') > 1
+                trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
+                    @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration) && patternSelect(s,);
+            end
             presentation.addController(trackerColor);
             
             if obj.getPrerender()
