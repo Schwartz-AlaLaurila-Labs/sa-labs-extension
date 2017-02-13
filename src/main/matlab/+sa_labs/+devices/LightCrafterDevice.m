@@ -152,6 +152,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
             % appears on all patterns
+            duration = obj.getFrameTrackerDuration();
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
                 @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration));
             presentation.addController(trackerColor);
