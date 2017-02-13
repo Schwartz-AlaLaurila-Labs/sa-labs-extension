@@ -35,14 +35,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             % Set up Lightcrafter
             colorMode = ip.Results.colorMode;
             if strcmp(colorMode, 'uv')
-                bitDepth = 6;
-                numPatterns = 2;
-                color = 'blue';
                 prerender = true;
             else
-                bitDepth = 8;
-                numPatterns = 1;
-                color = 'blue';
                 prerender = false;
             end
             
@@ -65,9 +59,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundIntensity', 0);
             obj.addConfigurationSetting('backgroundPattern', 1);
-            
-            obj.setPatternAttributes(bitDepth, color, numPatterns);
-            
+                        
         end
         
         function close(obj)
@@ -139,6 +131,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));            
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
 
+            % BACKGROUND
             background = stage.builtin.stimuli.Rectangle();
             background.size = canvasSize;
             background.position = canvasSize/2 - canvasTranslation;
@@ -153,21 +146,17 @@ classdef LightCrafterDevice < symphonyui.core.Device
             end
             presentation.insertStimulus(1, background);
             
+            % FRAME TRACKER
             tracker = stage.builtin.stimuli.Rectangle();
             tracker.size = obj.getFrameTrackerSize();
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
-            
-            duration = obj.getFrameTrackerDuration();
-            function c = patternSelect(state, activePatternNumber)
-                c = 1 * (state.pattern == activePatternNumber - 1);
-            end            
-            if obj.getConfigurationSetting('numberOfPatterns') > 1
-                trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                    @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration) && patternSelect(s,);
-            end
+            % appears on all patterns
+            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
+                @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration));
             presentation.addController(trackerColor);
             
+            % RENDER
             if obj.getPrerender()
                 player = stage.builtin.players.PrerenderedPlayer(presentation);
             else
