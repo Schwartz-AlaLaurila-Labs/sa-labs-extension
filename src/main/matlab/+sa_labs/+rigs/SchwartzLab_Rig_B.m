@@ -8,8 +8,8 @@ classdef SchwartzLab_Rig_B < symphonyui.core.descriptions.RigDescription
         filterWheelAttentuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
              
         micronsPerPixel = 2.3;
-        frameTrackerPosition = [40,250];
-        frameTrackerSize = [60,60];
+        frameTrackerPosition = [90,240];
+        frameTrackerSize = [50,50];
         filterWheelComPort = 'COM12';
         projectorAngleOffset = 270;
 

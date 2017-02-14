@@ -15,7 +15,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 4
         
-        responsePlotMode = false;%'cartesian';
+        responsePlotMode = 'cartesian';
         responsePlotSplitParameter = '';
     end
     
