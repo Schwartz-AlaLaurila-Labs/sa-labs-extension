@@ -28,16 +28,20 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
+            if obj.numberOfPatterns == 1
+                error('Must have > 1 pattern enabled to use color stim');
+            end
+            
             c1 = 1 + obj.contrast;
             c2 = 1 - obj.contrast;
             obj.spotContrasts = [[c1,1];
-                          [1,c1];
-                          [c1,c1];
-                          [c2,1];
-                          [1,c2];
-                          [c2,c2];
-                          [c1,c2];
-                          [c2,c1]];
+                              [1,c1];
+                              [c1,c1];
+                              [c2,1];
+                              [1,c2];
+                              [c2,c2];
+                              [c1,c2];
+                              [c2,c1]];
             
         end
 
@@ -47,7 +51,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             obj.currentColors = obj.baseColor .* obj.spotContrasts(index, :);
 
             epoch.addParameter('colors', obj.currentColors);
-            epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100)));
+            epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100))); % for plot display
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end

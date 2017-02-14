@@ -12,7 +12,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             ip.addParameter('host', 'localhost', @ischar);
             ip.addParameter('port', 5678, @isnumeric);
             ip.addParameter('micronsPerPixel', @isnumeric);
-            ip.addParameter('colorMode', 'single', @ischar);
+            ip.addParameter('colorMode', 'standard', @ischar);
             ip.parse(varargin{:});
             
             cobj = Symphony.Core.UnitConvertingExternalDevice(['LightCrafter Stage@' ip.Results.host], 'Texas Instruments', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
@@ -26,8 +26,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             trueCanvasSize = obj.stageClient.getCanvasSize();
             canvasSize = [trueCanvasSize(1) * 2, trueCanvasSize(2)];
-            frameTrackerSize = [80,80];
-            frameTrackerPosition = [40,40];
+            frameTrackerSizeDefault = [80,80];
+            frameTrackerPositionDefault = [40,40];
             
             obj.stageClient.setCanvasProjectionIdentity();
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
@@ -48,8 +48,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
-            obj.addConfigurationSetting('frameTrackerSize', frameTrackerSize);
-            obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPosition);
+            obj.addConfigurationSetting('frameTrackerSize', frameTrackerSizeDefault);
+            obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPositionDefault);
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', prerender, 'isReadOnly', true);
             obj.addConfigurationSetting('micronsPerPixel', 1);

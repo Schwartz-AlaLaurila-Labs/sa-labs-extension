@@ -10,8 +10,8 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen =[1.9510e-12, -1.4200e-09, 5.1430e-07, 9.6550e-06];
         micronsPerPixel = 1.6;
         projectorAngleOffset = 180;
-        frameTrackerPosition = [40,40];
-        frameTrackerSize = [80,80];
+        frameTrackerPosition = [20,20];
+        frameTrackerSize = [40,40];
         filterWheelComPort = nan;
         
         projectorColorMode = 'standard';
@@ -20,6 +20,10 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
     methods
         
         function obj = TestRig_SchwartzLab()
+            obj.initializeRig();
+        end
+        
+        function initializeRig(obj)
 
             import symphonyui.builtin.daqs.*;
             import symphonyui.builtin.devices.*;
@@ -33,16 +37,11 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
             
             obj.daqController = daq;
 
-%             if obj.testMode
-                amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
-                amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
-%             else
-%                 amp1 = MultiClampDevice('Amp1', 1, obj.amp1Id).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
-%                 amp2 = MultiClampDevice('Amp2', 2, obj.amp2Id).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
-%             end
+            amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
+            amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
+
             obj.addDevice(amp1);
             obj.addDevice(amp2);
-                
             
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
