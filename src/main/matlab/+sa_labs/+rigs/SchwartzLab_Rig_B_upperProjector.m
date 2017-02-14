@@ -7,7 +7,7 @@ classdef SchwartzLab_Rig_B_upperProjector < symphonyui.core.descriptions.RigDesc
         filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
         filterWheelAttentuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
              
-        micronsPerPixel = 2.3;
+        micronsPerPixel = 0.72;
         frameTrackerPosition = [40,250];
         frameTrackerSize = [60,60];
         filterWheelComPort = 'COM12';
