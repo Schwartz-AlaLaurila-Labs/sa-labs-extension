@@ -42,6 +42,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
+        ampList
         
         spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});
     end
@@ -51,12 +52,12 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         function didSetRig(obj)
             didSetRig@symphonyui.core.Protocol(obj);
             
-            ampList = horzcat({'None'}, obj.rig.getDeviceNames('Amp'));
+            obj.ampList = horzcat({'None'}, obj.rig.getDeviceNames('Amp'));
             
-            obj.chan1Type = symphonyui.core.PropertyType('char', 'row', ampList(2:end)); % first channel should always be filled
-            obj.chan2Type = symphonyui.core.PropertyType('char', 'row', ampList);
-            obj.chan3Type = symphonyui.core.PropertyType('char', 'row', ampList);
-            obj.chan4Type = symphonyui.core.PropertyType('char', 'row', ampList);
+            obj.chan1Type = symphonyui.core.PropertyType('char', 'row', obj.ampList(2:end)); % first channel should always be filled
+            obj.chan2Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
+            obj.chan3Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
+            obj.chan4Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
         end
 
         function d = getPropertyDescriptor(obj, name)
@@ -73,8 +74,11 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     d.category = '4 Protocol';
             end
             
-            if strfind(name, 'chan')
+            if strncmp(name, 'chan', 4)
                 d.category = '9 Amplifiers';
+                if str2double(name(5)) > (length(obj.ampList) - 1)
+                    d.isHidden = true;
+                end
             end
         end 
         

@@ -183,10 +183,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
            obj.stageClient.clearMemory();
         end
         
-        function setLedEnables(obj, auto, red, green, blue)
-            obj.lightCrafter.setLedEnables(auto, red, green, blue);
-            [a, r, g, b] = obj.lightCrafter.getLedEnables();
-            obj.setReadOnlyConfigurationSetting('lightCrafterLedEnables', [a, r, g, b]);
+        function setLedEnables(obj, auto, red, green, blue, uv)
+            if strcmp(obj.getColorMode(), 'standard')
+                obj.lightCrafter.setLedEnables(auto, red, green, blue);
+            else
+                obj.lightCrafter.setLedEnables(auto, green, uv, blue);
+            end
         end
         
         function [auto, red, green, blue] = getLedEnables(obj)

@@ -9,8 +9,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         NDF = 5             % Filter NDF value
         frameRate = 60;     % Hz
         blueLED = 30        % 0-255
-        greenOrUvLED = 30   % 0-255
-        redOrGreenLED = 30   % 0-255 
+        greenLED = 30   % 0-255
+        redLED = 30   % 0-255 
+        uvLED = 30
         numberOfPatterns = 1
         colorPattern1 = 'blue';
         colorPattern2 = 'none';
@@ -47,11 +48,30 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 case {'meanLevel', 'intensity'}
                     d.category = '1 Basic';
                     
-                case {'color','offsetX','offsetY','greenOrUvLED','redOrGreenLED','blueLED',...
-                        'numberOfPatterns','NDF','frameRate','bitDepth','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity',...
+                case {'offsetX','offsetY','NDF','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity'}
+                    d.category = '7 Projector';
+                    
+                case {'greenLED','redLED','blueLED','uvLED'}
+                    d.category = '7 Projector';
+                    lightCrafter = obj.rig.getDevices('LightCrafter');
+                    if ~isempty(lightCrafter)
+                        lightCrafter = obj.rig.getDevice('LightCrafter');
+                        if strcmp(lightCrafter.getColorMode(), 'standard')
+                            if strcmp(name, 'uvLED')
+                                d.isHidden = true;
+                            end
+                        else 
+                            if strcmp(name, 'redLED')
+                                d.isHidden = true;
+                            end
+                        end
+                    end
+                    
+                case {'color', 'numberOfPatterns','frameRate','bitDepth',...
                         'colorPattern1','colorPattern2','colorPattern3','primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
-                    d.category = '8 Projector';
+                    d.category = '8 Color';
             end
+            
         end
         
         function p = getPreview(obj, panel)
@@ -73,7 +93,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
             % set the NDF filter wheel
-            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+            if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 filterWheel.setNdfValue(obj.NDF);
             end
@@ -83,7 +103,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 lightCrafter = obj.rig.getDevice('LightCrafter');
                 lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
-                lightCrafter.setLedCurrents(obj.redOrGreenLED, obj.greenOrUvLED, obj.blueLED);
+                lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
                 lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
                 pause(0.2); % let the projector get set up
             end
@@ -160,14 +180,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             filterIndex = find(filterWheelNdfValues == obj.NDF, 1);
 
             NDF_attenuation = filterWheelAttentuationValues(filterIndex);
+            
             lightCrafter = obj.rig.getDevice('LightCrafter');
             if strcmp('standard', lightCrafter.getColorMode())
-                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenOrUvLED, 0, ...
-                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), 0)
+                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, 0, ...
+                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), 0);
             else
                 % UV mode
-                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.redOrGreenLED, obj.greenOrUvLED, ...
+                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
                     obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), lightCrafter.getResource('fitUV'));
+                NDF_attenuation = 1; % there's an NDF3 already included in the calculation for the upper projector
             end
             
             rstar = R * intensity * NDF_attenuation;
