@@ -23,6 +23,11 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         totalNumEpochs
     end
     
+    properties (Dependent)
+        intensity
+    end
+    
+    
     methods
         
         function prepareRun(obj)
@@ -102,6 +107,10 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = 8 * obj.numberOfCycles;
+        end
+        
+        function intensity = get.intensity(obj)
+            intensity = obj.baseColor(1);
         end
    
         

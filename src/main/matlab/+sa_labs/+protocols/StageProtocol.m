@@ -149,8 +149,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 return
             end
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                filterWheelNdfValues = 1:7;
-                filterWheelAttentuationValues = [1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6];
+                filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
+                filterWheelAttentuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
             else
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
