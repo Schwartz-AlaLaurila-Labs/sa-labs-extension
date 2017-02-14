@@ -16,16 +16,20 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             obj.device = device;
 
             obj.createUi();
+
+            set(obj.figureHandle, 'MenuBar', 'none');
+            set(obj.figureHandle, 'ToolBar', 'none');
+            set(obj.figureHandle, 'Name','Frame Timing','NumberTitle','off');
         end
 
         function createUi(obj)
             obj.axesHandle = axes( ...
                 'Parent', obj.figureHandle, ...
                 'XTickMode', 'auto');
-            xlabel(obj.axesHandle, 'flip');
-            ylabel(obj.axesHandle, 'sec');
-
-            obj.setTitle([obj.device.name ' Frame Timing']);
+%             xlabel(obj.axesHandle, 'flip');
+%             ylabel(obj.axesHandle, 'sec');
+            
+%             obj.setTitle([obj.device.name ' Frame Timing']);
         end
 
         function setTitle(obj, t)
@@ -44,8 +48,8 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
             durations = info.flipDurations;
             if numel(durations) > 0
                 x = 1:numel(durations);
-                y = durations;
-                ytarget = (1/frameRate) * ones(size(x));
+                y = durations * 1000;
+                ytarget = (1/frameRate) * ones(size(x)) * 1000;
             else
                 x = [];
                 y = [];
@@ -58,7 +62,8 @@ classdef FrameTimingFigure < symphonyui.core.FigureHandler
                 set(obj.sweep, 'XData', x, 'YData', y);
             end
             ylim(obj.axesHandle, [0, max([2/frameRate, 1.25*max(y)])]);
-                
+            xlim(obj.axesHandle, [0, max(x)])
+            set(obj.axesHandle,'LooseInset',get(obj.axesHandle,'TightInset'))
         end
 
     end
