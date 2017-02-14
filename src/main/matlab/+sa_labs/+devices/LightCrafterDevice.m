@@ -75,6 +75,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             end
         end
         
+        function s = getColorMode(obj)
+            s = obj.getConfigurationSetting('colorMode');
+        end
+        
         function s = getFrameRate(obj)
             s = obj.getConfigurationSetting('monitorRefreshRate');
         end

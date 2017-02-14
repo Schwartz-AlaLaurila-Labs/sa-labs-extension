@@ -70,7 +70,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 case {'sampleRate', 'spikeThreshold','spikeDetectorMode'}
                     d.category = '9 Amplifiers';
                 otherwise
-                    d.category = '4 Other';
+                    d.category = '4 Protocol';
             end
             
             if strfind(name, 'chan')

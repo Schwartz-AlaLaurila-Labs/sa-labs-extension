@@ -21,9 +21,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Dependent)
-        bitDepth = 8;       
+        bitDepth       
         RstarMean
         RstarIntensity
+        MstarIntensity
+        SstarIntensity
     end
     
     properties (Hidden)
@@ -46,7 +48,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     d.category = '1 Basic';
                     
                 case {'color','offsetX','offsetY','greenOrUvLED','redOrGreenLED','blueLED',...
-                        'numberOfPatterns','NDF','frameRate','bitDepth','RstarMean','RstarIntensity'...
+                        'numberOfPatterns','NDF','frameRate','bitDepth','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity',...
                         'colorPattern1','colorPattern2','colorPattern3','primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
                     d.category = '8 Projector';
             end
@@ -139,9 +141,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
     
-        function rstar = convertRelativeToRStar(obj, inval)
+        function [rstar, mstar, sstar] = convertIntensityToIsomerizations(obj, intensity)
             rstar = [];
-            if isempty(inval)
+            mstar = [];
+            sstar = [];
+            if isempty(intensity)
                 return
             end
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
@@ -157,26 +161,53 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
             NDF_attenuation = filterWheelAttentuationValues(filterIndex);
             lightCrafter = obj.rig.getDevice('LightCrafter');
-            [R,~,~] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, obj.color, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'));
-            rstar = R * inval * NDF_attenuation;
+            if strcmp('standard', lightCrafter.getColorMode())
+                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenOrUvLED, 0, ...
+                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), 0)
+            else
+                % UV mode
+                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.redOrGreenLED, obj.greenOrUvLED, ...
+                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), lightCrafter.getResource('fitUV'));
+            end
+            
+            rstar = R * intensity * NDF_attenuation;
+            mstar = M * intensity * NDF_attenuation;
+            sstar = S * intensity * NDF_attenuation;
+            
             %deal with patternsPerFrame in Rstar calculation
             maxPatternsPerFrame  = [24 12 8 6 4 4 3 2];
-            rstar = rstar * obj.numberOfPatterns./maxPatternsPerFrame(obj.bitDepth) * 2;
+            rstar = round(rstar * obj.numberOfPatterns ./ maxPatternsPerFrame(obj.bitDepth) * 2, 1);
+            mstar = round(mstar * obj.numberOfPatterns ./ maxPatternsPerFrame(obj.bitDepth) * 2, 1);
+            sstar = round(sstar * obj.numberOfPatterns ./ maxPatternsPerFrame(obj.bitDepth) * 2, 1);
         end
          
         function RstarMean = get.RstarMean(obj)
             RstarMean = [];
-%             if ~ isempty(obj.rig.getDevices('LightCrafter'))
-%                 RstarMean = obj.convertRelativeToRStar(obj.meanLevel);
-%             end
+            if ~isempty(obj.rig.getDevices('LightCrafter'))
+                [RstarMean, ~, ~] = obj.convertIntensityToIsomerizations(obj.meanLevel);
+            end
         end
     
         function RstarIntensity = get.RstarIntensity(obj)
             RstarIntensity = [];
-%             if isprop(obj, 'intensity') && ~ isempty(obj.rig.getDevices('LightCrafter'))
-%                 RstarIntensity = obj.convertRelativeToRStar(obj.intensity);
-%             end
+            if isprop(obj, 'intensity') && ~isempty(obj.rig.getDevices('LightCrafter'))
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
+            end
         end
+        
+        function MstarIntensity = get.MstarIntensity(obj)
+            MstarIntensity = [];
+            if isprop(obj, 'intensity') && ~isempty(obj.rig.getDevices('LightCrafter'))
+                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
+            end
+        end
+        
+        function SstarIntensity = get.SstarIntensity(obj)
+            SstarIntensity = [];
+            if isprop(obj, 'intensity') && ~isempty(obj.rig.getDevices('LightCrafter'))
+                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity);
+            end
+        end        
         
         function bitDepth = get.bitDepth(obj)
             if obj.numberOfPatterns == 1
