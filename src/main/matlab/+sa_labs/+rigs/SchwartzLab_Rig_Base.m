@@ -34,7 +34,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             if ~isnan(obj.filterWheelComPort)
                 neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
                 neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
-                neutralDensityFilterWheel.addResource('filterWheelAttentuationValues', obj.filterWheelAttentuationValues);
+                neutralDensityFilterWheel.addResource('filterWheelAttenuationValues', obj.filterWheelAttenuationValues);
                 obj.addDevice(neutralDensityFilterWheel);
             end
             

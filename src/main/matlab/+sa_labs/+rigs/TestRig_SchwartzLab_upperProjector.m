@@ -5,7 +5,7 @@ classdef TestRig_SchwartzLab_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         rigName = 'Test Rig';
         testMode = true;
         filterWheelValidPositions = [2, 4, 5, 6, 7, 8];
-        filterWheelAttentuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        filterWheelAttenuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
         
         NTCfitBlue = [-5.093e-10, 2.899e-07, -2.697e-06]; %added 04/01/16 by Todd -- fit coeff. for non tricolor stimuli on upper projector 6/16 edit
         NTCfitGreen = [-5.266e-11, 3.749e-08, 4.664e-07]; %added 04/01/16 by Todd -- fit coeff. for non tricolor stimuli on upper projector

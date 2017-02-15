@@ -5,7 +5,7 @@ classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
         rigName = 'Schwartz Lab Rig A';
         testMode = false;
         filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
-        filterWheelAttentuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        filterWheelAttenuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
         micronsPerPixel = 1.6;
         frameTrackerPosition = [70,110];
         frameTrackerSize = [60,60];

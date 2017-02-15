@@ -35,6 +35,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
         colorMode = '';
+        filterWheelNdfValues
+        filterWheelAttenuationValues
+        lightCrafter
     end
        
     methods (Abstract)
@@ -77,13 +80,23 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.BaseProtocol(obj);
                         
-            lightCrafter = obj.rig.getDevices('LightCrafter');
-            if ~isempty(lightCrafter)
-                lightCrafter = obj.rig.getDevice('LightCrafter');
-                obj.colorMode = lightCrafter.getColorMode();
+            lcrSearch = obj.rig.getDevices('LightCrafter');
+            if ~isempty(lcrSearch)
+                obj.lightCrafter = obj.rig.getDevice('LightCrafter');
+                obj.colorMode = obj.lightCrafter.getColorMode();
             else
                 obj.colorMode = '';
+                obj.lightCrafter = [];
             end
+            
+            if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+                obj.filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
+                obj.filterWheelAttenuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
+            else
+                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
+                obj.filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
+                obj.filterWheelAttenuationValues = filterWheel.getResource('filterWheelAttenuationValues');
+            end            
         end        
         
         function p = getPreview(obj, panel)
@@ -178,30 +191,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             rstar = [];
             mstar = [];
             sstar = [];
-            if isempty(intensity)
+            if isempty(intensity) || isempty(obj.lightCrafter)
                 return
             end
-            if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
-                filterWheelAttentuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
-            else
-                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
-                filterWheelAttentuationValues = filterWheel.getResource('filterWheelAttentuationValues');
-            end
-
-            filterIndex = find(filterWheelNdfValues == obj.NDF, 1);
-
-            NDF_attenuation = filterWheelAttentuationValues(filterIndex);
             
-            lightCrafter = obj.rig.getDevice('LightCrafter');
-            if strcmp('standard', lightCrafter.getColorMode())
+            if strcmp('standard', obj.colorMode)
                 [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
-                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'));
+                    obj.colorPattern1, obj.lightCrafter.getResource('fitBlue'), obj.lightCrafter.getResource('fitGreen'));
+                filterIndex = find(obj.filterWheelNdfValues == obj.NDF, 1);            
+                NDF_attenuation = obj.filterWheelAttenuationValues(filterIndex);
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
-                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), lightCrafter.getResource('fitUV'));
+                    obj.colorPattern1, obj.lightCrafter.getResource('fitBlue'), obj.lightCrafter.getResource('fitGreen'), obj.lightCrafter.getResource('fitUV'));
                 NDF_attenuation = 1; % there's an NDF3 already included in the calculation for the upper projector
             end
             
@@ -211,29 +213,26 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
          
         function RstarMean = get.RstarMean(obj)
-            RstarMean = [];
-            if ~isempty(obj.rig.getDevices('LightCrafter'))
-                [RstarMean, ~, ~] = obj.convertIntensityToIsomerizations(obj.meanLevel);
-            end
+            [RstarMean, ~, ~] = obj.convertIntensityToIsomerizations(obj.meanLevel);
         end
     
         function RstarIntensity = get.RstarIntensity(obj)
             RstarIntensity = [];
-            if isprop(obj, 'intensity') && ~isempty(obj.rig.getDevices('LightCrafter'))
+            if isprop(obj, 'intensity')
                 [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
             end
         end
         
         function MstarIntensity = get.MstarIntensity(obj)
             MstarIntensity = [];
-            if isprop(obj, 'intensity') && ~isempty(obj.rig.getDevices('LightCrafter'))
+            if isprop(obj, 'intensity')
                 [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
             end
         end
         
         function SstarIntensity = get.SstarIntensity(obj)
             SstarIntensity = [];
-            if isprop(obj, 'intensity') && ~isempty(obj.rig.getDevices('LightCrafter'))
+            if isprop(obj, 'intensity')
                 [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity);
             end
         end        
