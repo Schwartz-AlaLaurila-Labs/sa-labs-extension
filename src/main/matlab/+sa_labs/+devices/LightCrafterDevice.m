@@ -34,11 +34,6 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             % Set up Lightcrafter
             colorMode = ip.Results.colorMode;
-%             if strcmp(colorMode, 'uv')
-                prerender = true;
-%             else
-%                 prerender = false;
-%             end
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
@@ -51,7 +46,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('frameTrackerSize', frameTrackerSizeDefault);
             obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPositionDefault);
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
-            obj.addConfigurationSetting('prerender', prerender, 'isReadOnly', true);
+            obj.addConfigurationSetting('prerender', false);
             obj.addConfigurationSetting('micronsPerPixel', 1);
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
             obj.addConfigurationSetting('frameTrackerDuration', 0.2);
@@ -109,7 +104,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function s = getCanvasTranslation(obj)
             s = obj.getConfigurationSetting('canvasTranslation');
-        end            
+        end     
+        
+        function setCanvasTranslation(obj, t)
+            obj.setConfigurationSetting('canvasTranslation', t);
+        end
         
         function r = getMonitorRefreshRate(obj)
             r = obj.getConfigurationSetting('monitorRefreshRate');
@@ -122,6 +121,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
                 
         function tf = getPrerender(obj)
             tf = obj.getConfigurationSetting('prerender');
+        end
+        
+        function setPrerender(obj, tf)
+            obj.setConfigurationSetting('prerender', tf);
         end
         
 

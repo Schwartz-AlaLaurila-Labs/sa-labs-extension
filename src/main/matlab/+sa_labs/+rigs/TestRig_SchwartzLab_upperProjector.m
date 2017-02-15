@@ -14,7 +14,7 @@ classdef TestRig_SchwartzLab_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen = [-1.931e-11, 1.278e-08,  1.389e-07]; %added 3/21/16 by Todd for TriColor stims
         fitUV = [-2.346e-12, 1.883e-09,1.58e-07]; %added 3/21/16 by Todd for TriColor stims
         
-        micronsPerPixel = 1.6;
+        micronsPerPixel = 1;
         projectorAngleOffset = 180;
         frameTrackerPosition = [40,40];
         frameTrackerSize = [80,80];

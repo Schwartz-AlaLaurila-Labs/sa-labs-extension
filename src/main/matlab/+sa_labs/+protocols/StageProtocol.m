@@ -7,7 +7,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetY = 0         % um
         
         NDF = 5             % Filter NDF value
-        frameRate = 60;     % [15, 30, 45, 60] Hz
+%         frameRate = 60;     % [15, 30, 45, 60] Hz
         blueLED = 30        % 0-255
         greenLED = 30   % 0-255
         redLED = 30   % 0-255 
@@ -22,21 +22,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Dependent)
-        bitDepth       
         RstarMean
         RstarIntensity
         MstarIntensity
         SstarIntensity
+        bitDepth = 8
+        prerender = false
     end
     
     properties (Hidden)
         colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
-    end
-    
-    properties (Constant, Hidden)
-        numPatternsByBitDepth = [24 12 8 6 4 4 3 2];
+        colorMode = '';
     end
        
     methods (Abstract)
@@ -57,26 +55,36 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     
                 case {'greenLED','redLED','blueLED','uvLED','NDF'}
                     d.category = '7 Projector';
-                    lightCrafter = obj.rig.getDevices('LightCrafter');
-                    if ~isempty(lightCrafter)
-                        lightCrafter = obj.rig.getDevice('LightCrafter');
-                        if strcmp(lightCrafter.getColorMode(), 'standard')
-                            if strcmp(name, 'uvLED')
-                                d.isHidden = true;
-                            end
-                        else 
-                            if strcmp(name, 'redLED') || strcmp(name, 'NDF')
-                                d.isHidden = true;
-                            end
+                    if strcmp(obj.colorMode, 'standard')
+                        if strcmp(name, 'uvLED')
+                            d.isHidden = true;
+                        end
+                    else 
+                        if strcmp(name, 'redLED') || strcmp(name, 'NDF')
+                            d.isHidden = true;
                         end
                     end
                     
                 case {'color', 'numberOfPatterns','frameRate','bitDepth',...
-                        'colorPattern1','colorPattern2','colorPattern3','primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
+                        'colorPattern1','colorPattern2','colorPattern3',...
+                        'primaryObjectPattern','secondaryObjectPattern','backgroundPattern',...
+                        'prerender'}
                     d.category = '8 Color';
             end
             
         end
+        
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+                        
+            lightCrafter = obj.rig.getDevices('LightCrafter');
+            if ~isempty(lightCrafter)
+                lightCrafter = obj.rig.getDevice('LightCrafter');
+                obj.colorMode = lightCrafter.getColorMode();
+            else
+                obj.colorMode = '';
+            end
+        end        
         
         function p = getPreview(obj, panel)
             if isempty(obj.rig.getDevices('Stage'))
@@ -106,9 +114,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
                 lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
+                lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
-                lightCrafter.setConfigurationSetting('canvasTranslation', [obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
+                lightCrafter.setCanvasTranslation([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
                 pause(0.2); % let the projector get set up
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
@@ -196,15 +205,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 NDF_attenuation = 1; % there's an NDF3 already included in the calculation for the upper projector
             end
             
-            rstar = R * intensity * NDF_attenuation;
-            mstar = M * intensity * NDF_attenuation;
-            sstar = S * intensity * NDF_attenuation;
-            
-            %deal with patternsPerFrame in Rstar calculation
-            totalPatternCount = obj.numPatternsByBitDepth(obj.bitDepth);
-            rstar = round(rstar * obj.numberOfPatterns ./ totalPatternCount * 2, 1);
-            mstar = round(mstar * obj.numberOfPatterns ./ totalPatternCount * 2, 1);
-            sstar = round(sstar * obj.numberOfPatterns ./ totalPatternCount * 2, 1);
+            rstar = round(R * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
+            mstar = round(M * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
+            sstar = round(S * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
         end
          
         function RstarMean = get.RstarMean(obj)
@@ -240,6 +243,14 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 bitDepth = 8;
             else
                 bitDepth = 6;
+            end
+        end
+        
+        function prerender = get.prerender(obj)
+            if obj.numberOfPatterns == 1
+                prerender = false;
+            else
+                prerender = true;
             end
         end
     end
