@@ -125,12 +125,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
-                lightCrafter = obj.rig.getDevice('LightCrafter');
-                lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
-                lightCrafter.setPrerender(obj.prerender);
-                lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
-                lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
-                lightCrafter.setCanvasTranslation([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
+                obj.lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
+                obj.lightCrafter.setPrerender(obj.prerender);
+                obj.lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
+                obj.lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
+                obj.lightCrafter.setCanvasTranslation([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
                 pause(0.2); % let the projector get set up
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
