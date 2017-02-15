@@ -1,4 +1,4 @@
-classdef SchwartzLab_Rig_B_upperProjector < symphonyui.core.descriptions.RigDescription
+classdef SchwartzLab_Rig_B_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
     
     properties
         % properties not accessible here; have to be fed into a device to work
@@ -26,7 +26,7 @@ classdef SchwartzLab_Rig_B_upperProjector < symphonyui.core.descriptions.RigDesc
     end
     
     
-       methods
+    methods
         
         function obj = SchwartzLab_Rig_B_upperProjector()
             obj.initializeRig();

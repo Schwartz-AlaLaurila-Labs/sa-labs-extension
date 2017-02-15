@@ -7,7 +7,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetY = 0         % um
         
         NDF = 5             % Filter NDF value
-        frameRate = 60;     % Hz
+        frameRate = 60;     % [15, 30, 45, 60] Hz
         blueLED = 30        % 0-255
         greenLED = 30   % 0-255
         redLED = 30   % 0-255 
@@ -34,6 +34,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
     end
+    
+    properties (Constant, Hidden)
+        numPatternsByBitDepth = [24 12 8 6 4 4 3 2];
+    end
        
     methods (Abstract)
         p = createPresentation(obj);
@@ -45,13 +49,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             d = getPropertyDescriptor@sa_labs.protocols.BaseProtocol(obj, name);
             
             switch name
-                case {'meanLevel', 'intensity'}
-                    d.category = '1 Basic';
+%                 case {'meanLevel', 'intensity'}
+%                     d.category = '1 Basic';
                     
-                case {'offsetX','offsetY','NDF','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity'}
+                case {'offsetX','offsetY','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity'}
                     d.category = '7 Projector';
                     
-                case {'greenLED','redLED','blueLED','uvLED'}
+                case {'greenLED','redLED','blueLED','uvLED','NDF'}
                     d.category = '7 Projector';
                     lightCrafter = obj.rig.getDevices('LightCrafter');
                     if ~isempty(lightCrafter)
@@ -61,7 +65,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                                 d.isHidden = true;
                             end
                         else 
-                            if strcmp(name, 'redLED')
+                            if strcmp(name, 'redLED') || strcmp(name, 'NDF')
                                 d.isHidden = true;
                             end
                         end
@@ -183,8 +187,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             lightCrafter = obj.rig.getDevice('LightCrafter');
             if strcmp('standard', lightCrafter.getColorMode())
-                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, 0, ...
-                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'), 0);
+                [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
+                    obj.colorPattern1, lightCrafter.getResource('fitBlue'), lightCrafter.getResource('fitGreen'));
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
@@ -197,10 +201,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             sstar = S * intensity * NDF_attenuation;
             
             %deal with patternsPerFrame in Rstar calculation
-            maxPatternsPerFrame  = [24 12 8 6 4 4 3 2];
-            rstar = round(rstar * obj.numberOfPatterns ./ maxPatternsPerFrame(obj.bitDepth) * 2, 1);
-            mstar = round(mstar * obj.numberOfPatterns ./ maxPatternsPerFrame(obj.bitDepth) * 2, 1);
-            sstar = round(sstar * obj.numberOfPatterns ./ maxPatternsPerFrame(obj.bitDepth) * 2, 1);
+            totalPatternCount = obj.numPatternsByBitDepth(obj.bitDepth);
+            rstar = round(rstar * obj.numberOfPatterns ./ totalPatternCount * 2, 1);
+            mstar = round(mstar * obj.numberOfPatterns ./ totalPatternCount * 2, 1);
+            sstar = round(sstar * obj.numberOfPatterns ./ totalPatternCount * 2, 1);
         end
          
         function RstarMean = get.RstarMean(obj)

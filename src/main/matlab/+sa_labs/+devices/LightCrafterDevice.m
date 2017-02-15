@@ -124,9 +124,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             tf = obj.getConfigurationSetting('prerender');
         end
         
-        function setLedCurrents(obj, r, g, b)
-            obj.lightCrafter.setLedCurrents(r, g, b)
-        end
+
         
         function play(obj, presentation)
             canvasSize = obj.getCanvasSize();
@@ -190,6 +188,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
                 obj.lightCrafter.setLedEnables(auto, green, uv, blue);
             end
         end
+        
+        function setLedCurrents(obj, red, green, blue, uv)
+            if strcmp(obj.getColorMode(), 'standard')
+                obj.lightCrafter.setLedCurrents(red, green, blue);
+            else
+                obj.lightCrafter.setLedCurrents(green, uv, blue);
+            end
+        end        
         
         function [auto, red, green, blue] = getLedEnables(obj)
             [auto, red, green, blue] = obj.lightCrafter.getLedEnables();
