@@ -82,6 +82,10 @@ switch color
         G_on = 1;
         B_on = 1;
         UV_on = 0;
+    case 'green+uv'
+        G_on = 1;
+        B_on = 0;
+        UV_on = 1;
     case 'blue+uv'
         G_on = 0;
         B_on = 1;

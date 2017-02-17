@@ -8,10 +8,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         NDF = 5             % Filter NDF value
 %         frameRate = 60;     % [15, 30, 45, 60] Hz
-        blueLED = 30        % 0-255
-        greenLED = 30   % 0-255
-        redLED = 30   % 0-255 
-        uvLED = 30
+        blueLED = 20        % 0-255
+        greenLED = 0   % 0-255
+        redLED = 0   % 0-255 
+        uvLED = 0
         numberOfPatterns = 1
         colorPattern1 = 'blue';
         colorPattern2 = 'none';
@@ -31,13 +31,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
-        colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
-        colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'blue+uv', 'blue+uv+green','red'});
+        colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
+        colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
+        colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorMode = '';
         filterWheelNdfValues
         filterWheelAttenuationValues
-        lightCrafter
+        lightCrafterParams
     end
        
     methods (Abstract)
@@ -82,11 +82,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                         
             lcrSearch = obj.rig.getDevices('LightCrafter');
             if ~isempty(lcrSearch)
-                obj.lightCrafter = obj.rig.getDevice('LightCrafter');
-                obj.colorMode = obj.lightCrafter.getColorMode();
+                lightCrafter = obj.rig.getDevice('LightCrafter');
+                obj.lightCrafterParams = struct();
+                obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
+                obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
+                obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
+                obj.colorMode = lightCrafter.getColorMode();
             else
                 obj.colorMode = '';
-                obj.lightCrafter = [];
+                obj.lightCrafterParams = [];
             end
             
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
@@ -125,11 +129,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
-                obj.lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
-                obj.lightCrafter.setPrerender(obj.prerender);
-                obj.lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
-                obj.lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
-                obj.lightCrafter.setCanvasTranslation([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
+                lightCrafter = obj.rig.getDevice('LightCrafter');
+                lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
+                lightCrafter.setPrerender(obj.prerender);
+                lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
+                lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
+                lightCrafter.setCanvasTranslation([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
                 pause(0.2); % let the projector get set up
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
@@ -190,19 +195,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             rstar = [];
             mstar = [];
             sstar = [];
-            if isempty(intensity) || isempty(obj.lightCrafter)
+            if isempty(intensity) || isempty(obj.lightCrafterParams)
                 return
             end
             
             if strcmp('standard', obj.colorMode)
                 [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
-                    obj.colorPattern1, obj.lightCrafter.getResource('fitBlue'), obj.lightCrafter.getResource('fitGreen'));
+                    obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
                 filterIndex = find(obj.filterWheelNdfValues == obj.NDF, 1);            
                 NDF_attenuation = obj.filterWheelAttenuationValues(filterIndex);
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
-                    obj.colorPattern1, obj.lightCrafter.getResource('fitBlue'), obj.lightCrafter.getResource('fitGreen'), obj.lightCrafter.getResource('fitUV'));
+                    obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
                 NDF_attenuation = 1; % there's an NDF3 already included in the calculation for the upper projector
             end
             

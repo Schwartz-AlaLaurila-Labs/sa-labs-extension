@@ -2,13 +2,17 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 250                  % Spot leading duration (ms)
-        stimTime = 500                  % Spot duration (ms)
+        stimTime = 1000                  % Spot duration (ms)
         tailTime = 1000                 % Spot trailing duration (ms)
         
-        baseColor = [0.5, 0.5];
-        contrast = 0.9;
+        baseColor = [0.3, 0.3];
+        contrast = 0.4;  % baseline
         spotDiameter = 200              % Spot diameter (um)
         numberOfCycles = 3               % Number of cycles through all contrasts
+        enableSurround = false;
+        surroundDiameter = 1000;
+        
+        colorChangeMode = 'ramp'
     end
     
     properties (Hidden)
@@ -17,6 +21,9 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'sortColors';
+        
+        colorChangeModeType = symphonyui.core.PropertyType('char', 'row', {'swap','ramp'});
+        
     end
     
     properties (Hidden, Dependent)
@@ -37,22 +44,35 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                 error('Must have > 1 pattern enabled to use color stim');
             end
             
-            c1 = 1 + obj.contrast;
-            c2 = 1 - obj.contrast;
-            obj.spotContrasts = [[c1,1];
-                              [1,c1];
-                              [c1,c1];
-                              [c2,1];
-                              [1,c2];
-                              [c2,c2];
-                              [c1,c2];
-                              [c2,c1]];
+            stepUp = 1 + obj.contrast;
+            stepDown = 1 - obj.contrast;
+            switch obj.colorChangeMode
+                case 'swap'
+                    obj.spotContrasts = [[stepUp,1];
+                                      [1,stepUp];
+                                      [stepUp,stepUp];
+                                      [stepDown,1];
+                                      [1,stepDown];
+                                      [stepDown,stepDown];
+                                      [stepUp,stepDown];
+                                      [stepDown,stepUp]];
+                case 'ramp'
+                    obj.spotContrasts = [[stepUp,.1];
+                                      [stepUp,.2];
+                                      [stepUp,.4];
+                                      [stepUp,.6];
+                                      [stepUp,1];
+                                      [stepUp,1.3];
+                                      [stepUp,1.6];
+                                      [stepUp,2];
+                                      [stepUp,3]];
+            end
             
         end
 
         function prepareEpoch(obj, epoch)
 
-            index = mod(obj.numEpochsPrepared, 8) + 1;
+            index = mod(obj.numEpochsPrepared, size(obj.spotContrasts, 1)) + 1;
             obj.currentColors = obj.baseColor .* obj.spotContrasts(index, :);
 
             epoch.addParameter('colors', obj.currentColors);
@@ -66,21 +86,22 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
-            surround = stage.builtin.stimuli.Ellipse();
-            surround.color = 1;
-            surround.opacity = 1;
-            surround.radiusX = obj.um2pix(1200);
-            surround.radiusY = surround.radiusX;
-            surround.position = canvasSize / 2;
-            p.addStimulus(surround);
-            
             function c = surroundColor(state, backgroundColor)
                 c = backgroundColor(state.pattern + 1);
             end
-                    
-            surroundColorController = stage.builtin.controllers.PropertyController(surround, 'color',...
-                @(s) surroundColor(s, obj.baseColor));
-            p.addController(surroundColorController);            
+            
+            if obj.enableSurround
+                surround = stage.builtin.stimuli.Ellipse();
+                surround.color = 1;
+                surround.opacity = 1;
+                surround.radiusX = obj.um2pix(obj.surroundDiameter/2);
+                surround.radiusY = surround.radiusX;
+                surround.position = canvasSize / 2;
+                p.addStimulus(surround);
+                surroundColorController = stage.builtin.controllers.PropertyController(surround, 'color',...
+                    @(s) surroundColor(s, obj.baseColor));
+                p.addController(surroundColorController);
+            end
             
             
             spot = stage.builtin.stimuli.Ellipse();
@@ -106,7 +127,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = 8 * obj.numberOfCycles;
+            totalNumEpochs = size(obj.spotContrasts, 1) * obj.numberOfCycles;
         end
         
         function intensity = get.intensity(obj)
