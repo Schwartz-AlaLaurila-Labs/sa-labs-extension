@@ -13,6 +13,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         surroundDiameter = 1000;
         
         colorChangeMode = 'ramp'
+        numRampSteps = 8;
     end
     
     properties (Hidden)
@@ -57,6 +58,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                                       [stepUp,stepDown];
                                       [stepDown,stepUp]];
                 case 'ramp'
+                    rampSteps = linspace(.1, 3, obj.numRampSteps);
                     obj.spotContrasts = [[stepUp,.1];
                                       [stepUp,.2];
                                       [stepUp,.4];
@@ -75,7 +77,8 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             index = mod(obj.numEpochsPrepared, size(obj.spotContrasts, 1)) + 1;
             obj.currentColors = obj.baseColor .* obj.spotContrasts(index, :);
 
-            epoch.addParameter('colors', obj.currentColors);
+            epoch.addParameter('intensity1', obj.currentColors(1));
+            epoch.addParameter('intensity2', obj.currentColors(2));
             epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100))); % for plot display
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
