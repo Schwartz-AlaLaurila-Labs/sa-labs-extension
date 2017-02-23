@@ -31,12 +31,10 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 obj.addDevice(oscopeTrigger);
             end
             
-            if ~isnan(obj.filterWheelComPort)
-                neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
-                neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
-                neutralDensityFilterWheel.addResource('filterWheelAttenuationValues', obj.filterWheelAttenuationValues);
-                obj.addDevice(neutralDensityFilterWheel);
-            end
+            neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
+            neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
+            neutralDensityFilterWheel.addResource('filterWheelAttenuationValues', obj.filterWheelAttenuationValues);
+            obj.addDevice(neutralDensityFilterWheel);
             
             lightCrafter = sa_labs.devices.LightCrafterDevice('colorMode', obj.projectorColorMode);
             lightCrafter.setConfigurationSetting('micronsPerPixel', obj.micronsPerPixel);

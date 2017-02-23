@@ -4,13 +4,13 @@ classdef SchwartzLab_Rig_B_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         % properties not accessible here; have to be fed into a device to work
         rigName = 'Schwartz Lab Rig B Upper Projector';
         testMode = false;
-        filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
-        filterWheelAttenuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
+        filterWheelNdfValues = [2, 3, 4]; % calibration code has the NDF3 built in, so these are relative to that
+        filterWheelAttenuationValues = [10, 1.0, 0.1];
         
         micronsPerPixel = 0.72;
         frameTrackerPosition = [90,240];
         frameTrackerSize = [50,50];
-        filterWheelComPort = 'COM12';
+        filterWheelComPort = -1;
         projectorAngleOffset = 0;
         
         fitBlue = [-5.093e-10, 2.899e-07, -2.697e-06]; %added 04/01/16 by Todd -- fit coeff. for non tricolor stimuli on upper projector 6/16 edit

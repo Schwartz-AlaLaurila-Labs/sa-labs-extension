@@ -317,7 +317,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             if strcmp(obj.responseMode, 'Cell attached')
                 hold(obj.responseAxisSpikeRate, 'off')
             end
-            ylim(obj.responseAxis, [min(ylimRange(:,1)), max(ylimRange(:,2))]);
+            ylim(obj.responseAxis, [min(ylimRange(:,1))-.1, max(ylimRange(:,2))+.1]);
             
             %             then loop through all the epochs we have and plot them
             
@@ -360,7 +360,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 
                     Y = [];
                     Y_std = [];
-                    for i = 1:length(X);
+                    for i = 1:length(X)
                         Y(i) = mean(allMeasurementsByX{i});
                         Y_std(i) = std(allMeasurementsByX{i});
                     end

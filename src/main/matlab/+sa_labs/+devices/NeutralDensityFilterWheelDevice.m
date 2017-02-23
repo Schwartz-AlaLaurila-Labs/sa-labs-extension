@@ -13,13 +13,14 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             obj@symphonyui.core.Device(cobj);
             obj.cobj.MeasurementConversionTarget = symphonyui.core.Measurement.UNITLESS;
             
-            obj.serialPortObject = serial(comPort, 'BaudRate', 115200, 'DataBits', 8, 'StopBits', 1, 'Terminator', 'CR');
-           
-            % some defaults that shouldn't be used
-            filterWheelNdfValues = [1,2];
+            if comPort > 0
+                obj.serialPortObject = serial(comPort, 'BaudRate', 115200, 'DataBits', 8, 'StopBits', 1, 'Terminator', 'CR');
+            else
+                obj.serialPortObject = [];
+            end
 
             obj.addConfigurationSetting('comPort', comPort, 'isReadOnly', true);
-            obj.addConfigurationSetting('filterWheelNdfValues', filterWheelNdfValues);
+            obj.addConfigurationSetting('filterWheelNdfValues', [1,2]);
         end
         
         function position = getPosition(obj)

@@ -63,7 +63,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                             d.isHidden = true;
                         end
                     else 
-                        if strcmp(name, 'redLED') || strcmp(name, 'NDF')
+                        if strcmp(name, 'redLED')
                             d.isHidden = true;
                         end
                     end
@@ -94,13 +94,14 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                obj.filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
-                obj.filterWheelAttenuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
+                % useless defaults
+                obj.filterWheelNdfValues = [0];
+                obj.filterWheelAttenuationValues = [1.0];
             else
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 obj.filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
                 obj.filterWheelAttenuationValues = filterWheel.getResource('filterWheelAttenuationValues');
-            end            
+            end
         end        
         
         function p = getPreview(obj, panel)
@@ -124,7 +125,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             % set the NDF filter wheel
             if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                filterWheel.setNdfValue(obj.NDF);
+                if filterWheel.getConfigurationSetting('comPort') > 0
+                    filterWheel.setNdfValue(obj.NDF);
+                end
             end
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
@@ -199,16 +202,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 return
             end
             
+            filterIndex = find(obj.filterWheelNdfValues == obj.NDF, 1);     
+            NDF_attenuation = obj.filterWheelAttenuationValues(filterIndex);
+            
             if strcmp('standard', obj.colorMode)
                 [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
                     obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
-                filterIndex = find(obj.filterWheelNdfValues == obj.NDF, 1);            
-                NDF_attenuation = obj.filterWheelAttenuationValues(filterIndex);
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
                     obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
-                NDF_attenuation = 1; % there's an NDF3 already included in the calculation for the upper projector
             end
             
             rstar = round(R * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
