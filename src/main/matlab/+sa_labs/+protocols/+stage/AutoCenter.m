@@ -62,6 +62,12 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     
     methods
         
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+            
+            obj.NDF = 4;
+        end
+        
         function prepareRun(obj)
             obj.sessionId = regexprep(num2str(fix(clock),'%1d'),' +',''); % this is how you get a datetime string in MATLAB
             obj.epochNum = 0;
@@ -80,7 +86,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             devices = {};
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
-                if ~strcmp(ampName, 'None');
+                if ~strcmp(ampName, 'None')
                     device = obj.rig.getDevice(ampName);
                     devices{end+1} = device; %#ok<AGROW>
                 end

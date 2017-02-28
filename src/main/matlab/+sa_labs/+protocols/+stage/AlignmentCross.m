@@ -20,6 +20,12 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
     end
     
     methods
+        
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+            
+            obj.NDF = 2;
+        end
                 
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();

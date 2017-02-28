@@ -15,6 +15,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
 
         fitBlue = [7.89617359432192e-12 -4.46160989505515e-09 1.32776088533859e-06 1.96157899559780e-05];
         fitGreen =[4.432E-12, -3.514E-9, 1.315E-6, 1.345E-5];
+        fitUV = [];
         %PREVIOUS fitBlue = [7.603E-12, -6.603E-9, 2.133E-6, 3.398E-5];
         %PREVIOUS fitBlue = [1.0791E-11 -6.3562E-09 1.8909E-06 2.8196E-05];
         

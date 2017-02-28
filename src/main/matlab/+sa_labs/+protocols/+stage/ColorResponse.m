@@ -58,16 +58,16 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                                       [stepUp,stepDown];
                                       [stepDown,stepUp]];
                 case 'ramp'
-                    rampSteps = linspace(.1, 3, obj.numRampSteps);
+                    rampSteps = linspace(.1, 2.5, obj.numRampSteps);
                     obj.spotContrasts = [[stepUp,.1];
-                                      [stepUp,.2];
-                                      [stepUp,.4];
+                                      [stepUp,.3];
                                       [stepUp,.6];
-                                      [stepUp,1];
-                                      [stepUp,1.3];
-                                      [stepUp,1.6];
-                                      [stepUp,2];
-                                      [stepUp,3]];
+                                      [stepUp,.8];
+                                      [stepUp,1.1];
+                                      [stepUp,1.4];
+                                      [stepUp,1.8];
+                                      [stepUp,2.2];
+                                      [stepUp,2.8]];
             end
             
         end
@@ -75,6 +75,12 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
 
             index = mod(obj.numEpochsPrepared, size(obj.spotContrasts, 1)) + 1;
+            
+            if index == 1
+                reorder = randperm(size(obj.spotContrasts, 1));
+                obj.spotContrasts = obj.spotContrasts(reorder, :);
+            end
+            
             obj.currentColors = obj.baseColor .* obj.spotContrasts(index, :);
 
             epoch.addParameter('intensity1', obj.currentColors(1));

@@ -101,6 +101,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 obj.filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
                 obj.filterWheelAttenuationValues = filterWheel.getResource('filterWheelAttenuationValues');
+                obj.NDF = filterWheel.getResource('defaultNdfValue');
             end
         end        
         
