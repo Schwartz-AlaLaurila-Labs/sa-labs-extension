@@ -58,16 +58,17 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                                       [stepUp,stepDown];
                                       [stepDown,stepUp]];
                 case 'ramp'
-                    rampSteps = linspace(.1, 2.5, obj.numRampSteps);
-                    obj.spotContrasts = [[stepUp,.1];
-                                      [stepUp,.3];
-                                      [stepUp,.6];
-                                      [stepUp,.8];
-                                      [stepUp,1.1];
-                                      [stepUp,1.4];
-                                      [stepUp,1.8];
-                                      [stepUp,2.2];
-                                      [stepUp,2.8]];
+                    rampSteps = linspace(.1, 2, obj.numRampSteps)';
+                    obj.spotContrasts = horzcat(stepUp * ones(obj.numRampSteps,1), rampSteps);
+%                     obj.spotContrasts = [[stepUp,.1];
+%                                       [stepUp,.3];
+%                                       [stepUp,.6];
+%                                       [stepUp,.8];
+%                                       [stepUp,1.1];
+%                                       [stepUp,1.4];
+%                                       [stepUp,1.8];
+%                                       [stepUp,2.2];
+%                                       [stepUp,2.8]];
             end
             
         end
