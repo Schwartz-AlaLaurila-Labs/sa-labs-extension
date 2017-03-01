@@ -138,7 +138,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
-                lightCrafter.setCanvasTranslation([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]);
+                lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
                 pause(0.2); % let the projector get set up
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
