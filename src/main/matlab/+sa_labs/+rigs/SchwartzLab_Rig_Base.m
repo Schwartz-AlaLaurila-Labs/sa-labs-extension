@@ -16,11 +16,10 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             
             obj.daqController = daq;
             
-            amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
-%             amp2 = MultiClampDevice('Amp2', 2).bindStream(daq.getStream('ao1')).bindStream(daq.getStream('ai1'));
-            
-            obj.addDevice(amp1);
-%             obj.addDevice(amp2);
+            for i = 1:obj.numberOfAmplifiers
+                amp = MultiClampDevice(sprintf('Amp%g', i), i).bindStream(daq.getStream(sprintf('ao%g', i-1))).bindStream(daq.getStream(sprintf('ai%g', i-1)));
+                obj.addDevice(amp);
+            end
             
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
@@ -34,7 +33,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
             neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
             neutralDensityFilterWheel.addResource('filterWheelAttenuationValues', obj.filterWheelAttenuationValues);
-            neutralDensityFilterWheel.addResource('defaultNdfValue', max(obj.filterWheelNdfValues));
+            neutralDensityFilterWheel.addResource('defaultNdfValue', obj.filterWheelDefaultValue);
             obj.addDevice(neutralDensityFilterWheel);
             
             lightCrafter = sa_labs.devices.LightCrafterDevice('colorMode', obj.projectorColorMode);

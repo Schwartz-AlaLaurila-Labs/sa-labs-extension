@@ -6,6 +6,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         testMode = false;
         filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
         filterWheelAttenuationValues = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
+        filterWheelDefaultValue = 5;
              
         micronsPerPixel = 2.3;
         frameTrackerPosition = [90,240];
@@ -20,6 +21,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         %PREVIOUS fitBlue = [1.0791E-11 -6.3562E-09 1.8909E-06 2.8196E-05];
         
         projectorColorMode = 'standard';
+        numberOfAmplifiers = 1;
     end
     
     methods
