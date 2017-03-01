@@ -268,7 +268,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function p = um2pix(obj, um)
             stage = obj.rig.getDevice('Stage');
             micronsPerPixel = stage.getConfigurationSetting('micronsPerPixel');
-            p = round(um / micronsPerPixel);
+            p = um / micronsPerPixel;
         end
         
     end
