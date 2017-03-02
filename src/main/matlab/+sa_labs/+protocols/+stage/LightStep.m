@@ -37,13 +37,13 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-            function c = onDuringStim(state, preTime, stimTime)
-                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
-            end
-            
             function c = patternSelect(state, activePatternNumber)
                 c = 1 * (state.pattern == activePatternNumber - 1);
             end
+
+            function c = onDuringStim(state, preTime, stimTime)
+                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
+            end            
                         
             if obj.numberOfPatterns > 1
                 pattern = obj.primaryObjectPattern;

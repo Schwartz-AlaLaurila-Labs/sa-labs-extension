@@ -63,7 +63,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     methods
         
         function didSetRig(obj)
-            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
             
             obj.NDF = 4;
         end
@@ -341,7 +341,10 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 end
             end
             
-            
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
+            end
+      
             
             %             TODO: change epoch property shapeData to shapeDataMatrix in
             %             analysis
@@ -380,7 +383,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                     not(cellfun('isempty', strfind(obj.shapeDataColumns, 'Y')));
                 positions = obj.shapeDataMatrix(:,poscols);
                 positions_transformed = [obj.um2pix(positions(:,1)) + canvasSize(1)/2, obj.um2pix(positions(:,2)) + canvasSize(2)/2];
-                controllerPosition = stage.builtin.controllers.PropertyController(circ, 'position', @(s)shapeController(s, obj.preTime, [0, 0], ...
+                controllerPosition = stage.builtin.controllers.PropertyController(circ, 'position', @(s)shapeController(s, obj.preTime, [nan, nan], ...
                     obj.shapeDataMatrix(:,col_startTime), ...
                     obj.shapeDataMatrix(:,col_endTime), ...
                     positions_transformed, ci));
@@ -392,7 +395,19 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                     obj.shapeDataMatrix(:,col_startTime), ...
                     obj.shapeDataMatrix(:,col_endTime), ...
                     sdm_intflicstart, ci));
-                p.addController(controllerFlicker);
+                
+
+                
+                if obj.numberOfPatterns > 1
+                    pattern = obj.primaryObjectPattern;                
+                    controllerFlickerWithPattern = stage.builtin.controllers.PropertyController(circ, 'color', @(s)(patternSelect(s, pattern) * shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
+                        obj.shapeDataMatrix(:,col_startTime), ...
+                        obj.shapeDataMatrix(:,col_endTime), ...
+                        sdm_intflicstart, ci)));
+                    p.addController(controllerFlickerWithPattern);
+                else
+                    p.addController(controllerFlicker);
+                end
                 
             end % circle loop
             

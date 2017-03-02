@@ -46,10 +46,10 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             bar.color = obj.intensity;
             bar.opacity = 1;
             bar.orientation = obj.barAngle;
-            bar.size = round([obj.um2pix(obj.barLength), obj.um2pix(obj.barWidth)]);
+            bar.size = [obj.um2pix(obj.barLength), obj.um2pix(obj.barWidth)];
             p.addStimulus(bar);
             
-            pixelSpeed = obj.um2pix(obj.barSpeed);
+            [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
             xStep = cosd(obj.barAngle);
             yStep = sind(obj.barAngle);
             
@@ -67,7 +67,19 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             
             barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(state)movementController(state, p.duration * 1e3));
             p.addController(barMovement);
-           
+            
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
+            end
+                        
+            if obj.numberOfPatterns > 1
+                pattern = obj.primaryObjectPattern;
+                controller = stage.builtin.controllers.PropertyController(bar, 'color', ...
+                    @(s)(patternSelect(s, pattern)));
+                p.addController(controller);
+                
+            end      
+            
         end
         
         function prepareEpoch(obj, epoch)
@@ -89,8 +101,8 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         end        
 
         function stimTime = get.stimTime(obj)
-            pixelSpeed = obj.um2pix(obj.barSpeed);
-            pixelDistance = obj.um2pix(obj.distance);
+            [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
+            [~, pixelDistance] = obj.um2pix(obj.distance);
             stimTime = round(1e3 * pixelDistance/pixelSpeed);
         end
     end

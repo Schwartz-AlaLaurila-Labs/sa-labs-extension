@@ -11,10 +11,11 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         numberOfCycles = 3               % Number of cycles through all contrasts
         enableSurround = false;
         surroundDiameter = 1000;
-        rampRange = [0.1, 2];
         
         colorChangeMode = 'ramp'
         numRampSteps = 8;
+        rampRange = [0.1, 2]; % contrast multipliers of baseColor values. Divide by contrast to get ramp plot style x-axis
+
     end
     
     properties (Hidden)
@@ -34,10 +35,17 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
     properties (Dependent)
         intensity
+        plotRange
     end
     
     
     methods
+        
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+            
+            obj.numberOfPatterns = 2;
+        end        
         
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
@@ -143,6 +151,10 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         
         function intensity = get.intensity(obj)
             intensity = obj.baseColor(1);
+        end
+        
+        function plotRange = get.plotRange(obj)
+            plotRange = obj.rampRange / obj.contrast;
         end
    
         

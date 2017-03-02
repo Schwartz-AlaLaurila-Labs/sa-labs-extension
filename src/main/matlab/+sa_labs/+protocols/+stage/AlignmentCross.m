@@ -22,7 +22,7 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
     methods
         
         function didSetRig(obj)
-            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
             
             obj.NDF = 2;
         end

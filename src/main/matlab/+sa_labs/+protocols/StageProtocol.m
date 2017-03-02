@@ -18,7 +18,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern3 = 'none';
         primaryObjectPattern = 1
         secondaryObjectPattern = 1
-        backgroundPattern = 1
+        backgroundPattern = 2
     end
     
     properties (Dependent)
@@ -167,6 +167,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
         end
+       
             
         function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>
             tf = false;
