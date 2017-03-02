@@ -1,4 +1,4 @@
-classdef SchwartzLab_Rig_A < symphonyui.core.descriptions.RigDescription
+classdef SchwartzLab_Rig_A < sa_labs.rigs.SchwartzLab_Rig_Base
     
     properties
         % properties not accessible here; have to be fed into a device to work
