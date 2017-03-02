@@ -11,6 +11,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         numberOfCycles = 3               % Number of cycles through all contrasts
         enableSurround = false;
         surroundDiameter = 1000;
+        rampRange = [0.1, 2];
         
         colorChangeMode = 'ramp'
         numRampSteps = 8;
@@ -58,7 +59,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                                       [stepUp,stepDown];
                                       [stepDown,stepUp]];
                 case 'ramp'
-                    rampSteps = linspace(.1, 2, obj.numRampSteps)';
+                    rampSteps = linspace(obj.rampRange(1), obj.rampRange(2), obj.numRampSteps)';
                     obj.spotContrasts = horzcat(stepUp * ones(obj.numRampSteps,1), rampSteps);
 %                     obj.spotContrasts = [[stepUp,.1];
 %                                       [stepUp,.3];
