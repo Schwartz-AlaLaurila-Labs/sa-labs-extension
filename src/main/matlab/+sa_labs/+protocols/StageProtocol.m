@@ -87,6 +87,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
                 obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
                 obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
+                obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
                 obj.colorMode = lightCrafter.getColorMode();
             else
                 obj.colorMode = '';
@@ -146,6 +147,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
+            
+            % add the microns per pixel value for later upkeep
+            epoch.addParameter('micronsPerPixel', obj.lightCrafterParams.micronsPerPixel);
             
             % uses the frame tracker on the monitor to inform the HEKA that
             % the stage presentation has begun. Improves temporal alignment

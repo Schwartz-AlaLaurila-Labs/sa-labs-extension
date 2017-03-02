@@ -143,6 +143,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@symphonyui.core.Protocol(obj, epoch);
             
+            epoch.addParameter('symphonyVersion', 2);
+            
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
                 ampMode = obj.(['chan' num2str(ci) 'Mode']);
