@@ -2,13 +2,13 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 250                  % Spot leading duration (ms)
-        stimTime = 1000                  % Spot duration (ms)
-        tailTime = 1000                 % Spot trailing duration (ms)
+        stimTime = 500                  % Spot duration (ms)
+        tailTime = 500                 % Spot trailing duration (ms)
         
         baseColor = [0.3, 0.3];
-        contrast = 0.4;  % baseline
+        contrast = 0.3;  % baseline
         spotDiameter = 200              % Spot diameter (um)
-        numberOfCycles = 3               % Number of cycles through all contrasts
+        numberOfCycles = 3               % Number of cycles through all color sets
         enableSurround = false;
         surroundDiameter = 1000;
         
@@ -42,7 +42,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     methods
         
         function didSetRig(obj)
-            didSetRig@sa_labs.protocols.BaseProtocol(obj);
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
             
             obj.numberOfPatterns = 2;
         end        

@@ -67,7 +67,7 @@ function [Rstar, Mstar, Sstar ] = photoIsom2( bluIntenVal, grnIntenVal, color, f
         case 'green'
             B_on = 0;
             G_on = 1;
-        case 'cyan'
+        case 'blue+green'
             G_on = 1;
             B_on = 1;
         otherwise

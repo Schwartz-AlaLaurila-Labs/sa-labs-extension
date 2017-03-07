@@ -5,11 +5,11 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         tailTime = 250
         
         spotDiameter = 40; %um
-        searchDiameter = 400; %um
+        searchDiameter = 360; %um
         alignSpotDiam = 150;
         alignSpotIntensity = 1.0;
         %         numSpots = 100;
-        mapResolution = 50; % um
+        mapResolution = 40; % um
         spotTotalTime = 0.35;
         spotOnTime = 0.15;
         
