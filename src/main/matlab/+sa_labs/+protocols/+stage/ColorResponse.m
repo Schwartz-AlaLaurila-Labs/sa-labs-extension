@@ -154,7 +154,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         end
         
         function plotRange = get.plotRange(obj)
-            plotRange = obj.rampRange / obj.contrast;
+            plotRange = ((obj.rampRange * obj.intensity) - obj.intensity) / obj.intensity / obj.contrast;
         end
    
         
