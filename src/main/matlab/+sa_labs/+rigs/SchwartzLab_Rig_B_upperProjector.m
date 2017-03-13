@@ -5,7 +5,7 @@ classdef SchwartzLab_Rig_B_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         rigName = 'Schwartz Lab Rig B Upper Projector';
         testMode = false;
         filterWheelNdfValues = [2, 3, 4]; % calibration code has the NDF3 built in, so these are relative to that
-        filterWheelDefaultValue = 3;
+        filterWheelDefaultValue = 4;
         filterWheelAttenuationValues = [10, 1.0, 0.1];
         
         micronsPerPixel = 0.72;
