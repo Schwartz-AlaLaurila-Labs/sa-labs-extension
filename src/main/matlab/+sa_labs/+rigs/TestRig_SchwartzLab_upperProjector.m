@@ -15,7 +15,7 @@ classdef TestRig_SchwartzLab_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         fitUV = [];
         
         micronsPerPixel = 0.7;
-        projectorAngleOffset = 180;
+        orientation = [false, false];
         frameTrackerPosition = [20,20];
         frameTrackerSize = [40,40];
         

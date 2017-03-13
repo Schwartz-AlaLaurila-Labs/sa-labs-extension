@@ -15,10 +15,9 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         fitUV = [];
         
         micronsPerPixel = 1.38;
-        projectorAngleOffset = 180;
+        orientation = [false, false];
         frameTrackerPosition = [20,20];
         frameTrackerSize = [40,40];
-        
         
         projectorColorMode = 'standard';
     end

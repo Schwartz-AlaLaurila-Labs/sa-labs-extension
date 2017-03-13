@@ -36,14 +36,13 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             neutralDensityFilterWheel.addResource('defaultNdfValue', obj.filterWheelDefaultValue);
             obj.addDevice(neutralDensityFilterWheel);
             
-            lightCrafter = sa_labs.devices.LightCrafterDevice('colorMode', obj.projectorColorMode);
+            lightCrafter = sa_labs.devices.LightCrafterDevice('colorMode', obj.projectorColorMode, 'orientation', obj.orientation);
             lightCrafter.setConfigurationSetting('micronsPerPixel', obj.micronsPerPixel);
             lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition);
             lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize);
             lightCrafter.addResource('fitBlue', obj.fitBlue);
             lightCrafter.addResource('fitGreen', obj.fitGreen);
             lightCrafter.addResource('fitUV', obj.fitUV);
-            lightCrafter.addResource('projectorAngleOffset', obj.projectorAngleOffset);
             obj.addDevice(lightCrafter);
             
         end

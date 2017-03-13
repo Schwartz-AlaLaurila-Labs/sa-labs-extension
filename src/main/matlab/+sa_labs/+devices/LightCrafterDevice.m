@@ -13,6 +13,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             ip.addParameter('port', 5678, @isnumeric);
             ip.addParameter('micronsPerPixel', @isnumeric);
             ip.addParameter('colorMode', 'standard', @ischar);
+            ip.addParameter('orientation', [0,0]);
             ip.parse(varargin{:});
             
             cobj = Symphony.Core.UnitConvertingExternalDevice(['LightCrafter Stage@' ip.Results.host], 'Texas Instruments', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
@@ -34,12 +35,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             % Set up Lightcrafter
             colorMode = ip.Results.colorMode;
+            orientation = ip.Results.orientation;
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
-            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, colorMode);
+            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, ip.Results.colorMode);
             obj.lightCrafter.connect();
             obj.lightCrafter.setMode('pattern');
+            obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
             
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
@@ -54,6 +57,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundIntensity', 0);
             obj.addConfigurationSetting('backgroundPattern', 1);
+            obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
                         
         end
         

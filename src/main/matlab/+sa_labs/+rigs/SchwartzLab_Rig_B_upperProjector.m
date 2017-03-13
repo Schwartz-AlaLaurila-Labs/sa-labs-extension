@@ -12,7 +12,7 @@ classdef SchwartzLab_Rig_B_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         frameTrackerPosition = [90,240];
         frameTrackerSize = [50,50];
         filterWheelComPort = -1;
-        projectorAngleOffset = 0;
+        orientation = [true, false];
         
         fitBlue = [-5.093e-10, 2.899e-07, -2.697e-06]; %added 04/01/16 by Todd -- fit coeff. for non tricolor stimuli on upper projector 6/16 edit
         fitGreen = [-5.266e-11, 3.749e-08, 4.664e-07]; %added 04/01/16 by Todd -- fit coeff. for non tricolor stimuli on upper projector
