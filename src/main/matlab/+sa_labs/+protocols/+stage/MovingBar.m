@@ -13,7 +13,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 3
+        version = 4                 % v4: added initial distance offset for bar movement centering
         angles                          % Moving bar with Number of angles range between [0 - 360]
         barAngle                        % Moving bar angle for the current epoch @see prepareEpoch 
         
@@ -50,22 +50,22 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             p.addStimulus(bar);
             
             [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
-            xStep = cosd(obj.barAngle);
-            yStep = sind(obj.barAngle);
+            [~, pixelDistance] = obj.um2pix(obj.distance);
+            xStep = pixelSpeed * cosd(obj.barAngle);
+            yStep = pixelSpeed * sind(obj.barAngle);
+                        
+            xStartPos = canvasSize(1)/2 - pixelDistance / 2 * cosd(obj.barAngle);
+            yStartPos = canvasSize(2)/2 - pixelDistance / 2 * sind(obj.barAngle);
             
-            xPos = canvasSize(1)/2 - xStep * canvasSize(2)/2;
-            yPos = canvasSize(2)/2 - yStep * canvasSize(2)/2;
-            
-            function pos = movementController(state, duration)
+            function pos = movementController(state)
                 pos = [NaN, NaN];
-                if state.time >= obj.preTime * 1e-3 && state.time < (duration - obj.tailTime) * 1e-3
-                    pos = [xPos + (state.time - obj.preTime * 1e-3) * pixelSpeed * xStep,...
-                        yPos + (state.time - obj.preTime * 1e-3) * pixelSpeed* yStep];
-                    
+                t = state.time - obj.preTime * 1e-3;
+                if t >= 0 && t < obj.stimTime * 1e-3
+                    pos = [xStartPos + t * xStep, yStartPos + t * yStep];
                 end
             end
             
-            barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(state)movementController(state, p.duration * 1e3));
+            barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(state)movementController(state));
             p.addController(barMovement);
             
             function c = patternSelect(state, activePatternNumber)
@@ -101,9 +101,8 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         end        
 
         function stimTime = get.stimTime(obj)
-            [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
-            [~, pixelDistance] = obj.um2pix(obj.distance);
-            stimTime = round(1e3 * pixelDistance/pixelSpeed);
+            t = obj.distance / obj.barSpeed;
+            stimTime = 1e3 * t;
         end
     end
     

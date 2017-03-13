@@ -47,13 +47,15 @@ classdef LightStep < sa_labs.protocols.StageProtocol
                         
             if obj.numberOfPatterns > 1
                 pattern = obj.primaryObjectPattern;
-                controller = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                    @(s)(onDuringStim(s, obj.preTime, obj.stimTime) || patternSelect(s, pattern)));
-            else
-                controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
-                    @(s)onDuringStim(s, obj.preTime, obj.stimTime));
+                patternController = stage.builtin.controllers.PropertyController(spot, 'color', ...
+                    @(s)patternSelect(s, pattern));
+                p.addController(patternController);
             end
+            
+            controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
+                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
             p.addController(controller);
+
 
         end
         

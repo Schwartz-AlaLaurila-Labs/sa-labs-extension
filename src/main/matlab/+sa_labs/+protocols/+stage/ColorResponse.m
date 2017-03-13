@@ -6,15 +6,15 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         tailTime = 500                 % Spot trailing duration (ms)
         
         baseColor = [0.3, 0.3];
-        contrast = 0.3;  % baseline
+        contrast = 0.3;                 % contrast of fixed step each epoch, may be negative
         spotDiameter = 200              % Spot diameter (um)
         numberOfCycles = 3               % Number of cycles through all color sets
-        enableSurround = false;
+        enableSurround = false;         % use the surround instead of the mean level so mixed colors can be used
         surroundDiameter = 1000;
         
         colorChangeMode = 'ramp'
         numRampSteps = 8;
-        rampRange = [0.1, 2]; % contrast multipliers of baseColor values. Divide by contrast to get ramp plot style x-axis
+        rampRange = [0.1, 2]; % contrast multipliers of baseColor values
 
     end
     
@@ -31,11 +31,13 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
     properties (Hidden, Dependent)
         totalNumEpochs
+        intensity
+
     end
     
     properties (Dependent)
-        intensity
         plotRange
+        varyingIntensityValues % The intensity of the varying color, must be in [0,1]
     end
     
     
@@ -44,7 +46,8 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
             
-            obj.numberOfPatterns = 2;
+            obj.colorPattern1 = 'green';
+            obj.colorPattern2 = 'uv';
         end        
         
         function prepareRun(obj)
@@ -151,6 +154,10 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         
         function intensity = get.intensity(obj)
             intensity = obj.baseColor(1);
+        end
+        
+        function varyingIntensityValues = get.varyingIntensityValues(obj)
+            varyingIntensityValues = obj.contrast * obj.rampRange;
         end
         
         function plotRange = get.plotRange(obj)

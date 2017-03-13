@@ -12,7 +12,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         greenLED = 0   % 0-255
         redLED = 0   % 0-255 
         uvLED = 0
-        numberOfPatterns = 1
         colorPattern1 = 'blue';
         colorPattern2 = 'none';
         colorPattern3 = 'none';
@@ -22,6 +21,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Dependent)
+        numberOfPatterns = 1        
         RstarMean
         RstarIntensity
         MstarIntensity
@@ -121,7 +121,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function prepareRun(obj)
-
+            
             obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
             % set the NDF filter wheel
@@ -139,6 +139,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
+                lightCrafter.setLedEnables(true, 0, 0, 0, 0); % auto mode, should be set from pattern
                 lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
                 pause(0.2); % let the projector get set up
             end
@@ -263,6 +264,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 prerender = false;
             else
                 prerender = true;
+            end
+        end
+        
+        function numberOfPatterns = get.numberOfPatterns(obj)
+            if ~strcmp(obj.colorPattern3, 'none')
+                numberOfPatterns = 3;
+            elseif ~strcmp(obj.colorPattern2, 'none')
+                numberOfPatterns = 2;
+            else
+                numberOfPatterns = 1;
             end
         end
     end
