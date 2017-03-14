@@ -38,6 +38,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             
             lightCrafter = sa_labs.devices.LightCrafterDevice('colorMode', obj.projectorColorMode, 'orientation', obj.orientation);
             lightCrafter.setConfigurationSetting('micronsPerPixel', obj.micronsPerPixel);
+            lightCrafter.setConfigurationSetting('angleOffset', obj.angleOffset);
             lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition);
             lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize);
             lightCrafter.addResource('fitBlue', obj.fitBlue);

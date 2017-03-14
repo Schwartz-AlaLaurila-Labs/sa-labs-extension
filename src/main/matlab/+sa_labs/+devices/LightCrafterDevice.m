@@ -58,6 +58,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('backgroundIntensity', 0);
             obj.addConfigurationSetting('backgroundPattern', 1);
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
+            obj.addConfigurationSetting('angleOffset', 0, 'isReadOnly', true);
                         
         end
         

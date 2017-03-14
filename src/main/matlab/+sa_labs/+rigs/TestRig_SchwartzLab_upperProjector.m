@@ -18,7 +18,7 @@ classdef TestRig_SchwartzLab_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         orientation = [false, false];
         frameTrackerPosition = [20,20];
         frameTrackerSize = [40,40];
-        
+        angleOffset = 0;
         
         projectorColorMode = 'uv';
     end

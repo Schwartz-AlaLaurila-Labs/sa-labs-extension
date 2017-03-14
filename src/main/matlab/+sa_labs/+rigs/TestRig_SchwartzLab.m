@@ -16,6 +16,7 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         
         micronsPerPixel = 1.38;
         orientation = [false, false];
+        angleOffset = 180;
         frameTrackerPosition = [20,20];
         frameTrackerSize = [40,40];
         
