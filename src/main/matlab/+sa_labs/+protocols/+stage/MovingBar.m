@@ -70,15 +70,14 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             
             function c = patternSelect(state, activePatternNumber)
                 c = 1 * (state.pattern == activePatternNumber - 1);
-            end
-                        
+            end            
+            
             if obj.numberOfPatterns > 1
                 pattern = obj.primaryObjectPattern;
-                controller = stage.builtin.controllers.PropertyController(bar, 'color', ...
-                    @(s)(patternSelect(s, pattern)));
-                p.addController(controller);
-                
-            end      
+                patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
+                    @(s)(obj.intensity * patternSelect(s, pattern)));
+                p.addController(patternController);
+            end
             
         end
         

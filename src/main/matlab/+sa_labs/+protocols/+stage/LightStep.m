@@ -43,19 +43,18 @@ classdef LightStep < sa_labs.protocols.StageProtocol
 
             function c = onDuringStim(state, preTime, stimTime)
                 c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
-            end            
+            end
                         
             if obj.numberOfPatterns > 1
                 pattern = obj.primaryObjectPattern;
                 patternController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                    @(s)patternSelect(s, pattern));
+                    @(s)(obj.intensity * patternSelect(s, pattern)));
                 p.addController(patternController);
             end
-            
+                        
             controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
                 @(s)onDuringStim(s, obj.preTime, obj.stimTime));
             p.addController(controller);
-
 
         end
         

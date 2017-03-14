@@ -71,20 +71,28 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.curSize / 2));
             spot.radiusY = spot.radiusX;
-            %spot.color = obj.intensity;
+            spot.color = obj.intensity;
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-            function c = onDuringStim(state, preTime, stimTime, intensity, meanLevel)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    c = intensity;
-                else
-                    c = meanLevel;
-                end
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
             end
-            
-            controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.intensity, obj.meanLevel));
+
+            function c = onDuringStim(state, preTime, stimTime)
+                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
+            end
+                        
+            if obj.numberOfPatterns > 1
+                pattern = obj.primaryObjectPattern;
+                patternController = stage.builtin.controllers.PropertyController(spot, 'color', ...
+                    @(s)(obj.intensity * patternSelect(s, pattern)));
+                p.addController(patternController);
+            end
+                        
+            controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
+                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
             p.addController(controller);
                         
 %             obj.addFrameTracker(p);
