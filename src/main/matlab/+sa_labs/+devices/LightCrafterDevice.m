@@ -53,6 +53,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('micronsPerPixel', 1);
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
             obj.addConfigurationSetting('frameTrackerDuration', 0.2);
+            obj.addConfigurationSetting('frameTrackerDelay', 0.2);
             obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundIntensity', 0);
@@ -101,7 +102,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function s = getFrameTrackerDuration(obj)
             s = obj.getConfigurationSetting('frameTrackerDuration');
-        end        
+        end
+        
+        function s = getFrameTrackerDelay(obj)
+            s = obj.getConfigurationSetting('frameTrackerDelay');
+        end
         
 %         function setFrameTrackerDuration(obj, s)
 %             obj.setConfigurationSetting('frameTrackerDuration', s);
@@ -162,10 +167,15 @@ classdef LightCrafterDevice < symphonyui.core.Device
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
             % appears on all patterns
-            duration = obj.getFrameTrackerDuration();
-            trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration));
-            presentation.addController(trackerColor);
+            duration = obj.getFrameTrackerDuration()
+            delay = obj.getFrameTrackerDelay()
+            
+            function c = tcFunction(state)
+                t = max([0, state.time - delay]);
+                c = double(t > 0 && t < duration);
+            end
+            trackerController = stage.builtin.controllers.PropertyController(tracker, 'color',@tcFunction);
+            presentation.addController(trackerController);
             
             % RENDER
             if obj.getPrerender()

@@ -1,5 +1,10 @@
 classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
     
+    properties
+        frameTrackerDelay = .032;
+    end
+    
+    
     methods
         
         function initializeRig(obj)
@@ -41,6 +46,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             lightCrafter.setConfigurationSetting('angleOffset', obj.angleOffset);
             lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition);
             lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize);
+            lightCrafter.setConfigurationSetting('frameTrackerDelay', obj.frameTrackerDelay);
             lightCrafter.addResource('fitBlue', obj.fitBlue);
             lightCrafter.addResource('fitGreen', obj.fitGreen);
             lightCrafter.addResource('fitUV', obj.fitUV);
