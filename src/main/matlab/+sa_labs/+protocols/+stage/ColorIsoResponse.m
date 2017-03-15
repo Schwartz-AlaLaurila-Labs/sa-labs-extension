@@ -1,20 +1,15 @@
-classdef ColorResponse < sa_labs.protocols.StageProtocol
+classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 250                  % Spot leading duration (ms)
         stimTime = 500                  % Spot duration (ms)
         tailTime = 500                 % Spot trailing duration (ms)
         
-        baseColor = [0.3, 0.3];
-        contrast = 0.3;                 % contrast of fixed step each epoch, may be negative
-        spotDiameter = 200              % Spot diameter (um)
-        numberOfCycles = 3               % Number of cycles through all color sets
-        enableSurround = false;         % use the surround instead of the mean level so mixed colors can be used
-        surroundDiameter = 1000;
+        baseIntensity1 = 1.0;
+        startContrast1 = 0.1;
         
-        colorChangeMode = 'ramp'
-        numRampSteps = 8;
-        rampRange = [0.1, 2]; % contrast multipliers of baseColor values
+        baseIntensity2 = 0.1;
+        startContrast2 = 10;
 
     end
     
@@ -23,7 +18,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         currentColors
     
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'intensity2';
+        responsePlotSplitParameter = 'sortColors';
         
         colorChangeModeType = symphonyui.core.PropertyType('char', 'row', {'swap','ramp'});
         
@@ -31,13 +26,11 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
     properties (Hidden, Dependent)
         totalNumEpochs
-        intensity
-
     end
     
     properties (Dependent)
+        intensity
         plotRange
-        varyingIntensityValues % The intensity of the varying color, must be in [0,1]
     end
     
     
@@ -46,8 +39,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
             
-            obj.colorPattern1 = 'green';
-            obj.colorPattern2 = 'uv';
+            obj.numberOfPatterns = 2;
         end        
         
         function prepareRun(obj)
@@ -57,22 +49,8 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                 error('Must have > 1 pattern enabled to use color stim');
             end
             
-            stepUp = 1 + obj.contrast;
-            stepDown = 1 - obj.contrast;
-            switch obj.colorChangeMode
-                case 'swap'
-                    obj.spotContrasts = [[stepUp,1];
-                                      [1,stepUp];
-                                      [stepUp,stepUp];
-                                      [stepDown,1];
-                                      [1,stepDown];
-                                      [stepDown,stepDown];
-                                      [stepUp,stepDown];
-                                      [stepDown,stepUp]];
-                case 'ramp'
-                    rampSteps = linspace(obj.rampRange(1), obj.rampRange(2), obj.numRampSteps)';
-                    obj.spotContrasts = horzcat(stepUp * ones(obj.numRampSteps,1), rampSteps);
-            end
+
+            
             
         end
 
@@ -89,7 +67,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
 
             epoch.addParameter('intensity1', obj.currentColors(1));
             epoch.addParameter('intensity2', obj.currentColors(2));
-%             epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100))); % for plot display
+            epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100))); % for plot display
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
@@ -145,10 +123,6 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         
         function intensity = get.intensity(obj)
             intensity = obj.baseColor(1);
-        end
-        
-        function varyingIntensityValues = get.varyingIntensityValues(obj)
-            varyingIntensityValues = obj.contrast * obj.rampRange;
         end
         
         function plotRange = get.plotRange(obj)

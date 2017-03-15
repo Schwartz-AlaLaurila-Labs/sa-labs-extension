@@ -133,6 +133,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 end
             end
             
+            % check for pattern setting correctness
+            if ~strcmp(obj.colorPattern2, 'none')
+                if ~(obj.numberOfPatterns >= 2)
+                    error('Must have >= 2 patterns to use second pattern')
+                end
+            end
+            
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
