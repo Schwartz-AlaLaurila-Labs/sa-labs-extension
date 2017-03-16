@@ -19,7 +19,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)   
-        responsePlotMode = 'cartesian';
+        responsePlotMode = false;
         responsePlotSplitParameter = 'sortColors';
         
         colorChangeModeType = symphonyui.core.PropertyType('char', 'row', {'swap','ramp'});
@@ -53,12 +53,12 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime + 0.5],...
                 'spikeThreshold', obj.spikeThreshold, ...
                 'spikeDetectorMode', obj.spikeDetectorMode, ...
-                'contrastRange1', obj.contrastRange1, 'contrastRange2', obj.contrastRange2);
+                'contrastRange1', obj.contrastRange1, 'contrastRange2', obj.contrastRange2, ...
+                'colorNames', {obj.colorPattern1, obj.colorPattern2});
             
         end
 
         function prepareEpoch(obj, epoch)
-            
             obj.contrast1 = obj.isoResponseFigure.nextContrast1;
             obj.contrast2 = obj.isoResponseFigure.nextContrast2;
             obj.intensity1 = obj.baseIntensity1 * (1 + obj.contrast1);
@@ -68,7 +68,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             epoch.addParameter('intensity2', obj.intensity2);
             epoch.addParameter('contrast1', obj.contrast1);
             epoch.addParameter('contrast2', obj.contrast2);
-            epoch.addParameter('sortColors', sum([1000,1] .* round([obj.intensity1, obj.intensity2]*100))); % for plot display
+%             epoch.addParameter('sortColors', sum([1000,1] .* round([obj.intensity1, obj.intensity2]*100))); % for plot display
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
@@ -111,7 +111,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                     c = backgroundColor(state.pattern + 1);
                 end
             end
-                    
+            
             spotColorController = stage.builtin.controllers.PropertyController(spot, 'color',...
                 @(s) spotColor(s, [obj.intensity1, obj.intensity2], [obj.baseIntensity1, obj.baseIntensity2]));
             p.addController(spotColorController);
