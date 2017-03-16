@@ -19,11 +19,12 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         epochData
         responseData
+        pointData
         interpolant = [];
         
         isoPlotClickMode = 'select'
         isoPlotClickCountRemaining = 0;
-        isoPlotClickHistory = [];
+        isoPlotClickHistory = [];        
         
         handles
     end
@@ -57,7 +58,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                        
             obj.resetPlots();
             obj.createUi();
-            obj.updateGui();
+            obj.updateUi();
             
             obj.nextStimulus = [];
             obj.waitIfNecessary();
@@ -77,7 +78,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             obj.handles.measurementDataBox = uix.VBox('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.epochTable = uitable('Parent', obj.handles.measurementDataBox, ...
-                                    'ColumnName', {'contrast 1', 'contrast 2', 'response'}, ...
+                                    'ColumnName', {'contrast 1', 'contrast 2', 'mean resp', 'std','rep'}, ...
                                     'CellSelectionCallback', @obj.epochTableSelect);
             obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
                                     'ColumnName', {'contrast 1', 'contrast 2'});
@@ -100,7 +101,11 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.handles.selectNewStimulusGridButton = uicontrol('Style', 'pushbutton', ...
                         'String', 'New Grid',...
                         'Parent', obj.handles.actionButtonBox,...
-                        'Callback', @(a,b) obj.generateNextStimulusGrid());                    
+                        'Callback', @(a,b) obj.generateNextStimulusGrid());
+            obj.handles.selectBaseGridButton = uicontrol('Style', 'pushbutton', ...
+                        'String', 'Baseline',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.generateBaseGridStimulus());
             obj.handles.clearNextStimulusButton = uicontrol('Style', 'pushbutton', ...
                         'String', 'Clear Next',...
                         'Parent', obj.handles.actionButtonBox,...
@@ -110,7 +115,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.resumeProtocol());
                     
-            obj.handles.figureBox.Widths = [300, -1, 200];
+            obj.handles.figureBox.Widths = [350, -1, 100];
         end
         
         
@@ -141,7 +146,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.epochData{obj.epochIndex, 1} = e;
 
             obj.analyzeData();
-            obj.updateGui();
+            obj.updateUi();
            
             obj.waitIfNecessary();
 %             obj.generateNextStimulusAutomatic()
@@ -151,15 +156,21 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         function analyzeData(obj)
 %             thisEpoch = obj.epochData{end};
+
+            % combine responses into points
+            [points, ~, indices] = unique(obj.responseData(:,[1,2]), 'rows');
+            for i = 1:size(points,1)
+                obj.pointData(i,:) = [points(i,1), points(i,2), mean(obj.responseData(indices == i, 3)), std(obj.responseData(indices == i, 3)), sum(indices == i)];
+            end
             
             % calculate map of current results
-            if obj.epochIndex > 2
-                c1 = obj.responseData(:,1);
-                c2 = obj.responseData(:,2);
-                r = obj.responseData(:,3);
+            if size(obj.pointData, 1) >= 3
+                c1 = obj.pointData(:,1);
+                c2 = obj.pointData(:,2);
+                r = obj.pointData(:,3);
                 obj.interpolant = scatteredInterpolant(c1, c2, r, 'linear', 'none');
             end
-                        
+
         end
         
         function generateBaseGridStimulus(obj)
@@ -175,6 +186,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                                   [obj.contrastRange1(1),obj.contrastRange2(2)]];
 
             obj.nextStimulus = vertcat(obj.nextStimulus, bootstrapContrasts);
+            obj.updateUi();
         end
         
         function generateNextStimulusPoint(obj)
@@ -217,7 +229,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         end
                         startPoint = obj.isoPlotClickHistory(1,:);
                         endPoint = obj.isoPlotClickHistory(2,:);
-                        step = (endPoint - startPoint) / numLinePoints;
+                        step = (endPoint - startPoint) / (numLinePoints-1);
                         points = zeros(numLinePoints,2);
                         for p = 1:numLinePoints
                             points(p,:) = startPoint + step * (p-1);
@@ -228,38 +240,42 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         obj.isoPlotClickMode = 'select';
                     end
                     
-%                 case 'newgrid'
-%                     obj.isoPlotClickHistory(end+1,:) = [c1,c2];
-%                     obj.isoPlotClickCountRemaining = obj.isoPlotClickCountRemaining - 1;
-%                     
-%                     if obj.isoPlotClickCountRemaining == 0
-%                         numGridPoints = inputdlg('Number of grid edge points?');
-%                         if isempty(numGridPoints)
-%                             numGridPoints = 2;
-%                         else
-%                             numLinePoints = str2double(numGridPoints{1});
-%                         end
-%                         startPoint = obj.isoPlotClickHistory(1,:);
-%                         endPoint = obj.isoPlotClickHistory(2,:);
-%                         step1 = endPoint(1) - startPoint(;
-%                         points = zeros(numGridPoints.^2,2);
-%                         for p1 = 1:numGridPoints
-%                             points(p,:) = startPoint + step * (p1-1);
-%                         end
-%                         
-%                         obj.nextStimulus = vertcat(obj.nextStimulus, points);
-%                         obj.isoPlotClickHistory = [];
-%                         obj.isoPlotClickMode = 'select';
-%                     end
+                case 'newgrid'
+                    obj.isoPlotClickHistory(end+1,:) = [c1,c2];
+                    obj.isoPlotClickCountRemaining = obj.isoPlotClickCountRemaining - 1;
+                    
+                    if obj.isoPlotClickCountRemaining == 0
+                        numGridPoints = inputdlg('Number of grid edge points?');
+                        if isempty(numGridPoints)
+                            numGridPoints = 2;
+                        else
+                            numGridPoints = str2double(numGridPoints{1});
+                        end
+                        startPoint = obj.isoPlotClickHistory(1,:);
+                        endPoint = obj.isoPlotClickHistory(2,:);
+                        step = (endPoint - startPoint) / (numGridPoints-1);
+                        
+                        points = [];
+                        for p1 = 1:numGridPoints
+                            for p2 = 1:numGridPoints
+                                p = (p1-1)*numGridPoints + p2;
+                                points(p,:) = startPoint + step .* [p1-1, p2-1];
+                            end
+                        end
+                        
+                        obj.nextStimulus = vertcat(obj.nextStimulus, points);
+                        obj.isoPlotClickHistory = [];
+                        obj.isoPlotClickMode = 'select';
+                    end
             end
             
             
-            obj.updateGui();
+            obj.updateUi();
         end
         
         function clearNextStimulus(obj)
             obj.nextStimulus = [];
-            obj.updateGui();
+            obj.updateUi();
         end
         
         function resumeProtocol(obj)
@@ -286,33 +302,37 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         end
         
         
-        function updateGui(obj)
+        function updateUi(obj)
             % update next stimulus table
             obj.handles.nextStimulusTable.Data = obj.nextStimulus;
             
             % update epoch table
-            obj.handles.epochTable.Data = obj.responseData;
+            obj.handles.epochTable.Data = obj.pointData;
             
             % update iso data plot
             cla(obj.handles.isoAxes);
             hold(obj.handles.isoAxes, 'on');
 
-            if ~isempty(obj.responseData)                
+            if ~isempty(obj.pointData)
                 if ~isempty(obj.interpolant)
                     try
-                        c1p = linspace(min(obj.responseData(:,1)), max(obj.responseData(:,1)), 20);
-                        c2p = linspace(min(obj.responseData(:,2)), max(obj.responseData(:,2)), 20);
+                        c1p = linspace(min(obj.pointData(:,1)), max(obj.pointData(:,1)), 20);
+                        c2p = linspace(min(obj.pointData(:,2)), max(obj.pointData(:,2)), 20);
                         [C1p, C2p] = meshgrid(c1p, c2p);
                         int = obj.interpolant(C1p, C2p);
                         s = pcolor(obj.handles.isoAxes, C1p, C2p, int);
-                        shading(obj.handles.isoAxes,'flat')
+                        shading(obj.handles.isoAxes, 'flat');
                         set(s, 'PickableParts', 'none');
+                        
+%                         contour(obj.handles.isoAxes, C1p, C2p, int, 'k', 'ShowText','on', 'PickableParts', 'none')
                     end
                 end
 
                 % observations
-                scatter(obj.handles.isoAxes, obj.responseData(:,1), obj.responseData(:,2), 40, 'CData', obj.responseData(:,3), ...
-                    'LineWidth', 1, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'flat')
+                for oi = 1:size(obj.pointData,1)
+                    scatter(obj.handles.isoAxes, obj.pointData(oi,1), obj.pointData(oi,2), 40, 'CData', obj.pointData(oi,3), ...
+                        'LineWidth', 1, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'flat')
+                end
             end
             
             % next stimulus points
@@ -331,6 +351,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             ylabel(obj.handles.isoAxes, obj.colorNames{2});
             xlim(obj.handles.isoAxes, obj.contrastRange1);
             ylim(obj.handles.isoAxes, obj.contrastRange2);
+            set(obj.handles.isoAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
             hold(obj.handles.isoAxes, 'off');
         end
         
@@ -352,6 +373,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.epochData = {};
             obj.epochIndex = 0;
             obj.responseData = [];
+            obj.pointData = [];
             obj.interpolant = [];
             obj.nextStimulus = [];
         end
