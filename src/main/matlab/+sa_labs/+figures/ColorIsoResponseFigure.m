@@ -16,7 +16,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         contrastRange1
         contrastRange2
-        
+        ignoreNextEpoch = false;
+        runPausedSoMayNeedNullEpoch = true;
+           
         epochData
         responseData
         pointData
@@ -24,7 +26,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         isoPlotClickMode = 'select'
         isoPlotClickCountRemaining = 0;
-        isoPlotClickHistory = [];        
+        isoPlotClickHistory = [];
+        selectedPoint = [];
         
         handles
     end
@@ -76,50 +79,88 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             obj.handles.figureBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
             
-            obj.handles.measurementDataBox = uix.VBox('Parent', obj.handles.figureBox, 'Spacing', 10);
+            obj.handles.measurementDataBox = uix.VBoxFlex('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.epochTable = uitable('Parent', obj.handles.measurementDataBox, ...
-                                    'ColumnName', {'contrast 1', 'contrast 2', 'mean resp', 'std','rep'}, ...
+                                    'ColumnName', {'contr 1', 'contr 2', 'mean', 'VMR', 'rep'}, ...
+                                    'ColumnWidth', {60, 60, 40, 40, 40}, ...
                                     'CellSelectionCallback', @obj.epochTableSelect);
             obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
                                     'ColumnName', {'contrast 1', 'contrast 2'});
             obj.handles.epochResponseAxes = axes('Parent', obj.handles.measurementDataBox);
+            obj.handles.measurementDataBox.Heights = [-2, -1, -.5];
             
             obj.handles.isoDataBox = uix.VBox('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.isoAxes = axes('Parent', obj.handles.isoDataBox, ...
                         'ButtonDownFcn', @obj.clickIsoPlot);
             
             obj.handles.actionButtonBox = uix.VButtonBox('Parent', obj.handles.figureBox, ...
-                        'Spacing', 5, 'ButtonSize', [180, 40]);
-            obj.handles.selectNewStimulusPointButton = uicontrol('Style', 'pushbutton', ...
+                        'Spacing', 12, 'ButtonSize', [180, 30]);
+            uicontrol('Style', 'pushbutton', ...
                         'String', 'New Point',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateNextStimulusPoint());
-            obj.handles.selectNewStimulusLineButton = uicontrol('Style', 'pushbutton', ...
+            uicontrol('Style', 'pushbutton', ...
                         'String', 'New Line',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateNextStimulusLine());
-            obj.handles.selectNewStimulusGridButton = uicontrol('Style', 'pushbutton', ...
+            uicontrol('Style', 'pushbutton', ...
                         'String', 'New Grid',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateNextStimulusGrid());
-            obj.handles.selectBaseGridButton = uicontrol('Style', 'pushbutton', ...
-                        'String', 'Baseline',...
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'New Ramps',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.generateRamps());
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Extreme Grid',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateBaseGridStimulus());
-            obj.handles.clearNextStimulusButton = uicontrol('Style', 'pushbutton', ...
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Add Selected',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.addSelectedPoint());
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Add 4 nearest',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.addNearestPoints(4));
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Add 4 noisiest',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.addNoisiestPoints(4));
+            uicontrol('Style', 'pushbutton', ...
                         'String', 'Clear Next',...
                         'Parent', obj.handles.actionButtonBox,...
-                        'Callback', @(a,b) obj.clearNextStimulus());                    
-            obj.handles.resumeProtocolButton = uicontrol('Style', 'pushbutton', ...
-                        'String', 'Resume',...
+                        'Callback', @(a,b) obj.clearNextStimulus());
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Randomize',...
                         'Parent', obj.handles.actionButtonBox,...
-                        'Callback', @(a,b) obj.resumeProtocol());
+                        'Callback', @(a,b) obj.randomizeStimulus());
+
+            obj.handles.leadWithNullStimulusCheckbox = uicontrol('Style', 'checkbox', ...
+                        'Value', true, ...
+                        'String', 'Lead w/ null',...
+                        'Parent', obj.handles.actionButtonBox);
+            obj.handles.repeatStimCheckbox = uicontrol('Style', 'checkbox', ...
+                        'Value', true, ...
+                        'String', 'Repeat added stim',...
+                        'Parent', obj.handles.actionButtonBox);
                     
-            obj.handles.figureBox.Widths = [350, -1, 100];
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Resume', 'FontWeight', 'bold', 'FontSize', 16, ...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.resumeProtocol());                    
+                    
+            obj.handles.figureBox.Widths = [300, -1, 100];
         end
         
         
         function handleEpoch(obj, epoch)
+            if obj.ignoreNextEpoch
+                disp('ignoring epoch');
+                obj.assignNextStimulus();
+                obj.ignoreNextEpoch = false;
+                return
+            end
             obj.epochIndex = obj.epochIndex + 1;
             
             responseObject = epoch.getResponse(obj.devices{1}); %only one channel for now
@@ -150,7 +191,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
            
             obj.waitIfNecessary();
 %             obj.generateNextStimulusAutomatic()
-            
+
+            obj.selectedPoint = [];
             obj.assignNextStimulus();
         end
         
@@ -160,7 +202,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             % combine responses into points
             [points, ~, indices] = unique(obj.responseData(:,[1,2]), 'rows');
             for i = 1:size(points,1)
-                obj.pointData(i,:) = [points(i,1), points(i,2), mean(obj.responseData(indices == i, 3)), std(obj.responseData(indices == i, 3)), sum(indices == i)];
+                m = mean(obj.responseData(indices == i, 3));
+                v = var(obj.responseData(indices == i, 3));
+                obj.pointData(i,:) = [points(i,1), points(i,2), m, v/abs(m), sum(indices == i)];
             end
             
             % calculate map of current results
@@ -185,8 +229,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                                   [obj.contrastRange1(2),obj.contrastRange2(1)];
                                   [obj.contrastRange1(1),obj.contrastRange2(2)]];
 
-            obj.nextStimulus = vertcat(obj.nextStimulus, bootstrapContrasts);
-            obj.updateUi();
+            obj.addToStimulusWithRepeats(bootstrapContrasts);
         end
         
         function generateNextStimulusPoint(obj)
@@ -207,10 +250,11 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             int = hit.IntersectionPoint;
             c1 = int(1);
             c2 = int(2);
+            newPoints = [];
             
             switch obj.isoPlotClickMode
                 case 'newpoint'
-                    obj.nextStimulus = vertcat(obj.nextStimulus, [c1, c2]);
+                    newPoints = [c1, c2];
                     obj.isoPlotClickMode = 'select';
                     
                 case 'newline'
@@ -220,22 +264,21 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     if obj.isoPlotClickCountRemaining == 0
                         numLinePoints = inputdlg('Number of line points?');
                         if isempty(numLinePoints)
-                            numLinePoints = 2;
+                            return
                         else
                             numLinePoints = str2double(numLinePoints{1});
                         end
                         if numLinePoints < 2 || isnan(numLinePoints)
-                            numLinePoints = 2;
+                            return
                         end
                         startPoint = obj.isoPlotClickHistory(1,:);
                         endPoint = obj.isoPlotClickHistory(2,:);
                         step = (endPoint - startPoint) / (numLinePoints-1);
-                        points = zeros(numLinePoints,2);
+
                         for p = 1:numLinePoints
-                            points(p,:) = startPoint + step * (p-1);
+                            newPoints(p,:) = startPoint + step * (p-1);
                         end
                         
-                        obj.nextStimulus = vertcat(obj.nextStimulus, points);
                         obj.isoPlotClickHistory = [];
                         obj.isoPlotClickMode = 'select';
                     end
@@ -247,29 +290,96 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     if obj.isoPlotClickCountRemaining == 0
                         numGridPoints = inputdlg('Number of grid edge points?');
                         if isempty(numGridPoints)
-                            numGridPoints = 2;
+                            return
                         else
                             numGridPoints = str2double(numGridPoints{1});
                         end
+                        if numGridPoints < 2 || isnan(numGridPoints)
+                            return
+                        end                        
                         startPoint = obj.isoPlotClickHistory(1,:);
                         endPoint = obj.isoPlotClickHistory(2,:);
                         step = (endPoint - startPoint) / (numGridPoints-1);
                         
-                        points = [];
                         for p1 = 1:numGridPoints
                             for p2 = 1:numGridPoints
                                 p = (p1-1)*numGridPoints + p2;
-                                points(p,:) = startPoint + step .* [p1-1, p2-1];
+                                newPoints(p,:) = startPoint + step .* [p1-1, p2-1];
                             end
                         end
                         
-                        obj.nextStimulus = vertcat(obj.nextStimulus, points);
                         obj.isoPlotClickHistory = [];
                         obj.isoPlotClickMode = 'select';
                     end
             end
             
-            
+            obj.addToStimulusWithRepeats(newPoints)
+        end
+        
+        function generateRamps(obj)
+            prompt = {'Fixed contrast','Num points','Range low','Range high'};
+            dlg_title = 'Ramp config';
+            defaultans = {'0.3', '8', '-1', '2'};
+            answer = inputdlg(prompt,dlg_title,1,defaultans);
+
+            if isempty(answer)
+                return
+            else
+                fixedContrast = str2double(answer{1});
+                numRampSteps = str2double(answer{2});
+                rampRange(1) = str2double(answer{3});
+                rampRange(2) = str2double(answer{4});
+            end           
+
+            rampSteps = linspace(rampRange(1), rampRange(2), numRampSteps)';
+            newPoints1 = horzcat(fixedContrast * ones(numRampSteps,1), rampSteps);
+            newPoints2 = horzcat(rampSteps, fixedContrast * ones(numRampSteps,1));
+            newPoints = vertcat(newPoints1, newPoints2);
+            obj.addToStimulusWithRepeats(newPoints);
+        end
+        
+        function addSelectedPoint(obj)
+            obj.addToStimulusWithRepeats(obj.selectedPoint);
+        end
+        
+        function addNearestPoints(obj, n)
+            p = obj.selectedPoint(1,:);
+            points = obj.pointData(:,1:2);
+            distances = sqrt(sum(bsxfun(@minus, points, p) .^2, 2));
+            [~, si] = sort(distances);
+            points = points(si, :);
+            points = points(1:min([size(points,1), n]), :);
+            obj.addToStimulusWithRepeats(points);
+        end
+        
+        function addNoisiestPoints(obj, n)
+            points = obj.pointData(:,1:2);
+            noise = obj.pointData(:,4);
+            [~, si] = sort(noise);
+            points = points(si, :);
+            points = points(1:min([size(points,1), n]), :);
+            obj.addToStimulusWithRepeats(points);
+        end        
+        
+        function addToStimulusWithRepeats(obj, newPoints)
+            if ~isempty(newPoints)
+                if obj.handles.repeatStimCheckbox.Value
+                    count = 2;
+                else
+                    count = 1;
+                end
+                
+                for i = 1:count
+                    order = randperm(size(newPoints, 1));
+                    obj.nextStimulus = vertcat(obj.nextStimulus, newPoints(order,:));
+                end
+            end
+            obj.updateUi();
+        end
+        
+        function randomizeStimulus(obj)
+            order = randperm(size(obj.nextStimulus, 1));
+            obj.nextStimulus = obj.nextStimulus(order,:);
             obj.updateUi();
         end
         
@@ -289,12 +399,21 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function waitIfNecessary(obj)
             if isempty(obj.nextStimulus)
                 disp('waiting for input')
+                obj.runPausedSoMayNeedNullEpoch = true;
                 uiwait(obj.figureHandle);
             end
         end
             
             
         function assignNextStimulus(obj)
+            % add a null epoch if requested
+            if obj.handles.leadWithNullStimulusCheckbox.Value && obj.runPausedSoMayNeedNullEpoch
+                disp('adding lead epoch')
+                obj.ignoreNextEpoch = true;
+                obj.runPausedSoMayNeedNullEpoch = false;
+                obj.nextStimulus = vertcat(obj.nextStimulus(1,:), obj.nextStimulus);
+            end
+            
             % assign the contrasts to the next stimuli in the list
             obj.nextContrast1 = obj.nextStimulus(1, 1);
             obj.nextContrast2 = obj.nextStimulus(1, 2);
@@ -320,48 +439,76 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         c2p = linspace(min(obj.pointData(:,2)), max(obj.pointData(:,2)), 20);
                         [C1p, C2p] = meshgrid(c1p, c2p);
                         int = obj.interpolant(C1p, C2p);
+%                         f = fspecial('average');
+%                         int = imfilter(int, f);
                         s = pcolor(obj.handles.isoAxes, C1p, C2p, int);
-                        shading(obj.handles.isoAxes, 'flat');
+                        shading(obj.handles.isoAxes, 'interp');
                         set(s, 'PickableParts', 'none');
                         
-%                         contour(obj.handles.isoAxes, C1p, C2p, int, 'k', 'ShowText','on', 'PickableParts', 'none')
+                        contour(obj.handles.isoAxes, C1p, C2p, int, 'k', 'ShowText','on', 'PickableParts', 'none')
                     end
                 end
 
                 % observations
                 for oi = 1:size(obj.pointData,1)
-                    scatter(obj.handles.isoAxes, obj.pointData(oi,1), obj.pointData(oi,2), 40, 'CData', obj.pointData(oi,3), ...
-                        'LineWidth', 1, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'flat')
+                    if ~isempty(obj.selectedPoint) && all([obj.pointData(oi,1), obj.pointData(oi,2)] == obj.selectedPoint(1,:))
+                        siz = 90;
+                        edg = 'w';
+                    else
+                        siz = 40;
+                        edg = 'k';
+                    end
+                    scatter(obj.handles.isoAxes, obj.pointData(oi,1), obj.pointData(oi,2), siz, 'CData', obj.pointData(oi,3), ...
+                        'LineWidth', 1, 'MarkerEdgeColor', edg, 'MarkerFaceColor', 'flat', 'ButtonDownFcn', {@obj.isoPlotPointClick, oi})
                 end
             end
             
             % next stimulus points
             if ~isempty(obj.nextStimulus)
                 scatter(obj.handles.isoAxes, obj.nextStimulus(:,1), obj.nextStimulus(:,2), 60, 'CData', [1,1,1], ...
-                    'LineWidth', 1, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'flat')
+                    'LineWidth', 2, 'MarkerEdgeColor', 'k', 'Marker', 'x')
             end
             
-            % next plot click points
+            % plot click points
             if ~isempty(obj.isoPlotClickHistory)
                 scatter(obj.handles.isoAxes, obj.isoPlotClickHistory(:,1), obj.isoPlotClickHistory(:,2), '+', ...
                     'LineWidth', 2, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'flat')
-            end            
+            end       
             
             xlabel(obj.handles.isoAxes, obj.colorNames{1});
             ylabel(obj.handles.isoAxes, obj.colorNames{2});
-            xlim(obj.handles.isoAxes, obj.contrastRange1);
-            ylim(obj.handles.isoAxes, obj.contrastRange2);
+            xlim(obj.handles.isoAxes, obj.contrastRange1 + [-.1, .1]);
+            ylim(obj.handles.isoAxes, obj.contrastRange2 + [-.1, .1]);
             set(obj.handles.isoAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
             hold(obj.handles.isoAxes, 'off');
+            
+            % Update selected epoch in epoch signal display and table
+            
+            if ~isempty(obj.selectedPoint)
+                cla(obj.handles.epochResponseAxes);
+                point = obj.selectedPoint(1,:);
+                for ei = 1:length(obj.epochData)
+                    e = obj.epochData{ei};
+                    if all([e.parameters('contrast1'), e.parameters('contrast2')] == point)
+                        hold(obj.handles.epochResponseAxes, 'on')
+                        plot(obj.handles.epochResponseAxes, e.t, e.signal);
+                        plot(obj.handles.epochResponseAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+                        hold(obj.handles.epochResponseAxes, 'off')
+                    end
+                end
+            end
         end
         
         function epochTableSelect(obj, ~, data)
-            ei = data.Indices(1);
-            e = obj.epochData{ei};
-            plot(obj.handles.epochResponseAxes, e.t, e.signal);
-            hold(obj.handles.epochResponseAxes, 'on')
-            plot(obj.handles.epochResponseAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
-            hold(obj.handles.epochResponseAxes, 'off')
+            responsePointIndex = data.Indices(1);
+            point = obj.pointData(responsePointIndex, 1:2);
+            obj.selectedPoint = point;
+            obj.updateUi();
+        end
+        
+        function isoPlotPointClick(obj, ~, ~, index)
+            obj.selectedPoint = obj.pointData(index, 1:2);
+            obj.updateUi();
         end
         
         function clearFigure(obj)
@@ -376,6 +523,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.pointData = [];
             obj.interpolant = [];
             obj.nextStimulus = [];
+            obj.selectedPoint = [];
         end
     end
     
