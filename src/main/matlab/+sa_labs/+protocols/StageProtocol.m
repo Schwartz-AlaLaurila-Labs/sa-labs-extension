@@ -37,7 +37,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorMode = '';
         filterWheelNdfValues
         filterWheelAttenuationValues
-        lightCrafterParams
+    end
+    
+    properties (Hidden, Transient)
+        rigProperty
     end
        
     methods (Abstract)
@@ -79,31 +82,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.BaseProtocol(obj);
-                        
-            lcrSearch = obj.rig.getDevices('LightCrafter');
-            if ~isempty(lcrSearch)
-                lightCrafter = obj.rig.getDevice('LightCrafter');
-                obj.lightCrafterParams = struct();
-                obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
-                obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
-                obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
-                obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
-                obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
-                obj.colorMode = lightCrafter.getColorMode();
-            else
-                obj.colorMode = '';
-                obj.lightCrafterParams = [];
-            end
+
+            obj.rigProperty = sa_labs.factory.getInstance('rigProperty');
+            obj.colorMode = obj.rigProperty.rigDescription.projectorColorMode;
             
-            if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                % useless defaults
-                obj.filterWheelNdfValues = [0];
-                obj.filterWheelAttenuationValues = [1.0];
-            else
-                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                obj.filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
-                obj.filterWheelAttenuationValues = filterWheel.getResource('filterWheelAttenuationValues');
-                obj.NDF = filterWheel.getResource('defaultNdfValue');
+            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+                obj.NDF = obj.rig.getDevice('neutralDensityFilterWheel').getResource('defaultNdfValue');
             end
         end        
         
@@ -126,7 +110,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
             % set the NDF filter wheel
-            if ~isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 if filterWheel.getConfigurationSetting('comPort') > 0
                     filterWheel.setNdfValue(obj.NDF);
@@ -134,14 +118,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
             % check for pattern setting correctness
-            if ~strcmp(obj.colorPattern2, 'none')
+            if ~ strcmp(obj.colorPattern2, 'none')
                 if ~(obj.numberOfPatterns >= 2)
                     error('Must have >= 2 patterns to use second pattern')
                 end
             end
             
-            if ~isempty(obj.rig.getDevices('LightCrafter'))
+            if ~ isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
+                % TODO move the logic to light crafter
                 lightCrafter = obj.rig.getDevice('LightCrafter');
                 lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
                 lightCrafter.setPrerender(obj.prerender);
@@ -158,15 +143,20 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
             % add the microns per pixel value for later upkeep
-            epoch.addParameter('micronsPerPixel', obj.lightCrafterParams.micronsPerPixel);
-            epoch.addParameter('angleOffsetFromRig', obj.lightCrafterParams.angleOffset);
+            if ~ isempty(obj.rig.getDevices('LightCrafter'))
+                lightCrafter = obj.rig.getDevice('LightCrafter');
+                
+                % TODO how about setting this later h5 parsing, since h5 will have all the device configurations ?
+                epoch.addParameter('micronsPerPixel', lightCrafter.getConfigurationSetting('micronsPerPixel'));
+                epoch.addParameter('angleOffsetFromRig', lightCrafter.getConfigurationSetting('angleOffset'));
+            end
             
             % uses the frame tracker on the monitor to inform the HEKA that
             % the stage presentation has begun. Improves temporal alignment
             epoch.shouldWaitForTrigger = true;
             
-            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
-            if testMode
+
+            if obj.rigProperty.testMode
                 % gaussian noise for analysis testing
                 obj.addGaussianLoopbackSignals(epoch);
             else
@@ -188,8 +178,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
 
         function completeEpoch(obj, epoch)
-            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');            
-            if ~testMode
+            
+            if ~ obj.rigProperty.testMode
                 epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
             end
             
@@ -198,66 +188,65 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function completeRun(obj)
             completeRun@sa_labs.protocols.BaseProtocol(obj);
-
             obj.rig.getDevice('Stage').clearMemory();
         end
         
         function [tf, msg] = isValid(obj)
             [tf, msg] = isValid@sa_labs.protocols.BaseProtocol(obj);
+            
             if tf
                 tf = ~isempty(obj.rig.getDevices('Stage'));
                 msg = 'No stage';
             end
         end
-    
-        function [rstar, mstar, sstar] = convertIntensityToIsomerizations(obj, intensity)
-            rstar = [];
-            mstar = [];
-            sstar = [];
-            if isempty(intensity) || isempty(obj.lightCrafterParams)
-                return
-            end
-            
-            filterIndex = find(obj.filterWheelNdfValues == obj.NDF, 1);     
-            NDF_attenuation = obj.filterWheelAttenuationValues(filterIndex);
-            
-            if strcmp('standard', obj.colorMode)
-                [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
-                    obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
-            else
-                % UV mode
-                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
-                    obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
-            end
-            
-            rstar = round(R * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
-            mstar = round(M * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
-            sstar = round(S * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
-        end
          
         function RstarMean = get.RstarMean(obj)
-            [RstarMean, ~, ~] = obj.convertIntensityToIsomerizations(obj.meanLevel);
+            rigDesc =  obj.rigProperty.rigDescription;
+            [RstarMean, ~, ~] = rigDesc.getIsomerizations(obj.meanLevel, obj.isomerizationParameters());
         end
     
         function RstarIntensity = get.RstarIntensity(obj)
             RstarIntensity = [];
             if isprop(obj, 'intensity')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
+                rigDesc =  obj.rigProperty.rigDescription;
+                [RstarIntensity, ~, ~] = rigDesc.getIsomerizations(obj.intensity, obj.isomerizationParameters());
             end
         end
         
         function MstarIntensity = get.MstarIntensity(obj)
             MstarIntensity = [];
             if isprop(obj, 'intensity')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
+                rigDesc =  obj.rigProperty.rigDescription;
+                [~, MstarIntensity, ~] = rigDesc.getIsomerizations(obj.intensity, obj.isomerizationParameters());
             end
         end
         
         function SstarIntensity = get.SstarIntensity(obj)
             SstarIntensity = [];
             if isprop(obj, 'intensity')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity);
+                rigDesc =  obj.rigProperty.rigDescription;
+                [~, ~, SstarIntensity] = rigDesc.getIsomerizations(obj.intensity, obj.isomerizationParameters());
             end
+        end
+
+        function p = isomerizationParameters(obj)
+            source = [];
+            
+            if ~ isempty(obj.persistor)
+                source = obj.persistor.currentEpochGroup.source.getPropertyMap();
+            end
+            
+            p = struct();
+            p.NDF = obj.NDF;
+            p.blueLED = obj.blueLED;
+            p.greenLED = obj.greenLED;
+            p.uvLED = obj.uvLED;
+            p.colorPattern1 = obj.colorPattern1;
+            p.numberOfPatterns = obj.numberOfPatterns;
+            
+            p.ledCurrents = [obj.blueLED, obj.greenLED obj.uvLED];
+            p.ledTypes = sort(strsplit(obj.colorPattern1, '+'));
+            p.mouse = source;
         end        
         
         function bitDepth = get.bitDepth(obj)

@@ -1,8 +1,8 @@
 classdef LightCrafterDevice < symphonyui.core.Device
     
-    properties (Access = private, Transient)
-        stageClient
+    properties (Access = protected, Transient)
         lightCrafter
+        stageClient
     end
     
     methods
@@ -36,14 +36,9 @@ classdef LightCrafterDevice < symphonyui.core.Device
             % Set up Lightcrafter
             colorMode = ip.Results.colorMode;
             orientation = ip.Results.orientation;
+            obj.setLightCrafter(colorMode, orientation);
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
-            
-            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, ip.Results.colorMode);
-            obj.lightCrafter.connect();
-            obj.lightCrafter.setMode('pattern');
-            obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
-            
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('frameTrackerSize', frameTrackerSizeDefault);
@@ -60,6 +55,13 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', 0);
                         
+        end
+        
+        function setLightCrafter(obj, orientation, colorMode)
+            obj.lightCrafter = LightCrafter4500(obj.stageClient.getMonitorRefreshRate(), colorMode);
+            obj.lightCrafter.connect();
+            obj.lightCrafter.setMode('pattern');
+            obj.lightCrafter.setImageOrientation(orientation(1), orientation(2));
         end
         
         function close(obj)
@@ -149,6 +151,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             background.color = backgroundIntensity;
             backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
             background.color = backgroundIntensity;
+            
             if obj.getConfigurationSetting('numberOfPatterns') > 1
                 backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
                     @(state)(1 * (state.pattern == backgroundPattern - 1)));
