@@ -1,6 +1,0 @@
-[submodule "lib/matlab-lcr"]
-	path = lib/matlab-lcr
-	url = https://github.com/Stage-VSS/matlab-lcr.git
-[submodule "lib/matlab-emagin"]
-	path = lib/matlab-emagin
-	url = https://github.com/Stage-VSS/matlab-emagin.git

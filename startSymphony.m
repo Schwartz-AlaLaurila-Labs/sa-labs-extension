@@ -1,1 +1,0 @@
-run 'C:\Users\RigTest2\Documents\MATLAB\symphony-matlab\src\main\matlab\main.m'
