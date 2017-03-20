@@ -121,6 +121,22 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = inf;
         end
+        
+        function tf = shouldContinuePreparingEpochs(obj)
+            if ~isvalid(obj.isoResponseFigure)
+                tf = false;
+            else
+                tf = ~obj.isoResponseFigure.protocolShouldStop;
+            end
+        end
+        
+        function tf = shouldContinueRun(obj)
+            if ~isvalid(obj.isoResponseFigure)
+                tf = false;
+            else
+                tf = ~obj.isoResponseFigure.protocolShouldStop;
+            end
+        end        
 
     end
     

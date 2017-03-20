@@ -73,10 +73,18 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             end            
             
             if obj.numberOfPatterns > 1
-                pattern = obj.primaryObjectPattern;
-                patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
-                    @(s)(obj.intensity * patternSelect(s, pattern)));
-                p.addController(patternController);
+                if strcmp(obj.colorCombinationMode, 'replace')
+                    pattern = obj.primaryObjectPattern;
+                    patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
+                        @(s)(obj.intensity * patternSelect(s, pattern)));
+                    p.addController(patternController);
+                else % add
+                    pattern = obj.primaryObjectPattern;
+                    bgPattern = obj.backgroundPattern;
+                    patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
+                        @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
+                    p.addController(patternController);
+                end
             end
             
         end

@@ -18,6 +18,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         primaryObjectPattern = 1
         secondaryObjectPattern = 1
         backgroundPattern = 2
+        colorCombinationMode = 'add'
     end
     
     properties (Dependent)
@@ -34,6 +35,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
+        colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace'});
+
         colorMode = '';
         filterWheelNdfValues
         filterWheelAttenuationValues
@@ -53,7 +56,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 %                 case {'meanLevel', 'intensity'}
 %                     d.category = '1 Basic';
                     
-                case {'offsetX','offsetY','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity'}
+                case {'offsetX','offsetY','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity','colorCombinationMode'}
                     d.category = '7 Projector';
                     
                 case {'greenLED','redLED','blueLED','uvLED','NDF'}

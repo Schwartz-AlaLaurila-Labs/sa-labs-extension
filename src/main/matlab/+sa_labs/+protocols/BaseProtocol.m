@@ -61,16 +61,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             obj.chan3Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
             obj.chan4Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
             
-            % make device list for analysis figure
-            obj.devices = {};
-            for ci = 1:4
-                ampName = obj.(['chan' num2str(ci)]);
-                ampMode = obj.(['chan' num2str(ci) 'Mode']);
-                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
-                    device = obj.rig.getDevice(ampName);
-                    obj.devices{end+1} = device; %#ok<AGROW>
-                end
-            end            
+
         end
 
         function d = getPropertyDescriptor(obj, name)
@@ -128,7 +119,16 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
             end
 
-
+            % make device list for analysis figure
+            obj.devices = {};
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                ampMode = obj.(['chan' num2str(ci) 'Mode']);
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
+                    device = obj.rig.getDevice(ampName);
+                    obj.devices{end+1} = device; %#ok<AGROW>
+                end
+            end
             
             if obj.responsePlotMode ~= false
                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', obj.devices, ...

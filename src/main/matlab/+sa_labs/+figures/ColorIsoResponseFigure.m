@@ -16,11 +16,14 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         contrastRange1
         contrastRange2
+        plotRange1
+        plotRange2
         ignoreNextEpoch = false;
         runPausedSoMayNeedNullEpoch = true;
+        protocolShouldStop = false;
            
         epochData
-        responseData
+        
         pointData
         interpolant = [];
         
@@ -58,6 +61,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.contrastRange1 = ip.Results.contrastRange1;
             obj.contrastRange2 = ip.Results.contrastRange2;
             obj.colorNames = ip.Results.colorNames;
+            
+            obj.plotRange1 = obj.contrastRange1;
+            obj.plotRange2 = obj.contrastRange2;
                        
             obj.resetPlots();
             obj.createUi();
@@ -65,6 +71,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             obj.nextStimulus = [];
             obj.waitIfNecessary();
+            if ~isvalid(obj)
+                return
+            end
             obj.assignNextStimulus();
         end
         
@@ -80,14 +89,19 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.handles.figureBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
             
             obj.handles.measurementDataBox = uix.VBoxFlex('Parent', obj.handles.figureBox, 'Spacing', 10);
-            obj.handles.epochTable = uitable('Parent', obj.handles.measurementDataBox, ...
+            obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
+                                    'ColumnName', {'contrast 1', 'contrast 2'});            
+            obj.handles.dataTable = uitable('Parent', obj.handles.measurementDataBox, ...
                                     'ColumnName', {'contr 1', 'contr 2', 'mean', 'VMR', 'rep'}, ...
                                     'ColumnWidth', {60, 60, 40, 40, 40}, ...
-                                    'CellSelectionCallback', @obj.epochTableSelect);
-            obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
-                                    'ColumnName', {'contrast 1', 'contrast 2'});
+                                    'CellSelectionCallback', @obj.dataTableSelect);
+            obj.handles.singlePointTable = uitable('Parent', obj.handles.measurementDataBox, ...
+                                    'ColumnName', {'index', 'response'}, ...
+                                    'ColumnWidth', {60, 60}, ...
+                                    'CellSelectionCallback', @obj.singlePointTableSelect);
+
             obj.handles.epochResponseAxes = axes('Parent', obj.handles.measurementDataBox);
-            obj.handles.measurementDataBox.Heights = [-2, -1, -.5];
+            obj.handles.measurementDataBox.Heights = [-1, -2, -.5, -1];
             
             obj.handles.isoDataBox = uix.VBox('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.isoAxes = axes('Parent', obj.handles.isoDataBox, ...
@@ -112,13 +126,17 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateRamps());
             uicontrol('Style', 'pushbutton', ...
-                        'String', 'Extreme Grid',...
+                        'String', 'Baseline Grid',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateBaseGridStimulus());
             uicontrol('Style', 'pushbutton', ...
                         'String', 'Add Selected',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.addSelectedPoint());
+            uicontrol('Style', 'pushbutton', ...
+                        'String', 'Add in Rect',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.addPointsInRectangle());                    
             uicontrol('Style', 'pushbutton', ...
                         'String', 'Add 4 nearest',...
                         'Parent', obj.handles.actionButtonBox,...
@@ -130,7 +148,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             uicontrol('Style', 'pushbutton', ...
                         'String', 'Clear Next',...
                         'Parent', obj.handles.actionButtonBox,...
-                        'Callback', @(a,b) obj.clearNextStimulus());
+                        'Callback', @(a,b) obj.clearNextStimulus(), ...
+                        'ForegroundColor','red');
             uicontrol('Style', 'pushbutton', ...
                         'String', 'Randomize',...
                         'Parent', obj.handles.actionButtonBox,...
@@ -157,6 +176,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function handleEpoch(obj, epoch)
             if obj.ignoreNextEpoch
                 disp('ignoring epoch');
+                epoch.shouldBePersisted = false;
                 obj.assignNextStimulus();
                 obj.ignoreNextEpoch = false;
                 return
@@ -171,6 +191,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             e.signal = signal;
             e.t = (1:numel(e.signal)) / responseObject.sampleRate.quantityInBaseUnits;
             e.parameters = epoch.parameters;
+            e.ignore = false;
 
             result = obj.spikeDetector.detectSpikes(signal);
             spikeFrames = result.sp;
@@ -178,7 +199,6 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             % get spike count in analysis region
 %             e.response = sum(spikeTimes > obj.analysisRegion(1) & spikeTimes < obj.analysisRegion(2));
             e.response = round(10 * e.parameters('contrast1') + 7 * e.parameters('contrast2') + 10 * rand());
-            obj.responseData(obj.epochIndex, :) = [e.parameters('contrast1'), e.parameters('contrast2'), e.response];
 
             e.spikeTimes = spikeTimes;
             e.spikeFrames = spikeFrames;
@@ -192,18 +212,30 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.waitIfNecessary();
 %             obj.generateNextStimulusAutomatic()
 
+            if ~isvalid(obj)
+                return
+            end
+
             obj.selectedPoint = [];
             obj.assignNextStimulus();
         end
         
         function analyzeData(obj)
-%             thisEpoch = obj.epochData{end};
+            % collect all the epochs into a response table
+            responseData = [];
+            for ei = 1:length(obj.epochData)
+                e = obj.epochData{ei};
+                if e.ignore
+                    continue
+                end
+                responseData(end+1,:) = [e.parameters('contrast1'), e.parameters('contrast2'), e.response];
+            end
 
             % combine responses into points
-            [points, ~, indices] = unique(obj.responseData(:,[1,2]), 'rows');
+            [points, ~, indices] = unique(responseData(:,[1,2]), 'rows');
             for i = 1:size(points,1)
-                m = mean(obj.responseData(indices == i, 3));
-                v = var(obj.responseData(indices == i, 3));
+                m = mean(responseData(indices == i, 3));
+                v = var(responseData(indices == i, 3));
                 obj.pointData(i,:) = [points(i,1), points(i,2), m, v/abs(m), sum(indices == i)];
             end
             
@@ -214,7 +246,10 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 r = obj.pointData(:,3);
                 obj.interpolant = scatteredInterpolant(c1, c2, r, 'linear', 'none');
             end
-
+            
+            % calculate extents of display plot
+            obj.plotRange1 = [min([min(obj.pointData(:,1)), obj.contrastRange1(1)]), max([max(obj.pointData(:,1)), obj.contrastRange1(2)])];
+            obj.plotRange2 = [min([min(obj.pointData(:,2)), obj.contrastRange2(1)]), max([max(obj.pointData(:,2)), obj.contrastRange2(2)])];
         end
         
         function generateBaseGridStimulus(obj)
@@ -312,7 +347,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         obj.isoPlotClickMode = 'select';
                     end
             end
-            
+            obj.updateUi();
             obj.addToStimulusWithRepeats(newPoints)
         end
         
@@ -342,7 +377,22 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.addToStimulusWithRepeats(obj.selectedPoint);
         end
         
+        function addPointsInRectangle(obj)
+            rect = getrect(obj.handles.isoAxes);
+            points = [];
+            for p = 1:size(obj.pointData, 1)
+                point = obj.pointData(p,1:2);
+                if point(1) > rect(1) && point(1) < rect(1) + rect(3) && point(2) > rect(2) && point(2) < rect(2) + rect(4)
+                    points(end+1,:) = point;
+                end
+            end
+            obj.addToStimulusWithRepeats(points);
+        end
+        
         function addNearestPoints(obj, n)
+            if size(obj.pointData, 1) < n
+                return
+            end
             p = obj.selectedPoint(1,:);
             points = obj.pointData(:,1:2);
             distances = sqrt(sum(bsxfun(@minus, points, p) .^2, 2));
@@ -353,6 +403,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         end
         
         function addNoisiestPoints(obj, n)
+            if size(obj.pointData, 1) < n
+                return
+            end
             points = obj.pointData(:,1:2);
             noise = obj.pointData(:,4);
             [~, si] = sort(noise);
@@ -373,8 +426,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     order = randperm(size(newPoints, 1));
                     obj.nextStimulus = vertcat(obj.nextStimulus, newPoints(order,:));
                 end
+                obj.updateUi();
             end
-            obj.updateUi();
         end
         
         function randomizeStimulus(obj)
@@ -404,7 +457,6 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             end
         end
             
-            
         function assignNextStimulus(obj)
             % add a null epoch if requested
             if obj.handles.leadWithNullStimulusCheckbox.Value && obj.runPausedSoMayNeedNullEpoch
@@ -420,13 +472,29 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.nextStimulus(1,:) = [];
         end
         
-        
         function updateUi(obj)
             % update next stimulus table
             obj.handles.nextStimulusTable.Data = obj.nextStimulus;
             
-            % update epoch table
-            obj.handles.epochTable.Data = obj.pointData;
+            % update point data table
+            obj.handles.dataTable.Data = obj.pointData;
+            
+            % update selected point epochs table
+            if ~isempty(obj.selectedPoint)
+                point = obj.selectedPoint(1,:);
+                pointTable = [];
+                for ei = 1:length(obj.epochData)
+                    e = obj.epochData{ei};
+                    if e.ignore
+                        continue
+                    end
+                    if point(1) == e.parameters('contrast1') && point(2) == e.parameters('contrast2')
+                        pointTable(end+1,:) = [ei, e.response];
+                    end
+                end
+                obj.handles.singlePointTable.Data = pointTable;
+            end
+            
             
             % update iso data plot
             cla(obj.handles.isoAxes);
@@ -473,17 +541,21 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             if ~isempty(obj.isoPlotClickHistory)
                 scatter(obj.handles.isoAxes, obj.isoPlotClickHistory(:,1), obj.isoPlotClickHistory(:,2), '+', ...
                     'LineWidth', 2, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'flat')
-            end       
+            end
+            
+            
+            % draw some nice on/off divider lines
+            line(obj.handles.isoAxes, [0,0], obj.plotRange2, 'LineStyle', ':', 'Color', 'k', 'PickableParts', 'none');
+            line(obj.handles.isoAxes, obj.plotRange1, [0,0], 'LineStyle', ':', 'Color', 'k', 'PickableParts', 'none');
             
             xlabel(obj.handles.isoAxes, obj.colorNames{1});
             ylabel(obj.handles.isoAxes, obj.colorNames{2});
-            xlim(obj.handles.isoAxes, obj.contrastRange1 + [-.1, .1]);
-            ylim(obj.handles.isoAxes, obj.contrastRange2 + [-.1, .1]);
+            xlim(obj.handles.isoAxes, obj.plotRange1 + [-.1, .1]);
+            ylim(obj.handles.isoAxes, obj.plotRange2 + [-.1, .1]);
             set(obj.handles.isoAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
             hold(obj.handles.isoAxes, 'off');
             
             % Update selected epoch in epoch signal display and table
-            
             if ~isempty(obj.selectedPoint)
                 cla(obj.handles.epochResponseAxes);
                 point = obj.selectedPoint(1,:);
@@ -496,13 +568,30 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         hold(obj.handles.epochResponseAxes, 'off')
                     end
                 end
+                set(obj.handles.epochResponseAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
             end
+            
+
         end
         
-        function epochTableSelect(obj, ~, data)
+        function dataTableSelect(obj, ~, data)
+            if size(data.Indices, 1) == 0 % happens on a deselect from a ui redraw
+                return
+            end
             responsePointIndex = data.Indices(1);
             point = obj.pointData(responsePointIndex, 1:2);
             obj.selectedPoint = point;
+            obj.updateUi();
+        end
+        
+        function singlePointTableSelect(obj, tab, data)
+            if size(data.Indices, 1) == 0 % happens on a deselect from a ui redraw
+                return
+            end
+            tableRow = data.Indices(1);
+            ei = tab.Data(tableRow, 1);
+            obj.epochData{ei}.ignore = true;
+            obj.analyzeData();
             obj.updateUi();
         end
         
@@ -519,12 +608,13 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function resetPlots(obj)
             obj.epochData = {};
             obj.epochIndex = 0;
-            obj.responseData = [];
             obj.pointData = [];
             obj.interpolant = [];
             obj.nextStimulus = [];
             obj.selectedPoint = [];
+            obj.protocolShouldStop = false;
         end
+        
     end
     
 %     
