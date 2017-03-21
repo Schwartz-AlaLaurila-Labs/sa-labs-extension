@@ -32,10 +32,13 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     properties (Hidden, Dependent)
         totalNumEpochs
         intensity
-
+        intensity2
     end
     
     properties (Dependent)
+        RstarIntensity2
+        MstarIntensity2
+        SstarIntensity2        
         plotRange
         varyingIntensityValues % The intensity of the varying color, must be in [0,1]
     end
@@ -147,6 +150,10 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             intensity = obj.baseColor(1);
         end
         
+        function intensity = get.intensity2(obj)
+            intensity = obj.baseColor(2);
+        end        
+        
         function varyingIntensityValues = get.varyingIntensityValues(obj)
             varyingIntensityValues = obj.contrast * obj.rampRange;
         end
@@ -154,6 +161,27 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         function plotRange = get.plotRange(obj)
             plotRange = ((obj.rampRange * obj.intensity) - obj.intensity) / obj.intensity / obj.contrast;
         end
+        
+        function RstarIntensity = get.RstarIntensity2(obj)
+            RstarIntensity = [];
+            if isprop(obj, 'intensity')
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
+            end
+        end
+        
+        function MstarIntensity = get.MstarIntensity2(obj)
+            MstarIntensity = [];
+            if isprop(obj, 'intensity')
+                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
+            end
+        end
+        
+        function SstarIntensity = get.SstarIntensity2(obj)
+            SstarIntensity = [];
+            if isprop(obj, 'intensity')
+                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
+            end
+        end           
    
         
     end

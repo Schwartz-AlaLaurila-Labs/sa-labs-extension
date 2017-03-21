@@ -197,8 +197,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             spikeFrames = result.sp;
             spikeTimes = e.t(spikeFrames);
             % get spike count in analysis region
-%             e.response = sum(spikeTimes > obj.analysisRegion(1) & spikeTimes < obj.analysisRegion(2));
-            e.response = round(10 * e.parameters('contrast1') + 7 * e.parameters('contrast2') + 10 * rand());
+            e.response = sum(spikeTimes > obj.analysisRegion(1) & spikeTimes < obj.analysisRegion(2));
+%             e.response = round(10 * e.parameters('contrast1') + 7 * e.parameters('contrast2') + 10 * rand());
 
             e.spikeTimes = spikeTimes;
             e.spikeFrames = spikeFrames;
@@ -614,6 +614,11 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.selectedPoint = [];
             obj.protocolShouldStop = false;
         end
+        
+%         function show(obj)
+%             show@symphonyui.core.FigureHandler(obj);
+%             uiwait(obj.figureHandle);
+%         end        
         
     end
     

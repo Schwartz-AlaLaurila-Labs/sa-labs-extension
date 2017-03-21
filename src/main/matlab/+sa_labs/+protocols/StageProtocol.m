@@ -56,7 +56,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 %                 case {'meanLevel', 'intensity'}
 %                     d.category = '1 Basic';
                     
-                case {'offsetX','offsetY','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity','colorCombinationMode'}
+                case {'offsetX','offsetY','RstarMean','RstarIntensity','MstarIntensity','SstarIntensity','colorCombinationMode',...
+                        'RstarIntensity2','MstarIntensity2','SstarIntensity2'}
                     d.category = '7 Projector';
                     
                 case {'greenLED','redLED','blueLED','uvLED','NDF'}
@@ -213,12 +214,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
     
-        function [rstar, mstar, sstar] = convertIntensityToIsomerizations(obj, intensity)
+        function [rstar, mstar, sstar] = convertIntensityToIsomerizations(obj, intensity, color)
             rstar = [];
             mstar = [];
             sstar = [];
             if isempty(intensity) || isempty(obj.lightCrafterParams)
                 return
+            end
+            if nargin < 3
+                color = obj.colorPattern1;
             end
             
             filterIndex = find(obj.filterWheelNdfValues == obj.NDF, 1);     
@@ -226,11 +230,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             if strcmp('standard', obj.colorMode)
                 [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
-                    obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
+                    color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
-                    obj.colorPattern1, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
+                    color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
             end
             
             rstar = round(R * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
