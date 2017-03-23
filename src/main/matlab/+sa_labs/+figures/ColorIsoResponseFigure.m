@@ -105,8 +105,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                                     'ColumnWidth', {60, 60}, ...
                                     'CellSelectionCallback', @obj.singlePointTableSelect);
 
-            obj.handles.epochResponseAxes = axes('Parent', obj.handles.measurementDataBox);
-            obj.handles.measurementDataBox.Heights = [-1, -2, -.5, -1];
+            obj.handles.epochSelectionAxes = axes('Parent', obj.handles.measurementDataBox);
+            obj.handles.epochReponseAxes = axes('Parent', obj.handles.measurementDataBox);
+            obj.handles.measurementDataBox.Heights = [-1, -2, -.5, -1, -1];
             
             obj.handles.isoDataBox = uix.VBox('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.isoAxes = axes('Parent', obj.handles.isoDataBox, ...
@@ -210,7 +211,15 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             % add the epoch to the array
             obj.epochData{obj.epochIndex, 1} = e;
-
+            
+            % plot the epoch in the response axis
+            cla(obj.handles.epochReponseAxes);
+            hold(obj.handles.epochReponseAxes, 'on');
+            plot(obj.handles.epochReponseAxes, e.t, e.signal);
+            plot(obj.handles.epochReponseAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+            hold(obj.handles.epochReponseAxes, 'off')
+            set(obj.handles.epochReponseAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
+            
             obj.analyzeData();
             obj.updateUi();
            
@@ -420,6 +429,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.addToStimulusWithRepeats(points);
         end        
         
+        % unified function for adding points to the next stim list
         function addToStimulusWithRepeats(obj, newPoints)
             if ~isempty(newPoints)
                 % setup repeats
@@ -572,18 +582,18 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             % Update selected epoch in epoch signal display and table
             if ~isempty(obj.selectedPoint)
-                cla(obj.handles.epochResponseAxes);
+                cla(obj.handles.epochSelectionAxes);
                 point = obj.selectedPoint(1,:);
                 for ei = 1:length(obj.epochData)
                     e = obj.epochData{ei};
                     if all([e.parameters('contrast1'), e.parameters('contrast2')] == point)
-                        hold(obj.handles.epochResponseAxes, 'on')
-                        plot(obj.handles.epochResponseAxes, e.t, e.signal);
-                        plot(obj.handles.epochResponseAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
-                        hold(obj.handles.epochResponseAxes, 'off')
+                        hold(obj.handles.epochSelectionAxes, 'on')
+                        plot(obj.handles.epochSelectionAxes, e.t, e.signal);
+                        plot(obj.handles.epochSelectionAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+                        hold(obj.handles.epochSelectionAxes, 'off')
                     end
                 end
-                set(obj.handles.epochResponseAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
+                set(obj.handles.epochSelectionAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
             end
             
 
