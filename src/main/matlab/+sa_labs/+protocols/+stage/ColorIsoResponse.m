@@ -8,14 +8,11 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         spotDiameter = 200
         
         baseIntensity1 = .33;
-        contrastRange1 = [-.9, 2];
-        
         baseIntensity2 = .33;
-        contrastRange2 = [-.9, 2];
         
         enableSurround = false
         surroundDiameter = 1000
-
+        
     end
     
     properties (Hidden)   
@@ -28,6 +25,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         intensity2
         contrast1
         contrast2
+        stimulusMode
     end
     
     properties (Hidden, Dependent)
@@ -53,7 +51,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime + 0.5],...
                 'spikeThreshold', obj.spikeThreshold, ...
                 'spikeDetectorMode', obj.spikeDetectorMode, ...
-                'contrastRange1', obj.contrastRange1, 'contrastRange2', obj.contrastRange2, ...
+                'baseIntensity1', obj.baseIntensity1, 'baseIntensity2', obj.baseIntensity2, ...
                 'colorNames', {obj.colorPattern1, obj.colorPattern2});
             
         end
@@ -63,11 +61,13 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             obj.contrast2 = obj.isoResponseFigure.nextContrast2;
             obj.intensity1 = obj.baseIntensity1 * (1 + obj.contrast1);
             obj.intensity2 = obj.baseIntensity2 * (1 + obj.contrast2);
+            obj.stimulusMode = obj.isoResponseFigure.stimulusMode;
 
             epoch.addParameter('intensity1', obj.intensity1);
             epoch.addParameter('intensity2', obj.intensity2);
             epoch.addParameter('contrast1', obj.contrast1);
             epoch.addParameter('contrast2', obj.contrast2);
+            epoch.addParameter('stimulusMode', obj.stimulusMode);
 %             epoch.addParameter('sortColors', sum([1000,1] .* round([obj.intensity1, obj.intensity2]*100))); % for plot display
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);

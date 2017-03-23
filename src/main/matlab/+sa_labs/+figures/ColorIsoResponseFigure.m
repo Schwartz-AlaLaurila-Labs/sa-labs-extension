@@ -12,10 +12,10 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         nextContrast1
         nextContrast2
         nextStimulus = [];
+        nextStimulusMode
         colorNames
+        stimulusModes = {'default','ramp'};
         
-        contrastRange1
-        contrastRange2
         plotRange1
         plotRange2
         ignoreNextEpoch = false;
@@ -34,6 +34,11 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         handles
     end
+    
+    properties (Dependent)
+        contrastRange1
+        contrastRange2
+    end
 
     
     methods
@@ -47,8 +52,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             ip.addParameter('spikeDetectorMode', 'Stdev', @(x)ischar(x));
             ip.addParameter('colorNames',{'',''});
             ip.addParameter('analysisRegion', [0,inf]);
-            ip.addParameter('contrastRange1', [-1,1]);
-            ip.addParameter('contrastRange2', [-1,1]);
+            ip.addParameter('baseIntensity1');
+            ip.addParameter('baseIntensity2');
             
             ip.parse(varargin{:});
             
@@ -58,8 +63,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.spikeDetectorMode = ip.Results.spikeDetectorMode;
             obj.spikeDetector = sa_labs.util.SpikeDetector(obj.spikeDetectorMode, obj.spikeThreshold);
             obj.analysisRegion = ip.Results.analysisRegion;
-            obj.contrastRange1 = ip.Results.contrastRange1;
-            obj.contrastRange2 = ip.Results.contrastRange2;
+            obj.baseIntensity1 = ip.Results.baseIntensity1;
+            obj.baseIntensity2 = ip.Results.baseIntensity2;
             obj.colorNames = ip.Results.colorNames;
             
             obj.plotRange1 = obj.contrastRange1;
@@ -90,7 +95,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             obj.handles.measurementDataBox = uix.VBoxFlex('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
-                                    'ColumnName', {'contrast 1', 'contrast 2'});            
+                                    'ColumnName', {'contrast 1', 'contrast 2', 'mode'});            
             obj.handles.dataTable = uitable('Parent', obj.handles.measurementDataBox, ...
                                     'ColumnName', {'contr 1', 'contr 2', 'mean', 'VMR', 'rep'}, ...
                                     'ColumnWidth', {60, 60, 40, 40, 40}, ...
@@ -247,7 +252,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 obj.interpolant = scatteredInterpolant(c1, c2, r, 'linear', 'none');
             end
             
-            % calculate extents of display plot
+            % calculate extents of display plot (though we can't actually go outside the range once calculated)
             obj.plotRange1 = [min([min(obj.pointData(:,1)), obj.contrastRange1(1)]), max([max(obj.pointData(:,1)), obj.contrastRange1(2)])];
             obj.plotRange2 = [min([min(obj.pointData(:,2)), obj.contrastRange2(1)]), max([max(obj.pointData(:,2)), obj.contrastRange2(2)])];
         end
@@ -370,6 +375,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             newPoints1 = horzcat(fixedContrast * ones(numRampSteps,1), rampSteps);
             newPoints2 = horzcat(rampSteps, fixedContrast * ones(numRampSteps,1));
             newPoints = vertcat(newPoints1, newPoints2);
+            newPoints = horzcat(newPoints, 2 * ones(size(newPoints, 1), 1)); % set 'ramp' mode
             obj.addToStimulusWithRepeats(newPoints);
         end
         
@@ -416,10 +422,16 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         function addToStimulusWithRepeats(obj, newPoints)
             if ~isempty(newPoints)
+                % setup repeats
                 if obj.handles.repeatStimCheckbox.Value
                     count = 2;
                 else
                     count = 1;
+                end
+                
+                % add default modes if no modes are provided
+                if size(newPoints, 2) == 2
+                    newPoints = horzcat(newPoints, ones(size(newPoints,1), 1));
                 end
                 
                 for i = 1:count
@@ -438,6 +450,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         function clearNextStimulus(obj)
             obj.nextStimulus = [];
+            obj.nextStimulusMode = '';
             obj.updateUi();
         end
         
@@ -469,6 +482,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             % assign the contrasts to the next stimuli in the list
             obj.nextContrast1 = obj.nextStimulus(1, 1);
             obj.nextContrast2 = obj.nextStimulus(1, 2);
+            obj.nextStimulusMode = obj.stimulusModes{obj.nextStimulus(1, 3)};
             obj.nextStimulus(1,:) = [];
         end
         
@@ -544,9 +558,10 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             end
             
             
-            % draw some nice on/off divider lines
+            % draw some nice on/off divider lines, and contrast boundary lines
             line(obj.handles.isoAxes, [0,0], obj.plotRange2, 'LineStyle', ':', 'Color', 'k', 'PickableParts', 'none');
             line(obj.handles.isoAxes, obj.plotRange1, [0,0], 'LineStyle', ':', 'Color', 'k', 'PickableParts', 'none');
+            rectangle('Position', [-1, -1, diff(obj.contrastRange1), diff(obj.contrastRange2)], 'Color', 'k', 'LineWidth', 2, 'PickableParts', 'none');
             
             xlabel(obj.handles.isoAxes, obj.colorNames{1});
             ylabel(obj.handles.isoAxes, obj.colorNames{2});
@@ -611,9 +626,17 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.pointData = [];
             obj.interpolant = [];
             obj.nextStimulus = [];
+            obj.nextStimulusMode = '';
             obj.selectedPoint = [];
             obj.protocolShouldStop = false;
         end
+        
+        function crange = get.contrastRange1(obj)
+            crange = [-1, (1 / obj.baseIntensity1) - 1];
+        end
+        function crange = get.contrastRange2(obj)
+            crange = [-1, (1 / obj.baseIntensity2) - 1];
+        end        
         
 %         function show(obj)
 %             show@symphonyui.core.FigureHandler(obj);
