@@ -11,6 +11,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         nextContrast1
         nextContrast2
+        baseIntensity1
+        baseIntensity2
         nextStimulus = [];
         nextStimulusMode
         colorNames
@@ -52,8 +54,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             ip.addParameter('spikeDetectorMode', 'Stdev', @(x)ischar(x));
             ip.addParameter('colorNames',{'',''});
             ip.addParameter('analysisRegion', [0,inf]);
-            ip.addParameter('baseIntensity1');
-            ip.addParameter('baseIntensity2');
+            ip.addParameter('baseIntensity1', .1);
+            ip.addParameter('baseIntensity2', .1);
             
             ip.parse(varargin{:});
             
@@ -571,7 +573,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             % draw some nice on/off divider lines, and contrast boundary lines
             line(obj.handles.isoAxes, [0,0], obj.plotRange2, 'LineStyle', ':', 'Color', 'k', 'PickableParts', 'none');
             line(obj.handles.isoAxes, obj.plotRange1, [0,0], 'LineStyle', ':', 'Color', 'k', 'PickableParts', 'none');
-            rectangle('Position', [-1, -1, diff(obj.contrastRange1), diff(obj.contrastRange2)], 'Color', 'k', 'LineWidth', 2, 'PickableParts', 'none');
+            rectangle(obj.handles.isoAxes, 'Position', [-1, -1, diff(obj.contrastRange1), diff(obj.contrastRange2)], 'EdgeColor', 'k', 'LineWidth', 1, 'PickableParts', 'none');
             
             xlabel(obj.handles.isoAxes, obj.colorNames{1});
             ylabel(obj.handles.isoAxes, obj.colorNames{2});
@@ -650,8 +652,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
 %         function show(obj)
 %             show@symphonyui.core.FigureHandler(obj);
-%             uiwait(obj.figureHandle);
-%         end        
+%             obj.waitIfNecessary()
+%         end
         
     end
     

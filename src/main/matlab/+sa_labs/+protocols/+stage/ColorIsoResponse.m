@@ -61,7 +61,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             obj.contrast2 = obj.isoResponseFigure.nextContrast2;
             obj.intensity1 = obj.baseIntensity1 * (1 + obj.contrast1);
             obj.intensity2 = obj.baseIntensity2 * (1 + obj.contrast2);
-            obj.stimulusMode = obj.isoResponseFigure.stimulusMode;
+            obj.stimulusMode = obj.isoResponseFigure.nextStimulusMode;
 
             epoch.addParameter('intensity1', obj.intensity1);
             epoch.addParameter('intensity2', obj.intensity2);
