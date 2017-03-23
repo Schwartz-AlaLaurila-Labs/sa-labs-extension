@@ -7,8 +7,8 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         
         spotDiameter = 200
         
-        baseIntensity1 = .33;
-        baseIntensity2 = .33;
+        baseIntensity1 = .1;
+        baseIntensity2 = .1;
         
         enableSurround = false
         surroundDiameter = 1000
