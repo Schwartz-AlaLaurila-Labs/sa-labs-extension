@@ -249,7 +249,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function RstarIntensity = get.RstarIntensity(obj)
             RstarIntensity = [];
             if isprop(obj, 'intensity')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
+            elseif isprop(obj, 'baseIntensity1')
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
             end
         end
         
@@ -257,6 +259,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             MstarIntensity = [];
             if isprop(obj, 'intensity')
                 [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity);
+            elseif isprop(obj, 'baseIntensity1')
+                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
             end
         end
         
@@ -264,6 +268,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             SstarIntensity = [];
             if isprop(obj, 'intensity')
                 [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity);
+            elseif isprop(obj, 'baseIntensity1')
+                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
             end
         end        
         

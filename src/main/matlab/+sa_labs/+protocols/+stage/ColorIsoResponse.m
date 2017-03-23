@@ -15,6 +15,12 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         
     end
     
+    properties (Dependent)
+        RstarIntensity2
+        MstarIntensity2
+        SstarIntensity2   
+    end
+    
     properties (Hidden)   
         responsePlotMode = false;
         responsePlotSplitParameter = 'sortColors';
@@ -136,7 +142,29 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             else
                 tf = ~obj.isoResponseFigure.protocolShouldStop;
             end
-        end        
+        end
+        
+                
+        function RstarIntensity = get.RstarIntensity2(obj)
+            RstarIntensity = [];
+            if isprop(obj, 'baseIntensity2')
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
+            end
+        end
+        
+        function MstarIntensity = get.MstarIntensity2(obj)
+            MstarIntensity = [];
+            if isprop(obj, 'baseIntensity2')
+                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
+            end
+        end
+        
+        function SstarIntensity = get.SstarIntensity2(obj)
+            SstarIntensity = [];
+            if isprop(obj, 'baseIntensity2')
+                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
+            end
+        end           
 
     end
     
