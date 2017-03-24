@@ -370,7 +370,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function generateRamps(obj)
             prompt = {'Fixed contrast','Num points','Range low','Range high'};
             dlg_title = 'Ramp config';
-            defaultans = {'0.3', '8', '-1', '2'};
+            defaultans = {'3', '8', '-1', '8'};
             answer = inputdlg(prompt,dlg_title,1,defaultans);
 
             if isempty(answer)
