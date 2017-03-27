@@ -128,6 +128,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                     
                     %Mapping of image parameters(3) to linear index (1) defined here
                     %[scale, seed, "positive or negative" image] --> linear index
+                    obj.imageMatrices = zeros(res(1),res(2),obj.numConditions);
                     linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 1);                     
                     obj.imageMatrices(:,:, linearIndex) = uint8(255 * M);
                     linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 2);
