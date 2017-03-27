@@ -14,7 +14,7 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen = [-1.931e-11, 1.278e-08,  1.389e-07];
         fitUV = [];
         
-        micronsPerPixel = 1.38;
+        micronsPerPixel = 1;
         orientation = [false, false];
         angleOffset = 180;
         frameTrackerPosition = [20,20];

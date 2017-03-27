@@ -2,16 +2,20 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         
     properties
         %times in ms
-        preTime =500;
-        tailTime = 1000;
+        preTime =50;
+        tailTime = 50;
         stimTime = 1000;
         
         %in microns, use rigConfig to set microns per pixel
-        apertureDiameter = 200; %um
-        textureScale = [5 80]; %um
+        apertureDiameter = 800; %um
+        
+        minTextureScale = 80; %um
+        maxTextureScale = 80
+        numOfScaleSteps = 1;
+        logScaling = false;
+        numRandomSeeds = 2;
         
         uniformDistribution = true;
-        randomSeed = [1 5];
         singleDimension = false;
 %         singleAngle = -1; % set to a positive value to use a single fixed angle
 %         numberOfAngles = 12;       
@@ -24,9 +28,9 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 1 %Adam 3/21/17, based on "ImageCycler" and "drifting Texture"
-%         curAngle
-%         angles
         imageMatrices
+        textureScale
+        randomSeed
         curImageMatrix
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'textureScale';
@@ -34,8 +38,8 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden, Dependent)
-        numScales
-        numSeeds
+%         numScales
+%         numSeeds
         numConditions
         totalNumEpochs
     end
@@ -43,27 +47,31 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
     methods
         function d = getPropertyDescriptor(obj, name)
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);        
-            
-            switch name
-                case {'randomMotion','motionSeed','motionLowpassFilterParams'}
-                    d.category = '5 Random Motion';
-                case {'movementSensitivity','numberOfMovementSensitivitySteps','movementSensitivityStepSize'}
-                    d.category = '6 Motion Sensitivity';
-            end
+%             
+%             switch name
+%                 case {'randomMotion','motionSeed','motionLowpassFilterParams'}
+%                     d.category = '5 Random Motion';
+%                 case {'movementSensitivity','numberOfMovementSensitivitySteps','movementSensitivityStepSize'}
+%                     d.category = '6 Motion Sensitivity';
+%             end
             
         end
         
         function prepareRun(obj)
-%             % set the figure split value
-%             if obj.movementSensitivity 
-%                 obj.responsePlotSplitParameter = 'motionSensitivityStep';
-%             end
-            
             % Call the base method.
             prepareRun@sa_labs.protocols.StageProtocol(obj);
+            
+            %set textureScale and randomSeed
+            if ~obj.logScaling
+                obj.textureScale = linspace(obj.minTextureScale, obj.maxTextureScale, obj.numOfScaleSteps);
+            else
+                obj.textureScale = logspace(obj.minTextureScale, obj.maxTextureScale, obj.numOfScaleSteps);
+            end
+            obj.randomSeed = (1:obj.numRandomSeeds)*907;
+            
 
-            for scaleInd = 1:obj.numScales
-                for seedInd = 1:obj.numSeeds
+            for scaleInd = 1:obj.numOfScaleSteps
+                for seedInd = 1:obj.numRandomSeeds
                     % generate texture
                     canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
                     sigma = obj.um2pix(0.5 * obj.textureScale(scaleInd) / obj.resScaleFactor);
@@ -80,6 +88,10 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                     else
                         M = randn(stream, res);
                     end
+                    %Make pre-filtering matrix binary... 
+                    M(M <= 0) = 0;
+                    M(M > 0) = 1;
+                    
                     defaultSize = 2*ceil(2*sigma)+1;
                     M = imgaussfilt(M, sigma, 'FilterDomain','frequency','FilterSize',defaultSize*2+1);
                     
@@ -91,6 +103,13 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                     %             colormap gray
                     
                     if obj.uniformDistribution
+                        %Consider only pixels within apperture
+%                         appRadius = obj.um2pix(0.5 * obj.apertureDiameter/obj.resScaleFactor);
+%                         Mcenter = res./2;
+%                         [X,Y] = meshgrid(1:res(1),1:res(2));
+%                         M_in_app = M(((X-Mcenter(1)).^2+(Y-Mcenter(2)).^2)<=appRadius^2);
+%                         bins = [-Inf prctile(M_in_app,1:1:100)];
+                        % % %
                         bins = [-Inf prctile(M(:),1:1:100)];
                         M_orig = M;
                         for i=1:length(bins)-1
@@ -104,13 +123,14 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                         M = reshape(M, res);
                         M(M < 0) = 0;
                         M(M > 1) = 1;
+                        
                     end
                     
                     %Mapping of image parameters(3) to linear index (1) defined here
                     %[scale, seed, "positive or negative" image] --> linear index
-                    linearIndex = sub2ind([obj.numScales,obj.numSeeds,2], scaleInd, seedInd, 1);                     
+                    linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 1);                     
                     obj.imageMatrices(:,:, linearIndex) = uint8(255 * M);
-                    linearIndex = sub2ind([obj.numScales,obj.numSeeds,2], scaleInd, seedInd, 2);
+                    linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 2);
                     obj.imageMatrices(:,:, linearIndex) = uint8(255 * (1-M));
                     disp('done');
                 end;
@@ -145,7 +165,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             imagelinearIndex = obj.orderOfImages(epochIndex);
             %Add order randomization later!
             obj.curImageMatrix = obj.imageMatrices(:,:,imagelinearIndex);
-            [scaleInd,seedInd,posOrNegImage_Ind] = ind2sub([obj.numScales,obj.numSeeds,2],imagelinearIndex);
+            [scaleInd,seedInd,posOrNegImage_Ind] = ind2sub([obj.numOfScaleSteps,obj.numRandomSeeds,2],imagelinearIndex);
             epoch.addParameter('textureScale', obj.textureScale(scaleInd));
             epoch.addParameter('randomSeed',obj.randomSeed(seedInd));
             epoch.addParameter('negativeImage',posOrNegImage_Ind == 2);
@@ -160,6 +180,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             
             im = stage.builtin.stimuli.Image(uint8(obj.curImageMatrix));
             im.size = fliplr(size(obj.curImageMatrix)) * obj.resScaleFactor;
+            im.position = canvasSize / 2;
             p.addStimulus(im);
             
             % circular aperture mask (only gratings in center)
@@ -211,16 +232,16 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             p.addController(imVisible);
         end
         
-        function numScales = get.numScales(obj)
-            numScales = length(obj.textureScale);
-        end
-        
-        function numSeeds = get.numSeeds(obj)
-            numSeeds = length(obj.randomSeed);
-        end
+%         function numScales = get.numScales(obj)
+%             numScales = length(obj.textureScale);
+%         end
+%         
+%         function numSeeds = get.numSeeds(obj)
+%             numSeeds = length(obj.randomSeed);
+%         end
         
         function numConditions = get.numConditions(obj)
-           numConditions = obj.numScales*obj.numSeeds*2; 
+           numConditions = obj.numOfScaleSteps*obj.numRandomSeeds*2; 
            %x2 is for pos and neg images
         end
         
