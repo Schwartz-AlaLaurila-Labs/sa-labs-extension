@@ -65,20 +65,20 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             if ~obj.logScaling
                 obj.textureScale = linspace(obj.minTextureScale, obj.maxTextureScale, obj.numOfScaleSteps);
             else
-                obj.textureScale = logspace(obj.minTextureScale, obj.maxTextureScale, obj.numOfScaleSteps);
+                obj.textureScale = logspace(log10(obj.minTextureScale), log10(obj.maxTextureScale), obj.numOfScaleSteps);
             end
             obj.randomSeed = (1:obj.numRandomSeeds)*907;
             
-
+            % generate textures
+            canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+            res = [max(canvasSize) * 1.42,...
+                max(canvasSize) * 1.42]; % pixels
+            res = round(res / obj.resScaleFactor);
+            obj.imageMatrices = zeros(res(1),res(2),obj.numConditions);
             for scaleInd = 1:obj.numOfScaleSteps
                 for seedInd = 1:obj.numRandomSeeds
-                    % generate texture
-                    canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+
                     sigma = obj.um2pix(0.5 * obj.textureScale(scaleInd) / obj.resScaleFactor);
-                    res = [max(canvasSize) * 1.42,...
-                        max(canvasSize) * 1.42]; % pixels
-                    res = round(res / obj.resScaleFactor);
-                    
                     fprintf('making texture (%d x %d) with blur sigma %d pixels\n', res(1), res(2), sigma);
                     
                     stream = RandStream('mt19937ar','Seed',obj.randomSeed(seedInd));
@@ -128,7 +128,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                     
                     %Mapping of image parameters(3) to linear index (1) defined here
                     %[scale, seed, "positive or negative" image] --> linear index
-                    obj.imageMatrices = zeros(res(1),res(2),obj.numConditions);
+
                     linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 1);                     
                     obj.imageMatrices(:,:, linearIndex) = uint8(255 * M);
                     linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 2);
