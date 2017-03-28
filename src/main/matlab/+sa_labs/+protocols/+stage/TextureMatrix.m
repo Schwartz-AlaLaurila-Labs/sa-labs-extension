@@ -28,13 +28,17 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 1 %Adam 3/21/17, based on "ImageCycler" and "drifting Texture"
-        imageMatrices
+
         textureScale
         randomSeed
         curImageMatrix
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'textureScale';
         orderOfImages
+    end
+    
+    properties (Transient)
+        imageMatrices
     end
     
     properties (Hidden, Dependent)
