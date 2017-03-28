@@ -44,21 +44,24 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
     properties (Hidden, Dependent)
 %         numScales
 %         numSeeds
-        numConditions
         totalNumEpochs
+    end
+    
+    properties (Dependent)
+                numConditions
     end
     
     methods
         function d = getPropertyDescriptor(obj, name)
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);        
-%             
-%             switch name
-%                 case {'randomMotion','motionSeed','motionLowpassFilterParams'}
-%                     d.category = '5 Random Motion';
-%                 case {'movementSensitivity','numberOfMovementSensitivitySteps','movementSensitivityStepSize'}
-%                     d.category = '6 Motion Sensitivity';
-%             end
             
+%             switch name
+%                 %                 case {'randomMotion','motionSeed','motionLowpassFilterParams'}
+%                 %                     d.category = '5 Random Motion';
+%                 %                 case {'movementSensitivity','numberOfMovementSensitivitySteps','movementSensitivityStepSize'}
+%                 %                     d.category = '6 Motion Sensitivity';
+%             end
+%             
         end
         
         function prepareRun(obj)
