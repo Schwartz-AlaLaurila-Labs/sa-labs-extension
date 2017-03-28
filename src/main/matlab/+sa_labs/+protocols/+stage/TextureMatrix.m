@@ -37,7 +37,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         orderOfImages
     end
     
-    properties (Transient)
+    properties (Hidden, Transient)
         imageMatrices
     end
     
