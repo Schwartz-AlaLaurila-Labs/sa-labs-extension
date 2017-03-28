@@ -10,13 +10,16 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         
         spotSize = 200; % um
         numberOfEpochs = 500;
+        
+        alternatePatterns = false % alternates spot pattern between PRIMARY and SECONDARY OBJECT PATTERNS
     end
     
     properties (Hidden)
         version = 4
+        currentSpotPattern
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = '';
+        responsePlotSplitParameter = 'currentSpotPattern';
     end
     
     properties (Hidden, Dependent)
@@ -24,6 +27,27 @@ classdef LightStep < sa_labs.protocols.StageProtocol
     end
     
     methods
+        
+        function prepareEpoch(obj, epoch)
+            obj.currentSpotPattern = obj.primaryObjectPattern;
+            if obj.numberOfPatterns > 1
+                if obj.alternatePatterns
+                    if mod(obj.numEpochsPrepared, 2) == 1
+                        obj.currentSpotPattern = obj.secondaryObjectPattern;
+                        currentSpotColor = obj.colorPattern2;
+                    else
+                        obj.currentSpotPattern = obj.primaryObjectPattern;
+                        currentSpotColor = obj.colorPattern1;
+                    end
+                    disp(currentSpotColor)
+                end
+            end
+            epoch.addParameter('currentSpotPattern', obj.currentSpotPattern);
+            
+            % Call the base method.
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+                        
+        end        
       
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
@@ -46,13 +70,13 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             end
                         
             if obj.numberOfPatterns > 1
+                pattern = obj.currentSpotPattern;
+                
                 if strcmp(obj.colorCombinationMode, 'replace')
-                    pattern = obj.primaryObjectPattern;
                     patternController = stage.builtin.controllers.PropertyController(spot, 'color', ...
                         @(s)(obj.intensity * patternSelect(s, pattern)));
                     p.addController(patternController);
                 else % add
-                    pattern = obj.primaryObjectPattern;
                     bgPattern = obj.backgroundPattern;
                     patternController = stage.builtin.controllers.PropertyController(spot, 'color', ...
                         @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
