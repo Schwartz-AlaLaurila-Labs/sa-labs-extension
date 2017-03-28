@@ -31,7 +31,6 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         intensity2
         contrast1
         contrast2
-        stimulusMode
     end
     
     properties (Hidden, Dependent)
@@ -67,15 +66,18 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             obj.contrast2 = obj.isoResponseFigure.nextContrast2;
             obj.intensity1 = obj.baseIntensity1 * (1 + obj.contrast1);
             obj.intensity2 = obj.baseIntensity2 * (1 + obj.contrast2);
-            obj.stimulusMode = obj.isoResponseFigure.nextStimulusMode;
+            stimulusInfo = obj.isoResponseFigure.nextStimulusInfoOutput;
 
             epoch.addParameter('intensity1', obj.intensity1);
             epoch.addParameter('intensity2', obj.intensity2);
             epoch.addParameter('contrast1', obj.contrast1);
             epoch.addParameter('contrast2', obj.contrast2);
-            epoch.addParameter('stimulusMode', obj.stimulusMode);
-%             epoch.addParameter('sortColors', sum([1000,1] .* round([obj.intensity1, obj.intensity2]*100))); % for plot display
-            
+            keys = stimulusInfo.keys();
+            values = stimulusInfo.values();
+            for ki = 1:length(keys)
+                epoch.addParameter(keys{ki}, values{ki});
+            end
+
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         

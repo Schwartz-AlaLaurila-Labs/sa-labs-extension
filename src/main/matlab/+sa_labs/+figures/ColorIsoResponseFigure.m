@@ -13,10 +13,12 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         nextContrast2
         baseIntensity1
         baseIntensity2
+        stimulusInfo
         nextStimulus = [];
-        nextStimulusMode
+        nextStimulusInfo
+        nextStimulusInfoOutput
         colorNames
-        stimulusModes = {'default','ramp'};
+%         stimulusModes = {'default','ramp'};
         
         plotRange1
         plotRange2
@@ -97,7 +99,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             obj.handles.measurementDataBox = uix.VBoxFlex('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
-                                    'ColumnName', {'contrast 1', 'contrast 2', 'mode'});            
+                                    'ColumnName', {'contrast 1', 'contrast 2'});            
             obj.handles.dataTable = uitable('Parent', obj.handles.measurementDataBox, ...
                                     'ColumnName', {'contr 1', 'contr 2', 'mean', 'VMR', 'rep'}, ...
                                     'ColumnWidth', {60, 60, 40, 40, 40}, ...
@@ -382,12 +384,24 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 rampRange(2) = str2double(answer{4});
             end           
 
+            newInfo = {};
             rampSteps = linspace(rampRange(1), rampRange(2), numRampSteps)';
             newPoints1 = horzcat(fixedContrast * ones(numRampSteps,1), rampSteps);
+            for i = 1:numRampSteps
+                info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
+                info('fixedContrast') = fixedContrast;
+                info('fixedPattern') = 1;
+                newInfo{end+1, 1} = info;
+            end
             newPoints2 = horzcat(rampSteps, fixedContrast * ones(numRampSteps,1));
+            for i = 1:numRampSteps
+                info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
+                info('fixedContrast') = fixedContrast;
+                info('fixedPattern') = 2;
+                newInfo{end+1, 1} = info;
+            end
             newPoints = vertcat(newPoints1, newPoints2);
-            newPoints = horzcat(newPoints, 2 * ones(size(newPoints, 1), 1)); % set 'ramp' mode
-            obj.addToStimulusWithRepeats(newPoints);
+            obj.addToStimulusWithRepeats(newPoints, newInfo);
         end
         
         function addSelectedPoint(obj)
@@ -432,7 +446,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         end        
         
         % unified function for adding points to the next stim list
-        function addToStimulusWithRepeats(obj, newPoints)
+        function addToStimulusWithRepeats(obj, newPoints, newInfo)
             if ~isempty(newPoints)
                 % setup repeats
                 if obj.handles.repeatStimCheckbox.Value
@@ -441,14 +455,17 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     count = 1;
                 end
                 
-                % add default modes if no modes are provided
-                if size(newPoints, 2) == 2
-                    newPoints = horzcat(newPoints, ones(size(newPoints,1), 1));
+                if nargin < 3
+                    newInfo = {};
+                    for i = 1:size(newPoints,1)
+                        newInfo{i,1} = containers.Map({'stimulusMode'},{'default'},'UniformValues',false);
+                    end
                 end
-                
+                addedNewInfo = newInfo
                 for i = 1:count
                     order = randperm(size(newPoints, 1));
                     obj.nextStimulus = vertcat(obj.nextStimulus, newPoints(order,:));
+                    obj.nextStimulusInfo = vertcat(obj.nextStimulusInfo, newInfo(order,:));
                 end
                 obj.updateUi();
             end
@@ -457,12 +474,13 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function randomizeStimulus(obj)
             order = randperm(size(obj.nextStimulus, 1));
             obj.nextStimulus = obj.nextStimulus(order,:);
+            obj.nextStimulusInfo = obj.nextStimulusInfo(order,:);
             obj.updateUi();
         end
         
         function clearNextStimulus(obj)
             obj.nextStimulus = [];
-            obj.nextStimulusMode = '';
+            obj.nextStimulusInfo = {};
             obj.updateUi();
         end
         
@@ -489,12 +507,15 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 obj.ignoreNextEpoch = true;
                 obj.runPausedSoMayNeedNullEpoch = false;
                 obj.nextStimulus = vertcat(obj.nextStimulus(1,:), obj.nextStimulus);
+                obj.nextStimulusInfo = vertcat(obj.nextStimulusInfo(1,:), obj.nextStimulusInfo);
             end
             
             % assign the contrasts to the next stimuli in the list
             obj.nextContrast1 = obj.nextStimulus(1, 1);
             obj.nextContrast2 = obj.nextStimulus(1, 2);
-            obj.nextStimulusMode = obj.stimulusModes{obj.nextStimulus(1, 3)};
+            obj.nextStimulusInfoOutput = obj.nextStimulusInfo{1};
+            
+            obj.nextStimulusInfo(1) = [];
             obj.nextStimulus(1,:) = [];
         end
         
@@ -638,7 +659,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.pointData = [];
             obj.interpolant = [];
             obj.nextStimulus = [];
-            obj.nextStimulusMode = '';
+            obj.nextStimulusInfo = {};
             obj.selectedPoint = [];
             obj.protocolShouldStop = false;
         end
