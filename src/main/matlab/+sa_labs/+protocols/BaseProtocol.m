@@ -18,8 +18,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Mode = 'Off'
         chan4Hold = 0
         
-        spikeDetectorMode = 'Filtered Threshold';
-        spikeThreshold = 15 % pA or std
+        spikeDetectorMode = 'advanced';
+        spikeThreshold = -6 % pA or (pseudo-)std
     end
     
     properties (Transient, Hidden)
@@ -46,7 +46,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         ampList
         
-        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});
+        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'advanced', 'Simple Threshold', 'Filtered Threshold', 'none'});
     end
     
     methods
