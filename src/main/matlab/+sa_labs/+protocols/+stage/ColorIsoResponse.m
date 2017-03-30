@@ -35,7 +35,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     properties (Hidden, Dependent)
         totalNumEpochs
-
+        sessionId
     end    
     
     properties (Transient, Hidden)
@@ -47,6 +47,8 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
+            
+            obj.sessionId = regexprep(num2str(fix(clock),'%1d'),' +',''); % this is how you get a datetime string in MATLAB            
             
             if obj.numberOfPatterns == 1
                 error('Must have > 1 pattern enabled to use color stim');
@@ -68,6 +70,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             obj.intensity2 = obj.baseIntensity2 * (1 + obj.contrast2);
             stimulusInfo = obj.isoResponseFigure.nextStimulusInfoOutput;
 
+            epoch.addParameter('sessionId', obj.sessionId);
             epoch.addParameter('intensity1', obj.intensity1);
             epoch.addParameter('intensity2', obj.intensity2);
             epoch.addParameter('contrast1', obj.contrast1);

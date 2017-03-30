@@ -281,6 +281,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
 
                                   [obj.contrastRange1(2),obj.contrastRange2(1)];
                                   [obj.contrastRange1(1),obj.contrastRange2(2)]];
+                              
+            bootstrapContrasts = unique(bootstrapContrasts, 'rows');
 
             obj.addToStimulusWithRepeats(bootstrapContrasts);
         end
