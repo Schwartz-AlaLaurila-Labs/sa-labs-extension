@@ -164,7 +164,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                         p.mode = 'receptiveField';
                         
                         increasedRes = false;
-                        while true;
+                        while true
                             runConfig = sa_labs.util.shape.generateShapeStimulus(p, analysisData); %#ok<*PROPLC,*PROP>
                             if runConfig.stimTime > 1e3 * obj.epochTimeLimit
                                 p.mapResolution = round(p.mapResolution * 1.1);
