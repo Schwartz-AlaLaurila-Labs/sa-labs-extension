@@ -372,33 +372,33 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         end
         
         function generateRamps(obj)
-            prompt = {'Fixed contrast','Num points','Range low','Range high'};
+            prompt = {'Fixed contrast 1','Fixed contrast 2','Num points'};
             dlg_title = 'Ramp config';
-            defaultans = {'3', '8', '-1', '8'};
+            defaultans = {'3', '3', '8'};
             answer = inputdlg(prompt,dlg_title,1,defaultans);
 
             if isempty(answer)
                 return
             else
-                fixedContrast = str2double(answer{1});
-                numRampSteps = str2double(answer{2});
-                rampRange(1) = str2double(answer{3});
-                rampRange(2) = str2double(answer{4});
+                fixedContrast1 = str2double(answer{1});
+                fixedContrast2 = str2double(answer{2});
+                numRampSteps = str2double(answer{3});
             end           
 
             newInfo = {};
-            rampSteps = linspace(rampRange(1), rampRange(2), numRampSteps)';
-            newPoints1 = horzcat(fixedContrast * ones(numRampSteps,1), rampSteps);
+            rampSteps1 = linspace(obj.contrastRange2(1), obj.contrastRange2(2), numRampSteps)'
+            newPoints1 = horzcat(fixedContrast1 * ones(numRampSteps,1), rampSteps1)
             for i = 1:numRampSteps
                 info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
-                info('fixedContrast') = fixedContrast;
+                info('fixedContrast') = fixedContrast1;
                 info('fixedPattern') = 1;
                 newInfo{end+1, 1} = info;
             end
-            newPoints2 = horzcat(rampSteps, fixedContrast * ones(numRampSteps,1));
+            rampSteps2 = linspace(obj.contrastRange1(1), obj.contrastRange1(2), numRampSteps)'
+            newPoints2 = horzcat(rampSteps2, fixedContrast2 * ones(numRampSteps,1))
             for i = 1:numRampSteps
                 info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
-                info('fixedContrast') = fixedContrast;
+                info('fixedContrast') = fixedContrast2;
                 info('fixedPattern') = 2;
                 newInfo{end+1, 1} = info;
             end
@@ -463,7 +463,6 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         newInfo{i,1} = containers.Map({'stimulusMode'},{'default'},'UniformValues',false);
                     end
                 end
-                addedNewInfo = newInfo
                 for i = 1:count
                     order = randperm(size(newPoints, 1));
                     obj.nextStimulus = vertcat(obj.nextStimulus, newPoints(order,:));

@@ -31,11 +31,12 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         intensity2
         contrast1
         contrast2
+        sessionId
     end
     
     properties (Hidden, Dependent)
         totalNumEpochs
-        sessionId
+        
     end    
     
     properties (Transient, Hidden)

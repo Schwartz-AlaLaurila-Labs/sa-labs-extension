@@ -249,12 +249,12 @@ classdef SpikeDetector < handle
                 results.violation_ind = violation_ind;
                 
             elseif strcmp(obj.spikeDetectorMode, 'advanced')
-                
+                response = data - mean(data);
                 [fresponse, noise] = obj.filterResponse(response);
                 spikeIndices = obj.getThresCross(fresponse, noise * obj.spikeThreshold, sign(obj.spikeThreshold));
 
                 % refine spike locations to tips
-                if obj.threshold < 0
+                if obj.spikeThreshold < 0
                     for si = 1:length(spikeIndices)
                         sp = spikeIndices(si);
                         if sp < 100 || sp > length(response) - 100
