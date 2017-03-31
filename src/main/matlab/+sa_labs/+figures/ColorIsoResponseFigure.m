@@ -289,6 +289,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         
         function generateNextStimulusPoint(obj)
             obj.isoPlotClickMode = 'newpoint';
+            obj.isoPlotClickCountRemaining = 1;
         end
         
         function generateNextStimulusLine(obj)
@@ -306,6 +307,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             c1 = int(1);
             c2 = int(2);
             newPoints = [];
+            newInfo = {};
             
             switch obj.isoPlotClickMode
                 case 'newpoint'
@@ -366,44 +368,63 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         obj.isoPlotClickHistory = [];
                         obj.isoPlotClickMode = 'select';
                     end
+                    
+                    
+                case 'ramps'
+                    fixedContrast1 = c1;
+                    fixedContrast2 = c2;
+                    numRampSteps = 7;
+                    newInfo = {};
+                    rampSteps1 = linspace(obj.contrastRange2(1), obj.contrastRange2(2), numRampSteps)';
+                    newPoints1 = horzcat(fixedContrast1 * ones(numRampSteps,1), rampSteps1);
+                    for i = 1:numRampSteps
+                        info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
+                        info('fixedContrast') = fixedContrast1;
+                        info('fixedPattern') = 1;
+                        newInfo{end+1, 1} = info;
+                    end
+                    rampSteps2 = linspace(obj.contrastRange1(1), obj.contrastRange1(2), numRampSteps)';
+                    newPoints2 = horzcat(rampSteps2, fixedContrast2 * ones(numRampSteps,1));
+                    for i = 1:numRampSteps
+                        info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
+                        info('fixedContrast') = fixedContrast2;
+                        info('fixedPattern') = 2;
+                        newInfo{end+1, 1} = info;
+                    end
+                    newPoints = vertcat(newPoints1, newPoints2);
+
             end
-            obj.updateUi();
-            obj.addToStimulusWithRepeats(newPoints)
+            
+            
+            
+            if ~isempty(newInfo)
+                obj.addToStimulusWithRepeats(newPoints, newInfo)
+            else
+                obj.addToStimulusWithRepeats(newPoints)
+            end
+            
+            if obj.isoPlotClickCountRemaining > 0
+                obj.updateUi();
+            end
         end
         
         function generateRamps(obj)
-            prompt = {'Fixed contrast 1','Fixed contrast 2','Num points'};
-            dlg_title = 'Ramp config';
-            defaultans = {'3', '3', '8'};
-            answer = inputdlg(prompt,dlg_title,1,defaultans);
+%             prompt = {'Fixed contrast 1','Fixed contrast 2','Num points'};
+%             dlg_title = 'Ramp config';
+%             defaultans = {'3', '3', '8'};
+%             answer = inputdlg(prompt,dlg_title,1,defaultans);
+% 
+%             if isempty(answer)
+%                 return
+%             else
+%                 fixedContrast1 = str2double(answer{1});
+%                 fixedContrast2 = str2double(answer{2});
+%                 numRampSteps = str2double(answer{3});
+%             end        
+            
+            obj.isoPlotClickMode = 'ramps';
+            obj.isoPlotClickCountRemaining = 1;            
 
-            if isempty(answer)
-                return
-            else
-                fixedContrast1 = str2double(answer{1});
-                fixedContrast2 = str2double(answer{2});
-                numRampSteps = str2double(answer{3});
-            end           
-
-            newInfo = {};
-            rampSteps1 = linspace(obj.contrastRange2(1), obj.contrastRange2(2), numRampSteps)'
-            newPoints1 = horzcat(fixedContrast1 * ones(numRampSteps,1), rampSteps1)
-            for i = 1:numRampSteps
-                info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
-                info('fixedContrast') = fixedContrast1;
-                info('fixedPattern') = 1;
-                newInfo{end+1, 1} = info;
-            end
-            rampSteps2 = linspace(obj.contrastRange1(1), obj.contrastRange1(2), numRampSteps)'
-            newPoints2 = horzcat(rampSteps2, fixedContrast2 * ones(numRampSteps,1))
-            for i = 1:numRampSteps
-                info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
-                info('fixedContrast') = fixedContrast2;
-                info('fixedPattern') = 2;
-                newInfo{end+1, 1} = info;
-            end
-            newPoints = vertcat(newPoints1, newPoints2);
-            obj.addToStimulusWithRepeats(newPoints, newInfo);
         end
         
         function addSelectedPoint(obj)
