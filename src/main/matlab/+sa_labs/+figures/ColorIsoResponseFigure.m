@@ -371,9 +371,18 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     
                     
                 case 'ramps'
+                    numLinePoints = inputdlg('Number of ramp line points?');
+                    if isempty(numLinePoints)
+                        return
+                    else
+                        numLinePoints = str2double(numLinePoints{1});
+                    end
+                    if numLinePoints < 2 || isnan(numLinePoints)
+                        return
+                    end                    
                     fixedContrast1 = c1;
                     fixedContrast2 = c2;
-                    numRampSteps = 7;
+                    numRampSteps = numLinePoints;
                     newInfo = {};
                     rampSteps1 = linspace(obj.contrastRange2(1), obj.contrastRange2(2), numRampSteps)';
                     newPoints1 = horzcat(fixedContrast1 * ones(numRampSteps,1), rampSteps1);
