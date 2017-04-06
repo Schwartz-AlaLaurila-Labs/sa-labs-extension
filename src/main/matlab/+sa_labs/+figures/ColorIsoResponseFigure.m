@@ -371,25 +371,27 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     
                     
                 case 'ramps'
-                    numLinePoints = inputdlg('Number of ramp line points?');
-                    if isempty(numLinePoints)
+                    inp = inputdlg({'Number of ramp line points?', 'Fixed contrast 1?','Fixed contrast 2?'},...
+                        'Ramp config',1,{'8',num2str(c1),num2str(c2)});
+                    if isempty(inp)
                         return
                     else
-                        numLinePoints = str2double(numLinePoints{1});
+                        numRampSteps = str2double(inp{1});
+                        fixedContrast1 = str2double(inp{2});
+                        fixedContrast2 = str2double(inp{3});
                     end
-                    if numLinePoints < 2 || isnan(numLinePoints)
+                    if numRampSteps < 2 || isnan(numRampSteps)
                         return
-                    end                    
-                    fixedContrast1 = c1;
-                    fixedContrast2 = c2;
-                    numRampSteps = numLinePoints;
+                    end
                     newInfo = {};
+                    rampId = randi(100000000); % why not have an ID to make it easier later
                     rampSteps1 = linspace(obj.contrastRange2(1), obj.contrastRange2(2), numRampSteps)';
                     newPoints1 = horzcat(fixedContrast1 * ones(numRampSteps,1), rampSteps1);
                     for i = 1:numRampSteps
                         info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
                         info('fixedContrast') = fixedContrast1;
                         info('fixedPattern') = 1;
+                        info('rampId') = rampId;
                         newInfo{end+1, 1} = info;
                     end
                     rampSteps2 = linspace(obj.contrastRange1(1), obj.contrastRange1(2), numRampSteps)';
@@ -398,13 +400,12 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         info = containers.Map({'stimulusMode'},{'ramp'},'UniformValues',false);
                         info('fixedContrast') = fixedContrast2;
                         info('fixedPattern') = 2;
+                        info('rampId') = rampId;
                         newInfo{end+1, 1} = info;
                     end
                     newPoints = vertcat(newPoints1, newPoints2);
 
-            end
-            
-            
+            end           
             
             if ~isempty(newInfo)
                 obj.addToStimulusWithRepeats(newPoints, newInfo)
@@ -417,19 +418,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             end
         end
         
-        function generateRamps(obj)
-%             prompt = {'Fixed contrast 1','Fixed contrast 2','Num points'};
-%             dlg_title = 'Ramp config';
-%             defaultans = {'3', '3', '8'};
-%             answer = inputdlg(prompt,dlg_title,1,defaultans);
-% 
-%             if isempty(answer)
-%                 return
-%             else
-%                 fixedContrast1 = str2double(answer{1});
-%                 fixedContrast2 = str2double(answer{2});
-%                 numRampSteps = str2double(answer{3});
-%             end        
+        function generateRamps(obj)    
             
             obj.isoPlotClickMode = 'ramps';
             obj.isoPlotClickCountRemaining = 1;            
@@ -670,6 +659,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             tableRow = data.Indices(1);
             ei = tab.Data(tableRow, 1);
             obj.epochData{ei}.ignore = true;
+            fprintf('ignoring epoch %g in this analysis\n', ei);
             obj.analyzeData();
             obj.updateUi();
         end

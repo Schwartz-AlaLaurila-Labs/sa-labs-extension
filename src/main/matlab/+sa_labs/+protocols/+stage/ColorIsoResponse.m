@@ -49,7 +49,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            obj.sessionId = regexprep(num2str(fix(clock),'%1d'),' +',''); % this is how you get a datetime string in MATLAB            
+            obj.sessionId = [regexprep(num2str(fix(clock),'%1d'),' +','') '_']; % this is how you get a datetime string in MATLAB            
             
             if obj.numberOfPatterns == 1
                 error('Must have > 1 pattern enabled to use color stim');
