@@ -260,7 +260,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     
         function RstarIntensity = get.RstarIntensity1(obj)
             RstarIntensity = [];
-            obj.baseIntensity1
             if isprop(obj, 'intensity')
                 [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
             elseif isprop(obj, 'baseIntensity1')
