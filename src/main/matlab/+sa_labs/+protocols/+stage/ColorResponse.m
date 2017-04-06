@@ -5,8 +5,9 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         stimTime = 500                  % Spot duration (ms)
         tailTime = 500                 % Spot trailing duration (ms)
         
-        baseColor = [0.3, 0.3];
-        contrast = 0.3;                 % contrast of fixed step each epoch, may be negative
+        baseIntensity1
+        baseIntensity2
+        fixedContrast = 0.3;                 % contrast of fixed step each epoch, may be negative
         spotDiameter = 200              % Spot diameter (um)
         numberOfCycles = 3               % Number of cycles through all color sets
         enableSurround = false;         % use the surround instead of the mean level so mixed colors can be used
@@ -14,11 +15,13 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
         
         colorChangeMode = 'ramp'
         numRampSteps = 8;
-        rampRange = [0.1, 2]; % contrast multipliers of baseColor values
+%         rampRange = [-1, ]; % contrast multipliers of baseColor values
 
     end
     
     properties (Hidden)
+        version = 2; % changed to weber contrast
+        
         spotContrasts
         currentColors
     
@@ -36,6 +39,8 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     end
     
     properties (Dependent)
+        contrastRange
+        
         RstarIntensity2
         MstarIntensity2
         SstarIntensity2        
@@ -60,8 +65,8 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                 error('Must have > 1 pattern enabled to use color stim');
             end
             
-            stepUp = 1 + obj.contrast;
-            stepDown = 1 - obj.contrast;
+            stepUp = 1 + obj.fixedContrast;
+            stepDown = 1 - obj.fixedContrast;
             switch obj.colorChangeMode
                 case 'swap'
                     obj.spotContrasts = [[stepUp,1];
@@ -74,7 +79,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
                                       [stepDown,stepUp]];
                 case 'ramp'
                     rampSteps = linspace(obj.rampRange(1), obj.rampRange(2), obj.numRampSteps)';
-                    obj.spotContrasts = horzcat(stepUp * ones(obj.numRampSteps,1), rampSteps);
+                    obj.spotContrasts = horzcat(obj.fixedContrast * ones(obj.numRampSteps,1), rampSteps);
             end
             
         end
@@ -92,6 +97,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
 
             epoch.addParameter('intensity1', obj.currentColors(1));
             epoch.addParameter('intensity2', obj.currentColors(2));
+            
 %             epoch.addParameter('sortColors', sum([100,1] .* round(obj.currentColors*100))); % for plot display
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -162,27 +168,6 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
             plotRange = ((obj.rampRange * obj.intensity) - obj.intensity) / obj.intensity / obj.contrast;
         end
         
-        function RstarIntensity = get.RstarIntensity2(obj)
-            RstarIntensity = [];
-            if isprop(obj, 'intensity')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            end
-        end
-        
-        function MstarIntensity = get.MstarIntensity2(obj)
-            MstarIntensity = [];
-            if isprop(obj, 'intensity')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            end
-        end
-        
-        function SstarIntensity = get.SstarIntensity2(obj)
-            SstarIntensity = [];
-            if isprop(obj, 'intensity')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            end
-        end           
-   
         
     end
     
