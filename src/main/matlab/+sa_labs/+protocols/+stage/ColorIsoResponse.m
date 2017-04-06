@@ -1,14 +1,14 @@
 classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 250                  % Spot leading duration (ms)
+        preTime = 500                  % Spot leading duration (ms)
         stimTime = 500                  % Spot duration (ms)
-        tailTime = 500                 % Spot trailing duration (ms)
+        tailTime = 1500                 % Spot trailing duration (ms)
         
-        spotDiameter = 200
+        spotDiameter = 2000
         
-        baseIntensity1 = .1;
-        baseIntensity2 = .1;
+        baseIntensity1 = .2;
+        baseIntensity2 = .2;
         
         enableSurround = false
         surroundDiameter = 1000
@@ -23,10 +23,8 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     properties (Hidden)   
         responsePlotMode = false;
-        responsePlotSplitParameter = 'sortColors';
-        
-        colorChangeModeType = symphonyui.core.PropertyType('char', 'row', {'swap','ramp'});
-        
+        responsePlotSplitParameter = '';
+               
         intensity1
         intensity2
         contrast1
@@ -81,7 +79,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             for ki = 1:length(keys)
                 epoch.addParameter(keys{ki}, values{ki});
             end
-
+%             epoch.addParameter('sortColors', sum([1000,1] .* round([*100))); % for plot display
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
