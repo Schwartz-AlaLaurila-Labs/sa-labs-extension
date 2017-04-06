@@ -91,7 +91,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.BaseProtocol(obj);
-                        
+
             lcrSearch = obj.rig.getDevices('LightCrafter');
             if ~isempty(lcrSearch)
                 lightCrafter = obj.rig.getDevice('LightCrafter');
@@ -222,103 +222,117 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
     
-        function [rstar, mstar, sstar] = convertIntensityToIsomerizations(obj, intensity, color)
+        
+        function RstarMean = get.RstarMean(obj)
+            props = {'meanLevel'};
+            pattern = 1;
+            if obj.numberOfPatterns == 1
+                [RstarMean, ~, ~] = obj.getIsomerizations(props, pattern);
+            else
+                [RstarMean, ~, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
+            end
+        end
+    
+        function RstarIntensity = get.RstarIntensity1(obj)
+            props = {'intensity','baseIntensity1','intensity1'};
+            pattern = 1;
+            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function MstarIntensity = get.MstarIntensity1(obj)
+            props = {'intensity','baseIntensity1','intensity1'};
+            pattern = 1;
+            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function SstarIntensity = get.SstarIntensity1(obj)
+            props = {'intensity','baseIntensity1','intensity1'};
+            pattern = 1;
+            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function RstarIntensity = get.RstarIntensity2(obj)
+            props = {'baseIntensity2','intensity2'};
+            pattern = 2;
+            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function MstarIntensity = get.MstarIntensity2(obj)
+            props = {'baseIntensity2','intensity2'};
+            pattern = 2;
+            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function SstarIntensity = get.SstarIntensity2(obj)
+            props = {'baseIntensity2','intensity2'};
+            pattern = 2;
+            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+        end
+        
+            
+        function [RstarIntensity, MstarIntensity, SstarIntensity] = getIsomerizations(obj, props, pattern)
+            intensityToConvert = [];
+            for i = 1:length(props)
+                if isprop(obj, props{i})
+                    intensityToConvert = obj.(props{i});
+                    break;
+                end
+            end
+            if ~isempty(intensityToConvert)
+                patternColors = {obj.colorPattern1, obj.colorPattern2, obj.colorPattern3};
+                [RstarIntensity, MstarIntensity, SstarIntensity] = obj.convertIntensityToIsomerizations(intensityToConvert, patternColors{pattern}, obj.isomerizationParameters());
+            else
+                RstarIntensity = [];
+                MstarIntensity = [];
+                SstarIntensity = [];
+            end
+        end
+
+        function p = isomerizationParameters(obj)
+%             source = [];
+%             
+%             if ~isempty(obj.persistor)
+%                 source = obj.persistor.currentEpochGroup.source.getPropertyMap();
+%             end
+            p = struct();
+            p.NDF = obj.NDF;
+            p.blueLED = obj.blueLED;
+            p.greenLED = obj.greenLED;
+            p.uvLED = obj.uvLED;
+            p.redLED = obj.redLED;
+%             p.colorPattern1 = obj.colorPattern1;
+%             p.colorPattern2 = obj.colorPattern2;
+%             p.colorPattern3 = obj.colorPattern3;
+            p.numberOfPatterns = obj.numberOfPatterns;
+            
+%             p.ledTypes = sort(strsplit(obj.colorPattern1, '+'));
+%             p.mouse = source;
+        end
+        
+        function [rstar, mstar, sstar] = convertIntensityToIsomerizations(obj, intensity, color, parameters)
             rstar = [];
             mstar = [];
             sstar = [];
             if isempty(intensity) || isempty(obj.lightCrafterParams)
                 return
             end
-            if nargin < 3
-                color = obj.colorPattern1;
-            end
             
-            NDF_attenuation = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues == obj.NDF);
+            NDF_attenuation = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues == parameters.NDF);
             
             if strcmp('standard', obj.colorMode)
-                [R, M, S] = sa_labs.util.photoIsom2(obj.blueLED, obj.greenLED, ...
+                [R, M, S] = sa_labs.util.photoIsom2(parameters.blueLED, parameters.greenLED, ...
                     color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
             else
                 % UV mode
-                [R, M, S] = sa_labs.util.photoIsom2_triColor(obj.blueLED, obj.greenLED, obj.uvLED, ...
+                [R, M, S] = sa_labs.util.photoIsom2_triColor(parameters.blueLED, parameters.greenLED, parameters.uvLED, ...
                     color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
             end
             
-            rstar = round(R * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
-            mstar = round(M * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
-            sstar = round(S * intensity * NDF_attenuation / obj.numberOfPatterns, 1);
+            rstar = round(R * intensity * NDF_attenuation / parameters.numberOfPatterns, 1);
+            mstar = round(M * intensity * NDF_attenuation / parameters.numberOfPatterns, 1);
+            sstar = round(S * intensity * NDF_attenuation / parameters.numberOfPatterns, 1);
         end
-         
-        function RstarMean = get.RstarMean(obj)
-            if obj.numberOfPatterns == 1
-                [RstarMean, ~, ~] = obj.convertIntensityToIsomerizations(obj.meanLevel, obj.colorPattern1);
-            else
-                patternColors = {obj.colorPattern1, obj.colorPattern2, obj.colorPattern3};
-                [RstarMean, ~, ~] = obj.convertIntensityToIsomerizations(obj.meanLevel, patternColors{obj.backgroundPattern});
-            end
-        end
-    
-        function RstarIntensity = get.RstarIntensity1(obj)
-            RstarIntensity = [];
-            if isprop(obj, 'intensity')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
-            elseif isprop(obj, 'baseIntensity1')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
-            elseif isprop(obj, 'intensity1')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);                
-            end
-        end
-        
-        function MstarIntensity = get.MstarIntensity1(obj)
-            MstarIntensity = [];
-            if isprop(obj, 'intensity')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
-            elseif isprop(obj, 'baseIntensity1')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
-            elseif isprop(obj, 'intensity1')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);
-            end
-        end
-        
-        function SstarIntensity = get.SstarIntensity1(obj)
-            SstarIntensity = [];
-            if isprop(obj, 'intensity')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
-            elseif isprop(obj, 'baseIntensity1')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
-            elseif isprop(obj, 'intensity1')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);                
-            end
-        end
-        
-        
-        function RstarIntensity = get.RstarIntensity2(obj)
-            RstarIntensity = [];
-            if isprop(obj, 'baseIntensity2')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
-            elseif isprop(obj, 'intensity2')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            end
-        end
-        
-        function MstarIntensity = get.MstarIntensity2(obj)
-            MstarIntensity = [];
-            if isprop(obj, 'baseIntensity2')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
-            elseif isprop(obj, 'intensity2')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            end
-        end
-        
-        function SstarIntensity = get.SstarIntensity2(obj)
-            SstarIntensity = [];
-            if isprop(obj, 'baseIntensity2')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
-            elseif isprop(obj, 'intensity2')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            end
-        end        
-        
+             
         
         function bitDepth = get.bitDepth(obj)
             if obj.numberOfPatterns == 1

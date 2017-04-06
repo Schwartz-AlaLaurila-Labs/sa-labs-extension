@@ -48,6 +48,31 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             
         end
         
+        
+%         function [rstar, mstar, sstar] = getIsomerizations(obj, intensity, parameter)
+%             rstar = [];
+%             mstar = [];
+%             sstar = [];
+%             if isempty(intensity)
+%                 return
+%             end
+%             
+%             NDF_attenuation = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues == parameter.NDF);
+%             
+%             if strcmp('standard', obj.projectorColorMode)
+%                 [R, M, S] = sa_labs.util.photoIsom2(parameter.blueLED, parameter.greenLED, ...
+%                     parameter.color, obj.fitBlue, obj.fitGreen);
+%             else
+%                 % UV mode
+%                 [R, M, S] = sa_labs.util.photoIsom2_triColor(parameter.blueLED, parameter.greenLED, parameter.uvLED, ...
+%                     parameter.color, obj.fitBlue, obj.fitGreen, obj.fitUV);
+%             end
+%             
+%             rstar = round(R * intensity * NDF_attenuation / parameter.numberOfPatterns, 1);
+%             mstar = round(M * intensity * NDF_attenuation / parameter.numberOfPatterns, 1);
+%             sstar = round(S * intensity * NDF_attenuation / parameter.numberOfPatterns, 1);
+%         end
+        
     end
     
 end
