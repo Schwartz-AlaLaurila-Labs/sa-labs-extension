@@ -29,7 +29,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         SstarIntensity1
         RstarIntensity2
         MstarIntensity2
-        SstarIntensity2        
+        SstarIntensity2
         bitDepth = 8
         prerender = false
     end
@@ -260,12 +260,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     
         function RstarIntensity = get.RstarIntensity1(obj)
             RstarIntensity = [];
+            obj.baseIntensity1
             if isprop(obj, 'intensity')
                 [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
-            elseif isprop(obj, 'intensity1')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);                
             elseif isprop(obj, 'baseIntensity1')
                 [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
+            elseif isprop(obj, 'intensity1')
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);                
             end
         end
         
@@ -273,10 +274,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             MstarIntensity = [];
             if isprop(obj, 'intensity')
                 [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
-            elseif isprop(obj, 'intensity1')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);
             elseif isprop(obj, 'baseIntensity1')
                 [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
+            elseif isprop(obj, 'intensity1')
+                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);
             end
         end
         
@@ -284,38 +285,38 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             SstarIntensity = [];
             if isprop(obj, 'intensity')
                 [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity, obj.colorPattern1);
-            elseif isprop(obj, 'intensity1')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);                
             elseif isprop(obj, 'baseIntensity1')
                 [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.baseIntensity1, obj.colorPattern1);
+            elseif isprop(obj, 'intensity1')
+                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity1, obj.colorPattern1);                
             end
         end
         
         
         function RstarIntensity = get.RstarIntensity2(obj)
             RstarIntensity = [];
-            if isprop(obj, 'intensity2')
-                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            elseif isprop(obj, 'baseIntensity2')
+            if isprop(obj, 'baseIntensity2')
                 [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
+            elseif isprop(obj, 'intensity2')
+                [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
             end
         end
         
         function MstarIntensity = get.MstarIntensity2(obj)
             MstarIntensity = [];
-            if isprop(obj, 'intensity2')
-                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            elseif isprop(obj, 'baseIntensity2')
+            if isprop(obj, 'baseIntensity2')
                 [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
+            elseif isprop(obj, 'intensity2')
+                [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
             end
         end
         
         function SstarIntensity = get.SstarIntensity2(obj)
             SstarIntensity = [];
-            if isprop(obj, 'intensity2')
-                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
-            elseif isprop(obj, 'baseIntensity2')
+            if isprop(obj, 'baseIntensity2')
                 [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.baseIntensity2, obj.colorPattern2);
+            elseif isprop(obj, 'intensity2')
+                [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.intensity2, obj.colorPattern2);
             end
         end        
         
