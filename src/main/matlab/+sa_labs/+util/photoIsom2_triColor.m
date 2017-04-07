@@ -51,19 +51,32 @@ uvInten_cone = y.*uW_to_Watt.*pr_area;
 
 %Spectra pre-factors for LED-photoreceptor combinations
 %calculated using "calbrationPrefactorCalc_Adam"
-%Adam 3/31/14
 
-uv_Scone = 1.4232e+18;
-uv_Mcone = 1.1005e+18;
-uv_Rod = 9.5563e+17;
-
-green_Scone = 1.4597e+15;
-green_Mcone = 3.0842e+17;
-green_Rod = 3.1235e+17;
-
+% 
+% uv_Scone = 1.4232e+18;
+% uv_Mcone = 1.1005e+18;
+% uv_Rod = 9.5563e+17;
+% 
+% green_Scone = 1.4597e+15;
+% green_Mcone = 3.0842e+17;
+% green_Rod = 3.1235e+17;
+% 
 blue_Scone = 4.1543e+15;
 blue_Mcone = 3.8353e+18;
 blue_Rod = 4.7477e+18;
+
+% % %
+%Adam 4/2017:
+uv_Scone = 1.44142650029639e+18;
+uv_Mcone = 1.16246180369591e+18;
+uv_Rod = 1.02436532765631e+18;
+
+green_Scone = 0;
+green_Mcone = 4.53020268504620e+18;
+green_Rod = 4.61522727938398e+18;
+
+
+
 
 switch color
     case 'blue'
