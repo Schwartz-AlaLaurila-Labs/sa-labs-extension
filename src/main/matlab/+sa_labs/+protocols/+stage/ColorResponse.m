@@ -40,10 +40,7 @@ classdef ColorResponse < sa_labs.protocols.StageProtocol
     
     properties (Dependent)
         contrastRange
-        
-        RstarIntensity2
-        MstarIntensity2
-        SstarIntensity2        
+      
         plotRange
         varyingIntensityValues % The intensity of the varying color, must be in [0,1]
     end
