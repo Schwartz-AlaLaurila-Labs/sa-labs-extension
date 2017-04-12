@@ -252,19 +252,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function RstarIntensity = get.RstarIntensity2(obj)
-            props = {'baseIntensity2','intensity2'};
+            props = {'baseIntensity2','intensity2','meanLevel'};
             pattern = 2;
             [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
         end
         
         function MstarIntensity = get.MstarIntensity2(obj)
-            props = {'baseIntensity2','intensity2'};
+            props = {'baseIntensity2','intensity2','meanLevel'};
             pattern = 2;
             [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
         end
         
         function SstarIntensity = get.SstarIntensity2(obj)
-            props = {'baseIntensity2','intensity2'};
+            props = {'baseIntensity2','intensity2','meanLevel'};
             pattern = 2;
             [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
         end
