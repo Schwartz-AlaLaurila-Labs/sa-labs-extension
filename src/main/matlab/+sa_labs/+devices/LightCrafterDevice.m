@@ -52,7 +52,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('prerender', false);
             obj.addConfigurationSetting('micronsPerPixel', 1);
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
-            obj.addConfigurationSetting('frameTrackerDuration', 0.2);
+            obj.addConfigurationSetting('frameTrackerDuration', inf);
             obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundIntensity', 0);
@@ -162,9 +162,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
             % appears on all patterns
-            duration = obj.getFrameTrackerDuration();
+            trackerDuration = obj.getFrameTrackerDuration();
+            frameRate = obj.getFrameRate();
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                @(s)mod(s.frame, 2) && double(s.time + (1/s.frameRate) < duration));
+                @(s)mod(s.frame, 2) && s.time < trackerDuration && s.time < (presentation.duration - (1/frameRate)));
             presentation.addController(trackerColor);
             
             % RENDER

@@ -7,7 +7,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetY = 0         % um
         
         NDF = 5             % Filter NDF value
-%         frameRate = 60;     % [15, 30, 45, 60] Hz
         blueLED = 20        % 0-255
         greenLED = 0   % 0-255
         redLED = 0   % 0-255 
@@ -19,7 +18,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'add'
-        prerender = false
+        forcePrerender = false; % enable to force prerender mode to reduce frame dropping
     end
     
     properties (Dependent)
@@ -32,6 +31,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         MstarIntensity2
         SstarIntensity2
         bitDepth = 8
+        prerender = false
+        frameRate = 60; % changing this isn't implemented
     end
     
     properties (Hidden)
@@ -59,7 +60,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 %                 case {'meanLevel', 'intensity'}
 %                     d.category = '1 Basic';
                     
-                case {'offsetX','offsetY','RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1','NDF','blueLED','greenLED'}
+                case {'offsetX','offsetY','NDF','blueLED','greenLED'}
                     d.category = '7 Projector';
                                         
                 case 'redLED'
@@ -72,19 +73,27 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     d.category = '7 Projector';
                     if strcmp(obj.colorMode, 'standard')
                         d.isHidden = true;
-                    end                        
+                    end
                     
-                case {'color', 'numberOfPatterns','frameRate','bitDepth',...
+                case {'numberOfPatterns','frameRate','bitDepth',...
                         'colorPattern1','colorPattern2','colorPattern3',...
-                        'primaryObjectPattern','secondaryObjectPattern','backgroundPattern',...
-                        'prerender'}
+                        'prerender','forcePrerender'}
                     d.category = '8 Color';
-                    
-                case {'RstarIntensity2','MstarIntensity2','SstarIntensity2','colorCombinationMode'}
-                    d.category = '7 Projector';
+                
+                case {'colorCombinationMode','primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
                     if obj.numberOfPatterns == 1
                         d.isHidden = true;
                     end
+                    d.category = '8 Color';
+                    
+                case {'RstarIntensity2','MstarIntensity2','SstarIntensity2'}
+                    d.category = '6 Isomerizations';
+                    if obj.numberOfPatterns == 1
+                        d.isHidden = true;
+                    end
+                    
+                case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
+                    d.category = '6 Isomerizations';
             end
             
         end
@@ -112,11 +121,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.greenLED = 20;
                 obj.redLED = 0;
                 obj.uvLED = 30;
+                obj.colorPattern1 = 'green';
             elseif strcmp(obj.colorMode, 'standard')
                 obj.blueLED = 20;
                 obj.greenLED = 0;
                 obj.redLED = 0;
                 obj.uvLED = 0;
+                obj.colorPattern1 = 'blue';
             end
             
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
@@ -158,9 +169,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
             % check for pattern setting correctness
-            if ~strcmp(obj.colorPattern2, 'none')
-                if ~(obj.numberOfPatterns >= 2)
-                    error('Must have >= 2 patterns to use second pattern')
+            if obj.numberOfPatterns >= 2
+                if ~obj.prerender
+                    error('Must have prerender enabled to use multiple patterns')
                 end
             end
             
@@ -354,13 +365,17 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
         
-%         function prerender = get.prerender(obj)
-%             if obj.numberOfPatterns == 1
-%                 prerender = false;
-%             else
-%                 prerender = true;
-%             end
-%         end
+        function frameRate = get.frameRate(obj)
+            frameRate = 60; % changing this isn't implemented
+        end        
+        
+        function prerender = get.prerender(obj)
+            if obj.numberOfPatterns == 1 && ~obj.forcePrerender
+                prerender = false;
+            else
+                prerender = true;
+            end
+        end
         
         function numberOfPatterns = get.numberOfPatterns(obj)
             if ~strcmp(obj.colorPattern3, 'none')

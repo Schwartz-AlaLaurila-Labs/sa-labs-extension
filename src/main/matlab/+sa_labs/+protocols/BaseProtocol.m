@@ -184,7 +184,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 g.freqCutoff = 100;
                 g.numFilters = 1;
                 g.stDev = 2;
-                g.mean = 0;
+                g.mean = 100;
                 g.seed = randi(100000);
                 g.preTime = obj.preTime;
                 g.tailTime = obj.tailTime;
