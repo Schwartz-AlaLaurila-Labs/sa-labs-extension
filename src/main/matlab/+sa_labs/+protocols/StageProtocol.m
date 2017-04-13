@@ -107,6 +107,18 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.lightCrafterParams = [];
             end
             
+            if strcmp(obj.colorMode, 'uv')
+                obj.blueLED = 0;
+                obj.greenLED = 20;
+                obj.redLED = 0;
+                obj.uvLED = 30;
+            elseif strcmp(obj.colorMode, 'standard')
+                obj.blueLED = 20;
+                obj.greenLED = 0;
+                obj.redLED = 0;
+                obj.uvLED = 0;
+            end
+            
             if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 % useless defaults
                 obj.filterWheelNdfValues = [0];

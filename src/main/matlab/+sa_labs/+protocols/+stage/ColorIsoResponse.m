@@ -7,11 +7,15 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         
         spotDiameter = 2000
         
+        annulusMode = false;
+        annulusInnerDiameter = 300;
+        annulusOuterDiameter = 2000;
+        
         baseIntensity1 = .2;
         baseIntensity2 = .2;
         
         enableSurround = false
-        surroundDiameter = 1000
+        surroundDiameter = 3000
         
     end
         
@@ -100,14 +104,35 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             end
             
             
-            spot = stage.builtin.stimuli.Ellipse();
-            spot.color = 1;
-            spot.opacity = 1;
-            spot.radiusX = obj.um2pix(obj.spotDiameter/2);
-            spot.radiusY = spot.radiusX;
-            spot.position = canvasSize / 2;
-            p.addStimulus(spot);
-            
+            if ~obj.annulusMode
+                spotOrAnnulus = stage.builtin.stimuli.Ellipse();
+                spotOrAnnulus.color = 1;
+                spotOrAnnulus.opacity = 1;
+                spotOrAnnulus.radiusX = obj.um2pix(obj.spotDiameter/2);
+                spotOrAnnulus.radiusY = spotOrAnnulus.radiusX;
+                spotOrAnnulus.position = canvasSize / 2;
+                p.addStimulus(spotOrAnnulus);
+            else
+                spotOrAnnulus = stage.builtin.stimuli.Ellipse();
+                spotOrAnnulus.color = 1;
+                spotOrAnnulus.opacity = 1;
+                spotOrAnnulus.radiusX = obj.um2pix(obj.annulusOuterDiameter/2);
+                spotOrAnnulus.radiusY = spotOrAnnulus.radiusX;
+                spotOrAnnulus.position = canvasSize / 2;
+                p.addStimulus(spotOrAnnulus);
+                
+                centerMask = stage.builtin.stimuli.Ellipse();
+                centerMask.color = 1;
+                centerMask.opacity = 1;
+                centerMask.radiusX = obj.um2pix(obj.annulusInnerDiameter/2);
+                centerMask.radiusY = centerMask.radiusX;
+                centerMask.position = canvasSize / 2;
+                p.addStimulus(centerMask);
+                centerMaskColorController = stage.builtin.controllers.PropertyController(surround, 'color',...
+                    @(s) surroundColor(s, [obj.baseIntensity1, obj.baseIntensity2]));
+                p.addController(centerMaskColorController);
+            end
+                
             function c = spotColor(state, onColor, backgroundColor)
                 if state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3
                     c = onColor(state.pattern + 1);
@@ -116,7 +141,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 end
             end
             
-            spotColorController = stage.builtin.controllers.PropertyController(spot, 'color',...
+            spotColorController = stage.builtin.controllers.PropertyController(spotOrAnnulus, 'color',...
                 @(s) spotColor(s, [obj.intensity1, obj.intensity2], [obj.baseIntensity1, obj.baseIntensity2]));
             p.addController(spotColorController);
             
