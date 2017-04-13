@@ -8,6 +8,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         spikeDetector
         analysisRegion
         devices
+        responseMode
         
         nextContrast1
         nextContrast2
@@ -58,6 +59,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             ip.addParameter('analysisRegion', [0,inf]);
             ip.addParameter('baseIntensity1', .1);
             ip.addParameter('baseIntensity2', .1);
+            ip.addParameter('responseMode','Whole cell', @(x)ischar(x));
             
             ip.parse(varargin{:});
             
@@ -70,6 +72,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.baseIntensity1 = ip.Results.baseIntensity1;
             obj.baseIntensity2 = ip.Results.baseIntensity2;
             obj.colorNames = ip.Results.colorNames;
+            obj.responseMode = ip.Results.responseMode;
             
             obj.plotRange1 = obj.contrastRange1;
             obj.plotRange2 = obj.contrastRange2;
@@ -91,6 +94,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             import appbox.*;
             
+            set(obj.figureHandle, 'Name', 'Color Response Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
@@ -140,6 +144,12 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.generateBaseGridStimulus());
             uicontrol('Style', 'pushbutton', ...
+                        'String', 'Overall Grid',...
+                        'Parent', obj.handles.actionButtonBox,...
+                        'Callback', @(a,b) obj.generateOverallGridStimulus());    
+            uicontrol('Style', 'text', ... % spacer
+                        'Parent', obj.handles.actionButtonBox);
+            uicontrol('Style', 'pushbutton', ...
                         'String', 'Add Selected',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.addSelectedPoint());
@@ -155,13 +165,15 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'String', 'Add 4 noisiest',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.addNoisiestPoints(4));
+            uicontrol('Style', 'text', ... % spacer
+                        'Parent', obj.handles.actionButtonBox);                    
             uicontrol('Style', 'pushbutton', ...
-                        'String', 'Clear Next',...
+                        'String', 'Clear queue',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.clearNextStimulus(), ...
                         'ForegroundColor','red');
             uicontrol('Style', 'pushbutton', ...
-                        'String', 'Randomize',...
+                        'String', 'Randomize queue',...
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.randomizeStimulus());
 
@@ -203,15 +215,21 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             e.parameters = epoch.parameters;
             e.ignore = false;
 
-            result = obj.spikeDetector.detectSpikes(signal);
-            spikeFrames = result.sp;
-            spikeTimes = e.t(spikeFrames);
-            % get spike count in analysis region
-            e.response = sum(spikeTimes > obj.analysisRegion(1) & spikeTimes < obj.analysisRegion(2));
-%             e.response = round(10 * e.parameters('contrast1') + 7 * e.parameters('contrast2') + 10 * rand());
+            if strcmp(obj.responseMode, 'Cell attached')
+                result = obj.spikeDetector.detectSpikes(signal);
+                spikeFrames = result.sp;
+                spikeTimes = e.t(spikeFrames);
+                % get spike count in analysis region
+                e.response = sum(spikeTimes > obj.analysisRegion(1) & spikeTimes < obj.analysisRegion(2));
+    %             e.response = round(10 * e.parameters('contrast1') + 7 * e.parameters('contrast2') + 10 * rand());
+                e.spikeTimes = spikeTimes;
+                e.spikeFrames = spikeFrames;    
+            else
+                signal = signal - median(signal(1:1000));
+                signalInAnalysisRegion = signal(e.t > obj.analysisRegion(1) & e.t < obj.analysisRegion(2));
+                e.response = mean(signalInAnalysisRegion);
+            end
 
-            e.spikeTimes = spikeTimes;
-            e.spikeFrames = spikeFrames;
             
             % add the epoch to the array
             obj.epochData{obj.epochIndex, 1} = e;
@@ -220,7 +238,12 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             cla(obj.handles.epochReponseAxes);
             hold(obj.handles.epochReponseAxes, 'on');
             plot(obj.handles.epochReponseAxes, e.t, e.signal);
-            plot(obj.handles.epochReponseAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+            if strcmp(obj.responseMode, 'Cell attached')
+                plot(obj.handles.epochReponseAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+            end
+            % draw analysis region limits
+            line(obj.handles.epochReponseAxes, [obj.analysisRegion(1), obj.analysisRegion(1)], ylim(obj.handles.epochReponseAxes),'Color','g')
+            line(obj.handles.epochReponseAxes, [obj.analysisRegion(2), obj.analysisRegion(2)], ylim(obj.handles.epochReponseAxes),'Color','r')
             hold(obj.handles.epochReponseAxes, 'off')
             set(obj.handles.epochReponseAxes,'LooseInset',get(obj.handles.isoAxes,'TightInset'))
             
@@ -287,6 +310,30 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.addToStimulusWithRepeats(bootstrapContrasts);
         end
         
+        function generateOverallGridStimulus(obj)
+            newPoints = [];
+            numGridPoints = inputdlg('Number of grid edge points?');
+            if isempty(numGridPoints)
+                return
+            else
+                numGridPoints = str2double(numGridPoints{1});
+            end
+            if numGridPoints < 2 || isnan(numGridPoints)
+                return
+            end                        
+            startPoint = obj.contrastRange1(1);
+            endPoint = obj.contrastRange2(2);
+            step = (endPoint - startPoint) / (numGridPoints-1);
+
+            for p1 = 1:numGridPoints
+                for p2 = 1:numGridPoints
+                    p = (p1-1)*numGridPoints + p2;
+                    newPoints(p,:) = startPoint + step .* [p1-1, p2-1];
+                end
+            end
+            obj.addToStimulusWithRepeats(newPoints);
+        end
+        
         function generateNextStimulusPoint(obj)
             obj.isoPlotClickMode = 'newpoint';
             obj.isoPlotClickCountRemaining = 1;
@@ -331,7 +378,14 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         startPoint = obj.isoPlotClickHistory(1,:);
                         endPoint = obj.isoPlotClickHistory(2,:);
                         step = (endPoint - startPoint) / (numLinePoints-1);
-
+                        
+                        % make lines snap to vertical or horizontal
+                        for di = 1:2
+                            if abs(step(di)) < .1
+                                step(di) = 0;
+                            end
+                        end
+                        
                         for p = 1:numLinePoints
                             newPoints(p,:) = startPoint + step * (p-1);
                         end
@@ -469,6 +523,22 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         % unified function for adding points to the next stim list
         function addToStimulusWithRepeats(obj, newPoints, newInfo)
             if ~isempty(newPoints)
+                % move invalid points within bounds
+                for i = 1:size(newPoints,1)
+                    if newPoints(i,1) < obj.contrastRange1(1)
+                        newPoints(i,1) = obj.contrastRange1(1);
+                    end
+                    if newPoints(i,1) > obj.contrastRange1(2)
+                        newPoints(i,1) = obj.contrastRange1(2);
+                    end
+                    if newPoints(i,2) < obj.contrastRange2(1)
+                        newPoints(i,2) = obj.contrastRange2(1);
+                    end
+                    if newPoints(i,2) > obj.contrastRange2(2)
+                        newPoints(i,2) = obj.contrastRange2(2);
+                    end
+                end
+                
                 % setup repeats
                 if obj.handles.repeatStimCheckbox.Value
                     count = 2;

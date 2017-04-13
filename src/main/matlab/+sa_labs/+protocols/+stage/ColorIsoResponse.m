@@ -42,6 +42,16 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     methods
         
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case 'meanLevel'
+                    d.isHidden = true;
+            end
+            
+        end
+        
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
@@ -52,7 +62,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             end
             
             obj.isoResponseFigure = obj.showFigure('sa_labs.figures.ColorIsoResponseFigure', obj.devices, ...
-                'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime + 0.5],...
+                'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime] + [0.01, 0.05],...
                 'spikeThreshold', obj.spikeThreshold, ...
                 'spikeDetectorMode', obj.spikeDetectorMode, ...
                 'baseIntensity1', obj.baseIntensity1, 'baseIntensity2', obj.baseIntensity2, ...
@@ -128,7 +138,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 centerMask.radiusY = centerMask.radiusX;
                 centerMask.position = canvasSize / 2;
                 p.addStimulus(centerMask);
-                centerMaskColorController = stage.builtin.controllers.PropertyController(surround, 'color',...
+                centerMaskColorController = stage.builtin.controllers.PropertyController(centerMask, 'color',...
                     @(s) surroundColor(s, [obj.baseIntensity1, obj.baseIntensity2]));
                 p.addController(centerMaskColorController);
             end
