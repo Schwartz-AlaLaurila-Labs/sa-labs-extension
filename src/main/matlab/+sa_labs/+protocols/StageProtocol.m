@@ -19,6 +19,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'add'
+        prerender = false
     end
     
     properties (Dependent)
@@ -31,7 +32,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         MstarIntensity2
         SstarIntensity2
         bitDepth = 8
-        prerender = false
     end
     
     properties (Hidden)
@@ -342,13 +342,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
         
-        function prerender = get.prerender(obj)
-            if obj.numberOfPatterns == 1
-                prerender = false;
-            else
-                prerender = true;
-            end
-        end
+%         function prerender = get.prerender(obj)
+%             if obj.numberOfPatterns == 1
+%                 prerender = false;
+%             else
+%                 prerender = true;
+%             end
+%         end
         
         function numberOfPatterns = get.numberOfPatterns(obj)
             if ~strcmp(obj.colorPattern3, 'none')
