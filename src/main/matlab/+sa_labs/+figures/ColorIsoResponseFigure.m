@@ -640,8 +640,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             if ~isempty(obj.pointData)
                 if ~isempty(obj.interpolant)
                     try
-                        c1p = linspace(min(obj.pointData(:,1)), max(obj.pointData(:,1)), 20);
-                        c2p = linspace(min(obj.pointData(:,2)), max(obj.pointData(:,2)), 20);
+                        c1p = linspace(min(obj.pointData(:,1)), max(obj.pointData(:,1)), 40);
+                        c2p = linspace(min(obj.pointData(:,2)), max(obj.pointData(:,2)), 40);
                         [C1p, C2p] = meshgrid(c1p, c2p);
                         int = obj.interpolant(C1p, C2p);
 %                         f = fspecial('average');
