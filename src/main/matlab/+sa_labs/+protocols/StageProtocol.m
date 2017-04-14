@@ -18,7 +18,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'add'
-        forcePrerender = false; % enable to force prerender mode to reduce frame dropping
     end
     
     properties (Dependent)
@@ -35,11 +34,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         frameRate = 60; % changing this isn't implemented
     end
     
+    properties % again, for ordering
+        forcePrerender = 'auto'; % enable to force prerender mode to reduce frame dropping
+    end
+    
     properties (Hidden)
         colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace'});
+        forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','pr on','pr off'});
 
         colorMode = '';
         filterWheelNdfValues
@@ -169,11 +173,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
             % check for pattern setting correctness
-            if obj.numberOfPatterns >= 2
-                if ~obj.prerender
-                    error('Must have prerender enabled to use multiple patterns')
-                end
-            end
+%             if obj.numberOfPatterns >= 2
+%                 if ~obj.prerender
+%                     error('Must have prerender enabled to use multiple patterns')
+%                 end
+%             end
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
@@ -370,10 +374,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end        
         
         function prerender = get.prerender(obj)
-            if obj.numberOfPatterns == 1 && ~obj.forcePrerender
-                prerender = false;
-            else
+            if strcmp(obj.forcePrerender, 'auto')
+                if obj.numberOfPatterns == 1
+                    prerender = false;
+                else
+                    prerender = true;
+                end
+            elseif strcmp(obj.forcePrerender, 'pr on')
                 prerender = true;
+            else
+                prerender = false;
             end
         end
         
