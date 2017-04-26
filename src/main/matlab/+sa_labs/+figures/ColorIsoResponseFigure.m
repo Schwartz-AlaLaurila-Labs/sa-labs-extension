@@ -702,7 +702,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     if all([e.parameters('contrast1'), e.parameters('contrast2')] == point)
                         hold(obj.handles.epochSelectionAxes, 'on')
                         plot(obj.handles.epochSelectionAxes, e.t, e.signal);
-                        plot(obj.handles.epochSelectionAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+                        if strcmp(obj.responseMode, 'Cell attached')
+                            plot(obj.handles.epochSelectionAxes, e.spikeTimes, e.signal(e.spikeFrames), '.');
+                        end
                         hold(obj.handles.epochSelectionAxes, 'off')
                     end
                 end
