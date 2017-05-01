@@ -2,16 +2,16 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         
     properties
         %times in ms
-        preTime =50;
-        tailTime = 50;
+        preTime =500;
+        tailTime = 500;
         stimTime = 1000;
         
         %in microns, use rigConfig to set microns per pixel
-        apertureDiameter = 800; %um
+        apertureDiameter = 200; %um
         
-        minTextureScale = 80; %um
-        maxTextureScale = 80
-        numOfScaleSteps = 1;
+        minBlurSigma = 0.6; %pixels
+        maxBlurSigma = 80  %pixels
+        numOfBlurSteps = 2;
         logScaling = false;
         numRandomSeeds = 2;
         
@@ -20,20 +20,22 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
 %         singleAngle = -1; % set to a positive value to use a single fixed angle
 %         numberOfAngles = 12;       
         numberOfCycles = 2;
-        resScaleFactor = 2; % factor to decrease computational load
+        resScaleFactor = 1; % factor to decrease computational load
 
 
         
     end
     
     properties (Hidden)
-        version = 1 %Adam 3/21/17, based on "ImageCycler" and "drifting Texture"
+%         version = 1 %Adam 3/21/17, based on "ImageCycler" and "drifting Texture"
+        version = 2 %Adam 5/1/17; splitParameter will be blur sigma = 1/2 prev. 'textureScale', and entred in pixels
 
-        textureScale
+
+        blurSigma
         randomSeed
         curImageMatrix
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'textureScale';
+        responsePlotSplitParameter = 'halfMaxScale';
         orderOfImages
     end
     
@@ -45,11 +47,23 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
 %         numScales
 %         numSeeds
         totalNumEpochs
+        halfMaxScale %um
     end
     
     properties (Dependent)
-                numConditions
+                numConditions 
+                effectivePixelSize %um
+                minHalfMaxScale %um
+                maxHalfMaxScale %um
     end
+    
+    properties (Constant, Hidden)
+        fitPixelsToPixels = [6.39024e-06,-0.000578271,-0.0364984,7.62814,0.0201946]; 
+        %Adam's measurement of texture power spectra cutoff, 4/20/17.
+        %Don't use pixel blur sigma < 0.6 pixels.
+        % values below that give 1/2 max at about the same scale
+    end
+        
     
     methods
         function d = getPropertyDescriptor(obj, name)
@@ -68,11 +82,11 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             % Call the base method.
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            %set textureScale and randomSeed
+            %set blurSigma and randomSeed
             if ~obj.logScaling
-                obj.textureScale = linspace(obj.minTextureScale, obj.maxTextureScale, obj.numOfScaleSteps);
+                obj.blurSigma = linspace(obj.minBlurSigma, obj.maxBlurSigma, obj.numOfBlurSteps);
             else
-                obj.textureScale = logspace(log10(obj.minTextureScale), log10(obj.maxTextureScale), obj.numOfScaleSteps);
+                obj.textureScale = logspace(log10(obj.obj.minBlurSigma), log10(obj.maxBlurSigmae), obj.numOfBlurSteps);
             end
             obj.randomSeed = (1:obj.numRandomSeeds)*907;
             
@@ -82,10 +96,11 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                 max(canvasSize) * 1.42]; % pixels
             res = round(res / obj.resScaleFactor);
             obj.imageMatrices = zeros(res(1),res(2),obj.numConditions);
-            for scaleInd = 1:obj.numOfScaleSteps
+            for scaleInd = 1:obj.numOfBlurSteps
                 for seedInd = 1:obj.numRandomSeeds
 
-                    sigma = obj.um2pix(0.5 * obj.textureScale(scaleInd) / obj.resScaleFactor);
+                    %sigma = obj.um2pix(0.5 * obj.textureScale(scaleInd) / obj.resScaleFactor);
+                    sigma = obj.blurSigma(scaleInd);
                     fprintf('making texture (%d x %d) with blur sigma %d pixels\n', res(1), res(2), sigma);
                     
                     stream = RandStream('mt19937ar','Seed',obj.randomSeed(seedInd));
@@ -136,9 +151,9 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                     %Mapping of image parameters(3) to linear index (1) defined here
                     %[scale, seed, "positive or negative" image] --> linear index
 
-                    linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 1);                     
+                    linearIndex = sub2ind([obj.numOfBlurSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 1);                     
                     obj.imageMatrices(:,:, linearIndex) = uint8(255 * M);
-                    linearIndex = sub2ind([obj.numOfScaleSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 2);
+                    linearIndex = sub2ind([obj.numOfBlurSteps,obj.numRandomSeeds,2], scaleInd, seedInd, 2);
                     obj.imageMatrices(:,:, linearIndex) = uint8(255 * (1-M));
                     disp('done');
                 end;
@@ -147,25 +162,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         end
         
         function prepareEpoch(obj, epoch)
-%             
-%             % Randomize angles if this is a new set
-%             index = mod(obj.numEpochsPrepared, obj.numberOfAngles);
-%             if index == 0
-%                 obj.angles = obj.angles(randperm(obj.numberOfAngles));
-%             end
-% 
-%             obj.curAngle = obj.angles(index+1); %make it a property so preparePresentation has access to it
-%             epoch.addParameter('textureAngle', obj.curAngle);
-%             
-%             if obj.movementSensitivity
-%                 index = mod(obj.numEpochsPrepared, obj.numberOfMovementSensitivitySteps);
-%                 if index == 0
-%                     obj.sensitivitySteps = obj.sensitivitySteps(randperm(obj.numberOfMovementSensitivitySteps));
-%                 end
-%                 obj.curSensitivityStep = obj.sensitivitySteps(index+1);
-%             end
-%             epoch.addParameter('motionSensitivityStep', obj.curSensitivityStep);
-%             
+
             epochIndex = mod(obj.numEpochsPrepared, obj.numConditions)+1;
             if epochIndex == 1
                 obj.orderOfImages = randperm(obj.numConditions);
@@ -173,8 +170,8 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             imagelinearIndex = obj.orderOfImages(epochIndex);
             %Add order randomization later!
             obj.curImageMatrix = obj.imageMatrices(:,:,imagelinearIndex);
-            [scaleInd,seedInd,posOrNegImage_Ind] = ind2sub([obj.numOfScaleSteps,obj.numRandomSeeds,2],imagelinearIndex);
-            epoch.addParameter('textureScale', obj.textureScale(scaleInd));
+            [scaleInd,seedInd,posOrNegImage_Ind] = ind2sub([obj.numOfBlurSteps,obj.numRandomSeeds,2],imagelinearIndex);
+            epoch.addParameter('blurSigma', obj.blurSigma(scaleInd));
             epoch.addParameter('randomSeed',obj.randomSeed(seedInd));
             epoch.addParameter('negativeImage',posOrNegImage_Ind == 2);
             % Call the base method.
@@ -249,7 +246,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
 %         end
         
         function numConditions = get.numConditions(obj)
-           numConditions = obj.numOfScaleSteps*obj.numRandomSeeds*2; 
+           numConditions = obj.numOfBlurSteps*obj.numRandomSeeds*2; 
            %x2 is for pos and neg images
         end
         
@@ -257,6 +254,36 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             totalNumEpochs = obj.numberOfCycles * obj.numConditions;
         end
         
+        function effectivePixelSize = get.effectivePixelSize(obj)
+            effectivePixelSize = obj.um2pix(1)*obj.resScaleFactor;
+        end
+        
+        function halfMaxScale = get.halfMaxScale(obj)
+            halfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, obj.blurSigma);
+            %Don't use pixel blur (sigma) < 0.6 pixels.
+            % values below that give 1/2 max at about the same scale
+            % "0 blur" in old textures were no blur, step power spectrum at scale = sqrt(2) pixels
+            if obj.blurSigma < 0.6
+                halfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, 0.6);
+            end;
+        end
+            
+        function minHalfMaxScale = get.minHalfMaxScale(obj)
+            minHalfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, obj.minBlurSigma);
+
+            if obj.minBlurSigma < 0.6
+                minHalfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, 0.6);
+            end;
+        end
+            
+        function maxHalfMaxScale = get.maxHalfMaxScale(obj)
+            maxHalfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, obj.maxBlurSigma);
+
+            if obj.maxBlurSigma < 0.6
+                maxHalfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, 0.6);
+            end;
+        end
+            
     end
 end
 

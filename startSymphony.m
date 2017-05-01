@@ -1,1 +1,1 @@
-run 'C:\Users\Greg\Documents\MATLAB2\symphony-matlab\src\main\matlab\main.m'
+run 'C:\Users\RigTest2\Documents\MATLAB\symphony-matlab\src\main\matlab\main.m'
