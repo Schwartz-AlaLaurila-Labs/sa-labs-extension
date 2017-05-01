@@ -320,7 +320,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             end
             if numGridPoints < 2 || isnan(numGridPoints)
                 return
-            end                        
+            end
             startPoint = obj.contrastRange1(1);
             endPoint = obj.contrastRange2(2);
             step = (endPoint - startPoint) / (numGridPoints-1);
@@ -331,6 +331,14 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                     newPoints(p,:) = startPoint + step .* [p1-1, p2-1];
                 end
             end
+            
+            % add zeros (single LED modulations)
+            crossContrasts =     [[obj.contrastRange1(2),0];
+                                  [0,                    obj.contrastRange2(2)];
+                                  [0,                    obj.contrastRange2(1)];
+                                  [obj.contrastRange1(1),0]];
+            newPoints = vertcat(newPoints, crossContrasts);
+            
             obj.addToStimulusWithRepeats(newPoints);
         end
         
