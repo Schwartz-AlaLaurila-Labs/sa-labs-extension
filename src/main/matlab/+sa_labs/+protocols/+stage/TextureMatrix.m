@@ -272,7 +272,8 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         end
         
         function effectivePixelSize = get.effectivePixelSize(obj)
-            effectivePixelSize = obj.um2pix(1)*obj.resScaleFactor;
+            [~,pixPerMic] = obj.um2pix(1);
+            effectivePixelSize = (1/pixPerMic)*obj.resScaleFactor;
         end
             
         function minHalfMaxScale = get.minHalfMaxScale(obj)
