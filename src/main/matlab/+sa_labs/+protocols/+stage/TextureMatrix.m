@@ -2,15 +2,15 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         
     properties
         %times in ms
-        preTime =500;
+        preTime = 500;
         tailTime = 500;
         stimTime = 1000;
         
         %in microns, use rigConfig to set microns per pixel
-        apertureDiameter = 200; %um
+        apertureDiameter = 3000; %um
         
         minBlurSigma = 0.6; %pixels
-        maxBlurSigma = 80  %pixels
+        maxBlurSigma = 24  %pixels
         numOfBlurSteps = 2;
         logScaling = false;
         numRandomSeeds = 2;
@@ -32,6 +32,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
 
 
         blurSigma
+        halfMaxScale %um
         randomSeed
         curImageMatrix
         responsePlotMode = 'cartesian';
@@ -47,7 +48,7 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
 %         numScales
 %         numSeeds
         totalNumEpochs
-        halfMaxScale %um
+
     end
     
     properties (Dependent)
@@ -58,11 +59,16 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
     end
     
     properties (Constant, Hidden)
+        
         fitPixelsToPixels = [6.39024e-06,-0.000578271,-0.0364984,7.62814,0.0201946]; 
         %Adam's measurement of texture power spectra cutoff, 4/20/17.
         %Don't use pixel blur sigma < 0.6 pixels.
         % values below that give 1/2 max at about the same scale
     end
+    
+%     properties (Hidden)
+%         responsePlotSplitParameter = 'halfMaxScale';   
+%     end
         
     
     methods
@@ -86,9 +92,18 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             if ~obj.logScaling
                 obj.blurSigma = linspace(obj.minBlurSigma, obj.maxBlurSigma, obj.numOfBlurSteps);
             else
-                obj.textureScale = logspace(log10(obj.obj.minBlurSigma), log10(obj.maxBlurSigmae), obj.numOfBlurSteps);
+                obj.blurSigma = logspace(log10(obj.minBlurSigma), log10(obj.maxBlurSigma), obj.numOfBlurSteps);
             end
             obj.randomSeed = (1:obj.numRandomSeeds)*907;
+            
+            obj.halfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, obj.blurSigma);
+            %Don't use pixel blur (sigma) < 0.6 pixels.
+            % values below that give 1/2 max at about the same scale
+            if obj.blurSigma < 0.6
+                obj.halfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, 0.6);
+            end;
+            
+            
             
             % generate textures
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
@@ -174,6 +189,8 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
             epoch.addParameter('blurSigma', obj.blurSigma(scaleInd));
             epoch.addParameter('randomSeed',obj.randomSeed(seedInd));
             epoch.addParameter('negativeImage',posOrNegImage_Ind == 2);
+            
+            epoch.addParameter('halfMaxScale',obj.halfMaxScale(scaleInd));
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
@@ -256,16 +273,6 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
         
         function effectivePixelSize = get.effectivePixelSize(obj)
             effectivePixelSize = obj.um2pix(1)*obj.resScaleFactor;
-        end
-        
-        function halfMaxScale = get.halfMaxScale(obj)
-            halfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, obj.blurSigma);
-            %Don't use pixel blur (sigma) < 0.6 pixels.
-            % values below that give 1/2 max at about the same scale
-            % "0 blur" in old textures were no blur, step power spectrum at scale = sqrt(2) pixels
-            if obj.blurSigma < 0.6
-                halfMaxScale = obj.effectivePixelSize*polyval(obj.fitPixelsToPixels, 0.6);
-            end;
         end
             
         function minHalfMaxScale = get.minHalfMaxScale(obj)
