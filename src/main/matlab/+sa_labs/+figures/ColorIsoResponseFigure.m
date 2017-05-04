@@ -182,7 +182,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'String', 'Lead w/ null',...
                         'Parent', obj.handles.actionButtonBox);
             obj.handles.repeatStimCheckbox = uicontrol('Style', 'checkbox', ...
-                        'Value', true, ...
+                        'Value', false, ...
                         'String', 'Repeat added stim',...
                         'Parent', obj.handles.actionButtonBox);
                     
@@ -321,8 +321,8 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             if numGridPoints < 2 || isnan(numGridPoints)
                 return
             end
-            startPoint = obj.contrastRange1(1);
-            endPoint = obj.contrastRange2(2);
+            startPoint = [obj.contrastRange1(1), obj.contrastRange2(1)];
+            endPoint = [obj.contrastRange1(2), obj.contrastRange2(2)];
             step = (endPoint - startPoint) / (numGridPoints-1);
 
             for p1 = 1:numGridPoints
@@ -531,6 +531,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         % unified function for adding points to the next stim list
         function addToStimulusWithRepeats(obj, newPoints, newInfo)
             if ~isempty(newPoints)
+                % remove duplicates
+                newPoints = unique(newPoints, 'rows');
+                
                 % move invalid points within bounds
                 for i = 1:size(newPoints,1)
                     if newPoints(i,1) < obj.contrastRange1(1)
