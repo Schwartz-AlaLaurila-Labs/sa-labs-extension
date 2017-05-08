@@ -11,18 +11,23 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         centerDiameter = 150 % um
         annulusInnerDiameter = 300 % um
         annulusOuterDiameter = 600 % um
-        frameDwell = 1 % Frames per noise update
+        frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
         contrastValues = 1 %contrast, as fraction of mean
         seedStartValue = 1
         seedChangeMode = 'repeat only';
         locationMode = 'Center';
+        colorMode = '1 pattern';
+        
+        colorMeanIntensity1 = 0.5;
+        colorMeanIntensity2 = 0.5;
 
         numberOfEpochs = uint16(30) % number of epochs to queue
     end
 
     properties (Hidden)
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
-        
+        locationModeType = symphonyui.core.PropertyType('char', 'row', {'Center', 'Surround', 'Center-Surround'})
+        colorModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'})
         
         centerNoiseSeed
         surroundNoiseSeed
@@ -94,20 +99,22 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             annulusOuterDiameterPix = obj.um2pix(obj.annulusOuterDiameter);
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3); %create presentation of specified duration
-            preFrames = round(60 * (obj.preTime/1e3));
+            preFrames = round(obj.frameRate * (obj.preTime/1e3));
+            
+            % create shapes
+            if strcmp(obj.colorMode, '2 patterns')
+                % create background for color use
+                backgroundRect = stage.builtin.stimuli.Rectangle();
+                backgroundRect.position = canvasSize/2;
+                backgroundRect.size = canvasSize * 2;
+            end
+                
             if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
                 surroundSpot = stage.builtin.stimuli.Ellipse();
                 surroundSpot.radiusX = annulusOuterDiameterPix/2;
                 surroundSpot.radiusY = annulusOuterDiameterPix/2;
                 surroundSpot.position = canvasSize/2;
                 p.addStimulus(surroundSpot);
-                surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
-                    @(state)getSurroundIntensity(obj, state.frame - preFrames));
-                p.addController(surroundSpotIntensity);
-                % hide during pre & post
-                surroundSpotVisible = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
-                    @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
-                p.addController(surroundSpotVisible);
                 %mask / annulus...
                 maskSpot = stage.builtin.stimuli.Ellipse();
                 maskSpot.radiusX = annulusInnerDiameterPix/2;
@@ -122,15 +129,75 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 centerSpot.radiusY = centerDiameterPix/2;
                 centerSpot.position = canvasSize/2;
                 p.addStimulus(centerSpot);
-                centerSpotIntensity = stage.builtin.controllers.PropertyController(centerSpot, 'color',...
-                    @(state)getCenterIntensity(obj, state.frame - preFrames));
-                p.addController(centerSpotIntensity);
-                % hide during pre & post
-                centerSpotVisible = stage.builtin.controllers.PropertyController(centerSpot, 'visible', ...
-                    @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
-                p.addController(centerSpotVisible);
             end
+                
+            
+            % add controllers
+            
+            
+            if strcmp(obj.colorMode, '1 pattern')
+                if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                    surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
+                        @(state)getSurroundIntensity(obj, state.frame - preFrames));
+                    p.addController(surroundSpotIntensity);
+                    % hide during pre & post
+                    surroundSpotVisibleController = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
+                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                    p.addController(surroundSpotVisibleController);
+                end
 
+                if or(strcmp(obj.currentStimulus, 'Center'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                    centerSpotIntensityController = stage.builtin.controllers.PropertyController(centerSpot, 'color',...
+                        @(state)getCenterIntensity(obj, state.frame - preFrames));
+                    p.addController(centerSpotIntensityController);
+                    % hide during pre & post
+                    centerSpotVisibleController = stage.builtin.controllers.PropertyController(centerSpot, 'visible', ...
+                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                    p.addController(centerSpotVisibleController);
+                end
+            else
+                
+                % 2 pattern controllers:
+            
+                % background rect
+                backgroundRectColorController = stage.builtin.controllers.PropertyController(backgroundRect, 'color',...
+                    @(s) colorPatternLookup(s, [obj.colorMeanIntensity1, obj.colorMeanIntensity2]));
+                p.addController(backgroundRectColorController);
+                                
+                % mask spot
+                if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                    maskSpotColorController = stage.builtin.controllers.PropertyController(maskSpot, 'color',...
+                        @(s) colorPatternLookup(s, [obj.colorMeanIntensity1, obj.colorMeanIntensity2]));
+                    p.addController(maskSpotColorController);
+                end
+                
+                % surround
+                if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                    surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
+                        @(state)getSurroundIntensity2Pattern(obj, state.frame - preFrames, state.pattern));
+                    p.addController(surroundSpotIntensity);
+                    % hide during pre & post
+                    surroundSpotVisibleController = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
+                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                    p.addController(surroundSpotVisibleController);
+                end                
+                
+                % center
+                if or(strcmp(obj.currentStimulus, 'Center'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                    centerSpotIntensityController = stage.builtin.controllers.PropertyController(centerSpot, 'color',...
+                        @(state)getCenterIntensity2Pattern(obj, state.frame - preFrames, state.pattern));
+                    p.addController(centerSpotIntensityController);
+                    % hide during pre & post
+                    centerSpotVisibleController = stage.builtin.controllers.PropertyController(centerSpot, 'visible', ...
+                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                    p.addController(centerSpotVisibleController);
+                end
+            end
+            
+            function c = colorPatternLookup(state, colors)
+                c = colors(state.pattern + 1);
+            end
+                        
             function i = getCenterIntensity(obj, frame)
                 persistent intensity;
                 if frame<0 %pre frames. frame 0 starts stimPts
@@ -141,14 +208,8 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                             obj.currentContrast * obj.meanLevel * obj.centerNoiseStream.randn;
                     end
                 end
-                if intensity < 0
-                    intensity = 0;
-                elseif intensity > obj.meanLevel * 2
-                    intensity = obj.meanLevel * 2; % probably important to be symmetrical to whiten the stimulus
-                elseif intensity > 1
-                    intensity = 1;
-                end
-                i = intensity;
+                
+                i = clipIntensity(intensity, obj.meanLevel);
             end
             
             function i = getSurroundIntensity(obj, frame)
@@ -161,14 +222,58 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                             obj.currentContrast * obj.meanLevel * obj.surroundNoiseStream.randn;
                     end
                 end
-                  if intensity < 0
+          
+                i = clipIntensity(intensity, obj.meanLevel);
+            end
+            
+            
+            function i = getCenterIntensity2Pattern(obj, frame, pattern)
+                persistent intensity;
+                if pattern == 0
+                    mn = obj.colorMeanIntensity1;
+                else
+                    mn = obj.colorMeanIntensity2;
+                end
+                
+                if frame<0 %pre frames. frame 0 starts stimPts
+                    intensity = mn;
+                else %in stim frames
+                    if mod(frame, obj.frameDwell) == 0 %noise update
+                        intensity = mn + obj.currentContrast * mn * obj.centerNoiseStream.randn;
+                    end
+                end
+          
+                i = clipIntensity(intensity, mn);
+            end
+            
+            function i = getSurroundIntensity2Pattern(obj, frame, pattern)
+                persistent intensity;
+                if pattern == 0
+                    mn = obj.colorMeanIntensity1;
+                else
+                    mn = obj.colorMeanIntensity2;
+                end
+                
+                if frame<0 %pre frames. frame 0 starts stimPts
+                    intensity = mn;
+                else %in stim frames
+                    if mod(frame, obj.frameDwell) == 0 %noise update
+                        intensity = mn + obj.currentContrast * mn * obj.surroundNoiseStream.randn;
+                    end
+                end
+          
+                i = clipIntensity(intensity, mn);
+            end
+
+            
+            function intensity = clipIntensity(intensity, mn)
+                if intensity < 0
                     intensity = 0;
-                elseif intensity > obj.meanLevel * 2
-                    intensity = obj.meanLevel * 2; % probably important to be symmetrical to whiten the stimulus
+                elseif intensity > mn * 2
+                    intensity = mn * 2; % probably important to be symmetrical to whiten the stimulus
                 elseif intensity > 1
                     intensity = 1;
-                end              
-                i = intensity;
+                end    
             end
 
         end
