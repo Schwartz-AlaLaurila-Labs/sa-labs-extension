@@ -25,6 +25,8 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     end
 
     properties (Hidden)
+        version = 2; % version 1 is unmarked; version 2 introduces 2-color presentations
+        
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
         locationModeType = symphonyui.core.PropertyType('char', 'row', {'Center', 'Surround', 'Center-Surround'})
         colorModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'})
