@@ -2,8 +2,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     % This protocol from turner-package, commit a07ffa5, retrieved Sep 13 2016
     % https://github.com/Rieke-Lab/turner-package
     % thanks Max! -Sam
-    
-    
+        
     properties
         preTime = 500 % ms
         stimTime = 30000 % ms
