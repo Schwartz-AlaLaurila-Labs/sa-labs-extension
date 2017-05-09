@@ -16,7 +16,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         seedStartValue = 1
         seedChangeMode = 'repeat only';
         locationMode = 'Center';
-        colorMode = '1 pattern';
+        colorNoiseMode = '1 pattern';
         
         colorMeanIntensity1 = 0.5;
         colorMeanIntensity2 = 0.5;
@@ -29,7 +29,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
         locationModeType = symphonyui.core.PropertyType('char', 'row', {'Center', 'Surround', 'Center-Surround'})
-        colorModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'})
+        colorNoiseModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'})
         
         centerNoiseSeed
         surroundNoiseSeed
@@ -58,30 +58,34 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-            obj.surroundNoiseSeed = 1;
-            obj.currentStimulus = 'Center';
+            
+            obj.currentStimulus = obj.locationMode;
 
             if strcmp(obj.seedChangeMode, 'repeat only')
-                seed = obj.seedStartValue+1;
+                seed = obj.seedStartValue;
             elseif strcmp(obj.seedChangeMode, 'increment only')
-                seed = obj.numEpochsCompleted + obj.seedStartValue +1;
+                seed = obj.numEpochsCompleted + obj.seedStartValue;
             else
                 seedIndex = mod(obj.numEpochsCompleted,2);
-                if seedIndex == 1
+                if seedIndex == 0
                     seed = obj.seedStartValue;
-                elseif seedIndex == 0
-                    seed = obj.seedStartValue + obj.numEpochsCompleted / 2 + 1;
+                elseif seedIndex == 1
+                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 2;
                 end
             end
                         
-            if length(obj.contrastValues) > 1
-                contrastIndex = mod(floor(obj.numEpochsCompleted / 2), length(obj.contrastValues)) + 1;
-            else
-                contrastIndex = 1;
-            end
-            obj.currentContrast = obj.contrastValues(contrastIndex);
+%             if length(obj.contrastValues) > 1
+%                 contrastIndex = mod(floor(obj.numEpochsCompleted / 2), length(obj.contrastValues)) + 1;
+%             else
+%                 contrastIndex = 1;
+%             end
+            obj.currentContrast = obj.contrastValues(1);
+            
             obj.centerNoiseSeed = seed;
-            fprintf('Using center seed %g\n',seed);
+            fprintf('Using center seed %g\n', obj.centerNoiseSeed);
+            
+            obj.surroundNoiseSeed = seed + 1e5; % magic number ftw
+            fprintf('Using surround seed %g\n', obj.surroundNoiseSeed);
 
             %at start of epoch, set random streams using this cycle's seeds
             obj.centerNoiseStream = RandStream('mt19937ar', 'Seed', obj.centerNoiseSeed);
@@ -97,18 +101,19 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             
             %convert from microns to pixels...
             centerDiameterPix = obj.um2pix(obj.centerDiameter);
-            annulusInnerDiameterPix = obj.um2pix(obj.annulusInnerDiameter);
-            annulusOuterDiameterPix = obj.um2pix(obj.annulusOuterDiameter);
+            [~, annulusInnerDiameterPix] = obj.um2pix(obj.annulusInnerDiameter);
+            [~, annulusOuterDiameterPix] = obj.um2pix(obj.annulusOuterDiameter);
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3); %create presentation of specified duration
             preFrames = round(obj.frameRate * (obj.preTime/1e3));
             
             % create shapes
-            if strcmp(obj.colorMode, '2 patterns')
+            if strcmp(obj.colorNoiseMode, '2 patterns')
                 % create background for color use
                 backgroundRect = stage.builtin.stimuli.Rectangle();
                 backgroundRect.position = canvasSize/2;
-                backgroundRect.size = canvasSize * 2;
+                backgroundRect.size = canvasSize + 10;
+                p.addStimulus(backgroundRect);
             end
                 
             if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
@@ -117,7 +122,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 surroundSpot.radiusY = annulusOuterDiameterPix/2;
                 surroundSpot.position = canvasSize/2;
                 p.addStimulus(surroundSpot);
-                %mask / annulus...
+                %mask / annulus
                 maskSpot = stage.builtin.stimuli.Ellipse();
                 maskSpot.radiusX = annulusInnerDiameterPix/2;
                 maskSpot.radiusY = annulusInnerDiameterPix/2;
@@ -135,9 +140,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 
             
             % add controllers
-            
-            
-            if strcmp(obj.colorMode, '1 pattern')
+            if strcmp(obj.colorNoiseMode, '1 pattern')
                 if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
                     surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
                         @(state)getSurroundIntensity(obj, state.frame - preFrames));
@@ -182,7 +185,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                     surroundSpotVisibleController = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
                         @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
                     p.addController(surroundSpotVisibleController);
-                end                
+                end
                 
                 % center
                 if or(strcmp(obj.currentStimulus, 'Center'), strcmp(obj.currentStimulus, 'Center-Surround'))

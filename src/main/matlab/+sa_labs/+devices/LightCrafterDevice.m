@@ -142,19 +142,22 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
 
             % BACKGROUND
-            background = stage.builtin.stimuli.Rectangle();
-            background.size = canvasSize;
-            background.position = canvasSize/2 - canvasTranslation;
             backgroundIntensity = obj.getConfigurationSetting('backgroundIntensity');
-            background.color = backgroundIntensity;
-            backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
-            background.color = backgroundIntensity;
-            if obj.getConfigurationSetting('numberOfPatterns') > 1
-                backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
-                    @(state)(1 * (state.pattern == backgroundPattern - 1)));
-                presentation.addController(backgroundPatternController);
+            if backgroundIntensity > 0 % should be a safe way to cut down on rendering time
+                background = stage.builtin.stimuli.Rectangle();
+                background.size = canvasSize;
+                background.position = canvasSize/2 - canvasTranslation;
+
+                background.color = backgroundIntensity;
+                backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
+                background.color = backgroundIntensity;
+                if obj.getConfigurationSetting('numberOfPatterns') > 1
+                    backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
+                        @(state)(1 * (state.pattern == backgroundPattern - 1)));
+                    presentation.addController(backgroundPatternController);
+                end
+                presentation.insertStimulus(1, background);
             end
-            presentation.insertStimulus(1, background);
             
             % FRAME TRACKER
             tracker = stage.builtin.stimuli.Rectangle();
