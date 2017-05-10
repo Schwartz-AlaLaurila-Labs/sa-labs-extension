@@ -10,23 +10,13 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         annulusMode = false;
         annulusInnerDiameter = 300;
         annulusOuterDiameter = 2000;
-        
-        baseIntensity1 = .2;
-        baseIntensity2 = .2;
-        
-        enableSurround = false
-        surroundDiameter = 3000
-        
+
     end
         
     properties (Hidden)   
         responsePlotMode = false;
         responsePlotSplitParameter = '';
-               
-        intensity1
-        intensity2
-        contrast1
-        contrast2
+
         sessionId
     end
     
@@ -46,11 +36,16 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
             
             switch name
-                case 'meanLevel'
+                case {'contrast1', 'contrast2'}
                     d.isHidden = true;
             end
-            
         end
+        
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
+            
+            obj.colorCombinationMode = 'contrast';
+        end        
         
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
@@ -66,7 +61,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime] + [0.005, 0],...
                 'spikeThreshold', obj.spikeThreshold, ...
                 'spikeDetectorMode', obj.spikeDetectorMode, ...
-                'baseIntensity1', obj.baseIntensity1, 'baseIntensity2', obj.baseIntensity2, ...
+                'baseIntensity1', obj.meanLevel1, 'baseIntensity2', obj.meanLevel2, ...
                 'colorNames', {obj.colorPattern1, obj.colorPattern2});
             
         end
@@ -74,13 +69,13 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
             obj.contrast1 = obj.isoResponseFigure.nextContrast1;
             obj.contrast2 = obj.isoResponseFigure.nextContrast2;
-            obj.intensity1 = obj.baseIntensity1 * (1 + obj.contrast1);
-            obj.intensity2 = obj.baseIntensity2 * (1 + obj.contrast2);
+            intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
+            intensity2 = obj.meanLevel2 * (1 + obj.contrast2);
             stimulusInfo = obj.isoResponseFigure.nextStimulusInfoOutput;
 
             epoch.addParameter('sessionId', obj.sessionId);
-            epoch.addParameter('intensity1', obj.intensity1);
-            epoch.addParameter('intensity2', obj.intensity2);
+            epoch.addParameter('intensity1', intensity1);
+            epoch.addParameter('intensity2', intensity2);
             epoch.addParameter('contrast1', obj.contrast1);
             epoch.addParameter('contrast2', obj.contrast2);
             keys = stimulusInfo.keys();
@@ -96,24 +91,6 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-            
-            function c = surroundColor(state, backgroundColor)
-                c = backgroundColor(state.pattern + 1);
-            end
-            
-            if obj.enableSurround
-                surround = stage.builtin.stimuli.Ellipse();
-                surround.color = 1;
-                surround.opacity = 1;
-                surround.radiusX = obj.um2pix(obj.surroundDiameter/2);
-                surround.radiusY = surround.radiusX;
-                surround.position = canvasSize / 2;
-                p.addStimulus(surround);
-                surroundColorController = stage.builtin.controllers.PropertyController(surround, 'color',...
-                    @(s) surroundColor(s, [obj.baseIntensity1, obj.baseIntensity2]));
-                p.addController(surroundColorController);
-            end
-            
             
             if ~obj.annulusMode
                 spotOrAnnulus = stage.builtin.stimuli.Ellipse();
@@ -140,21 +117,12 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 centerMask.position = canvasSize / 2;
                 p.addStimulus(centerMask);
                 centerMaskColorController = stage.builtin.controllers.PropertyController(centerMask, 'color',...
-                    @(s) surroundColor(s, [obj.baseIntensity1, obj.baseIntensity2]));
+                    @(s) surroundColor(s, [obj.meanLevel1, obj.meanLevel2]));
                 p.addController(centerMaskColorController);
             end
                 
-            function c = spotColor(state, onColor, backgroundColor)
-                if state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3
-                    c = onColor(state.pattern + 1);
-                else
-                    c = backgroundColor(state.pattern + 1);
-                end
-            end
-            
-            spotColorController = stage.builtin.controllers.PropertyController(spotOrAnnulus, 'color',...
-                @(s) spotColor(s, [obj.intensity1, obj.intensity2], [obj.baseIntensity1, obj.baseIntensity2]));
-            p.addController(spotColorController);
+            obj.setOnDuringStimController(p, spotOrAnnulus);
+            obj.setColorController(p, spotOrAnnulus);
             
         end
         

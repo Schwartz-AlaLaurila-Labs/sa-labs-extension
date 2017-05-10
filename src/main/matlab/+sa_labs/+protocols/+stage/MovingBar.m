@@ -11,8 +11,6 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         numberOfAngles = 12
         numberOfCycles = 2
         
-        contrast1 = 1;
-        contrast2 = 1;
     end
     
     properties (Hidden)

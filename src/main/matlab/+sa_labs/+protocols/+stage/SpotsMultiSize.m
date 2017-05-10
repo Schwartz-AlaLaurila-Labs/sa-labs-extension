@@ -77,13 +77,7 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
            
-            function c = onDuringStim(state, preTime, stimTime)
-                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
-            end
-                        
-            controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
-                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
-            p.addController(controller);
+            obj.setOnDuringStimController(p, spot);
                         
             % shared code for multi-pattern objects
             obj.setColorController(p, spot);

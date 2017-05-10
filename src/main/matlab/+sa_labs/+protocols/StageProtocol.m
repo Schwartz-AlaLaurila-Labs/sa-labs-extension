@@ -302,7 +302,17 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     p.addController(patternController);
                 end
             end
-        end        
+        end
+        
+        function setOnDuringStimController(obj, p, stageObject)
+            function c = onDuringStim(state, preTime, stimTime)
+                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
+            end
+            
+            controller = stage.builtin.controllers.PropertyController(stageObject, 'opacity', ...
+                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
+            p.addController(controller);
+        end
         
         function RstarMean = get.RstarMean(obj)
             props = {'meanLevel'};
