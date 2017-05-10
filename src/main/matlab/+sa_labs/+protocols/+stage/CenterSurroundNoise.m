@@ -5,20 +5,17 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         
     properties
         preTime = 500 % ms
-        stimTime = 30000 % ms
+        stimTime = 10000 % ms
         tailTime = 500 % ms
         centerDiameter = 150 % um
         annulusInnerDiameter = 300 % um
         annulusOuterDiameter = 600 % um
         frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
-        contrastValues = 1 %contrast, as fraction of mean
+        contrastValues = 10000000000 %contrast, as fraction of mean (set very high for binary noise)
         seedStartValue = 1
         seedChangeMode = 'repeat only';
         locationMode = 'Center';
         colorNoiseMode = '1 pattern';
-        
-        colorMeanIntensity1 = 0.5;
-        colorMeanIntensity2 = 0.5;
 
         numberOfEpochs = uint16(30) % number of epochs to queue
     end
@@ -48,13 +45,13 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     methods
         
         function prepareRun(obj)
-            if obj.meanLevel == 0
+            if obj.numberOfPatterns == 1 && obj.meanLevel == 0
                 warning('Mean Level must be greater than 0 for this to work');
             end
             
             prepareRun@sa_labs.protocols.StageProtocol(obj);
         end
-        
+                
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
@@ -78,7 +75,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
 %             else
 %                 contrastIndex = 1;
 %             end
-            obj.currentContrast = obj.contrastValues(1);
+            obj.currentContrast = obj.contrastValues(1); % cycle later
             
             obj.centerNoiseSeed = seed;
             fprintf('Using center seed %g\n', obj.centerNoiseSeed);
@@ -107,13 +104,6 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             preFrames = round(obj.frameRate * (obj.preTime/1e3));
             
             % create shapes
-            if strcmp(obj.colorNoiseMode, '2 patterns')
-                % create background for color use
-                backgroundRect = stage.builtin.stimuli.Rectangle();
-                backgroundRect.position = canvasSize/2;
-                backgroundRect.size = canvasSize + 10;
-                p.addStimulus(backgroundRect);
-            end
                 
             if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
                 surroundSpot = stage.builtin.stimuli.Ellipse();
@@ -162,16 +152,11 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             else
                 
                 % 2 pattern controllers:
-            
-                % background rect
-                backgroundRectColorController = stage.builtin.controllers.PropertyController(backgroundRect, 'color',...
-                    @(s) colorPatternLookup(s, [obj.colorMeanIntensity1, obj.colorMeanIntensity2]));
-                p.addController(backgroundRectColorController);
                                 
                 % mask spot
                 if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
                     maskSpotColorController = stage.builtin.controllers.PropertyController(maskSpot, 'color',...
-                        @(s) colorPatternLookup(s, [obj.colorMeanIntensity1, obj.colorMeanIntensity2]));
+                        @(s) colorPatternLookup(s, [obj.meanLevel1, obj.meanLevel2]));
                     p.addController(maskSpotColorController);
                 end
                 
@@ -234,9 +219,9 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             function i = getCenterIntensity2Pattern(obj, frame, pattern)
                 persistent intensity;
                 if pattern == 0
-                    mn = obj.colorMeanIntensity1;
+                    mn = obj.meanLevel1;
                 else
-                    mn = obj.colorMeanIntensity2;
+                    mn = obj.meanLevel2;
                 end
                 
                 if frame<0 %pre frames. frame 0 starts stimPts
@@ -253,9 +238,9 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             function i = getSurroundIntensity2Pattern(obj, frame, pattern)
                 persistent intensity;
                 if pattern == 0
-                    mn = obj.colorMeanIntensity1;
+                    mn = obj.meanLevel1;
                 else
-                    mn = obj.colorMeanIntensity2;
+                    mn = obj.meanLevel2;
                 end
                 
                 if frame<0 %pre frames. frame 0 starts stimPts

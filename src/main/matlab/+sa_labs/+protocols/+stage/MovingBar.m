@@ -71,34 +71,12 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(state)movementController(state));
             p.addController(barMovement);
             
-            function c = patternSelect(state, activePatternNumber)
-                c = 1 * (state.pattern == activePatternNumber - 1);
-            end
             
-            if obj.numberOfPatterns > 1
-                if strcmp(obj.colorCombinationMode, 'replace')
-                    pattern = obj.primaryObjectPattern;
-                    patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
-                        @(s)(obj.intensity * patternSelect(s, pattern)));
-                    p.addController(patternController);
-                elseif strcmp(obj.colorCombinationMode, 'add')
-                    pattern = obj.primaryObjectPattern;
-                    bgPattern = obj.backgroundPattern;
-                    patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
-                        @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
-                    p.addController(patternController);
-                else
-                    % two-color contrast mode
-                    intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
-                    intensity2 = obj.meanLevel2 * (1 + obj.contrast2);
-                    patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
-                        @(s)(intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)));
-                    p.addController(patternController);
-                end
-            end
+            % shared code for multi-pattern objects
+            obj.setColorController(p, bar);
             
         end
-        
+                
         function prepareEpoch(obj, epoch)
             
             index = mod(obj.numEpochsPrepared, obj.numberOfAngles);

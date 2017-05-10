@@ -56,7 +56,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundPatternMode', 'noPattern');
-            obj.addConfigurationSetting('backgroundIntensity', 0);
+            obj.addConfigurationSetting('backgroundIntensity', 0); % also pattern 1 if contrast mode
+            obj.addConfigurationSetting('backgroundIntensity2', 0)
             obj.addConfigurationSetting('backgroundPattern', 1);
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', 0);
@@ -132,7 +133,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
                     obj.setConfigurationSetting('backgroundPattern', b)
                     
                 case 'twoPattern'
-                    obj.setConfigurationSetting('backgroundIntensity', [a, b])
+                    obj.setConfigurationSetting('backgroundIntensity', a)
+                    obj.setConfigurationSetting('backgroundIntensity2', b)
             end
             
         end
@@ -174,7 +176,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
                     presentation.addController(backgroundPatternController);
                     
                 case 'twoPattern'
-                    [intensity1, intensity2] = obj.getConfigurationSetting('backgroundIntensity')
+                    intensity1 = obj.getConfigurationSetting('backgroundIntensity');
+                    intensity2 = obj.getConfigurationSetting('backgroundIntensity2');
                     backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
                         @(state)(intensity1 * patternSelect(state, 1) + intensity2 * patternSelect(state, 2)));
                     presentation.addController(backgroundPatternController);
