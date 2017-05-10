@@ -5,7 +5,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         stimTime = 500                  % Spot duration (ms)
         tailTime = 1500                 % Spot trailing duration (ms)
         
-        spotDiameter = 2000
+        spotDiameter = 130
         
         annulusMode = false;
         annulusInnerDiameter = 300;

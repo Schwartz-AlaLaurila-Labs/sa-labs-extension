@@ -21,7 +21,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         primaryObjectPattern = 1
         secondaryObjectPattern = 1
         backgroundPattern = 2
-        colorCombinationMode = 'add'
+        colorCombinationMode = 'contrast'
     end
     
     properties (Dependent)
@@ -234,7 +234,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
                 epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
             end
-            
+                        
         end
        
             
@@ -301,6 +301,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                         @(s)(intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)));
                     p.addController(patternController);
                 end
+            else
+                stageObject.color = obj.intensity; % wasn't life simpler back then?
             end
         end
         
