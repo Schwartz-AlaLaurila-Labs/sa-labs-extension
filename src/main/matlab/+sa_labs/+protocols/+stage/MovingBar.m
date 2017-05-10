@@ -10,6 +10,9 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         distance = 3000                 % Bar distance (um)
         numberOfAngles = 12
         numberOfCycles = 2
+        
+        contrast1 = 1;
+        contrast2 = 1;
     end
     
     properties (Hidden)
@@ -70,7 +73,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             
             function c = patternSelect(state, activePatternNumber)
                 c = 1 * (state.pattern == activePatternNumber - 1);
-            end            
+            end
             
             if obj.numberOfPatterns > 1
                 if strcmp(obj.colorCombinationMode, 'replace')
@@ -78,11 +81,18 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
                     patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
                         @(s)(obj.intensity * patternSelect(s, pattern)));
                     p.addController(patternController);
-                else % add
+                elseif strcmp(obj.colorCombinationMode, 'add')
                     pattern = obj.primaryObjectPattern;
                     bgPattern = obj.backgroundPattern;
                     patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
                         @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
+                    p.addController(patternController);
+                else
+                    % two-color contrast mode
+                    intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
+                    intensity2 = obj.meanLevel2 * (1 + obj.contrast2);
+                    patternController = stage.builtin.controllers.PropertyController(bar, 'color', ...
+                        @(s)(intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)));
                     p.addController(patternController);
                 end
             end

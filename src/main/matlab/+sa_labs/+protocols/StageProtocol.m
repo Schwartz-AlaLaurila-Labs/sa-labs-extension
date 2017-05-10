@@ -3,6 +3,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
     properties
         meanLevel = 0.0     % Background light intensity (0-1)
+        meanLevel1 = 0.5
+        meanLevel2 = 0.5
         offsetX = 0         % um
         offsetY = 0         % um
         
@@ -42,7 +44,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
-        colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace'});
+        colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace','contrast'});
         forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','pr on','pr off'});
 
         colorMode = '';
@@ -84,6 +86,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                         'prerender','forcePrerender'}
                     d.category = '8 Color';
                 
+                case {'meanLevel1','meanLevel2','contrast1','contrast2'}
+                    if obj.numberOfPatterns == 1
+                        d.isHidden = true;
+                    end
+                    
                 case {'colorCombinationMode','primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
                     if obj.numberOfPatterns == 1
                         d.isHidden = true;
@@ -171,18 +178,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     filterWheel.setNdfValue(obj.NDF);
                 end
             end
-            
-            % check for pattern setting correctness
-%             if obj.numberOfPatterns >= 2
-%                 if ~obj.prerender
-%                     error('Must have prerender enabled to use multiple patterns')
-%                 end
-%             end
-            
+                        
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
-                lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
+                if obj.numberOfPatterns > 1
+                    if strcmp(obj.colorCombinationMode, 'contrast')
+                        lightCrafter.setBackground('twoPattern', obj.meanLevel1, obj.meanLevel2);
+                    else
+                        lightCrafter.setBackground('singlePattern', obj.meanLevel, obj.backgroundPattern);
+                    end
+                else
+                    lightCrafter.setBackground('noPattern', obj.meanLevel);
+                end
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
