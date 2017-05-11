@@ -55,7 +55,9 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('frameTrackerDuration', inf);
             obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
-            obj.addConfigurationSetting('backgroundIntensity', 0);
+            obj.addConfigurationSetting('backgroundPatternMode', 'noPattern');
+            obj.addConfigurationSetting('backgroundIntensity', 0); % also pattern 1 if contrast mode
+            obj.addConfigurationSetting('backgroundIntensity2', 0)
             obj.addConfigurationSetting('backgroundPattern', 1);
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', 0);
@@ -119,9 +121,22 @@ classdef LightCrafterDevice < symphonyui.core.Device
             r = obj.getConfigurationSetting('monitorRefreshRate');
         end
         
-        function setBackground(obj, i, p)
-            obj.setConfigurationSetting('backgroundIntensity', i)
-            obj.setConfigurationSetting('backgroundPattern', p)
+        function setBackground(obj, mode, a, b)
+            obj.setConfigurationSetting('backgroundPatternMode', mode)
+            
+            switch mode
+                case 'noPattern'
+                    obj.setConfigurationSetting('backgroundIntensity', a)
+                    
+                case 'singlePattern'
+                    obj.setConfigurationSetting('backgroundIntensity', a)
+                    obj.setConfigurationSetting('backgroundPattern', b)
+                    
+                case 'twoPattern'
+                    obj.setConfigurationSetting('backgroundIntensity', a)
+                    obj.setConfigurationSetting('backgroundIntensity2', b)
+            end
+            
         end
                 
         function tf = getPrerender(obj)
@@ -142,22 +157,37 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
 
             % BACKGROUND
-            backgroundIntensity = obj.getConfigurationSetting('backgroundIntensity');
-            if backgroundIntensity > 0 % should be a safe way to cut down on rendering time
-                background = stage.builtin.stimuli.Rectangle();
-                background.size = canvasSize;
-                background.position = canvasSize/2 - canvasTranslation;
-
-                background.color = backgroundIntensity;
-                backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
-                background.color = backgroundIntensity;
-                if obj.getConfigurationSetting('numberOfPatterns') > 1
+            
+            background = stage.builtin.stimuli.Rectangle();
+            background.size = canvasSize;
+            background.position = canvasSize/2 - canvasTranslation;
+            background.opacity = 1;
+            mode = obj.getConfigurationSetting('backgroundPatternMode');
+            
+            switch mode
+                case 'noPattern'
+                    background.color = obj.getConfigurationSetting('backgroundIntensity');
+                    
+                case 'singlePattern'
+                    background.color = obj.getConfigurationSetting('backgroundIntensity');
+                    backgroundPattern = obj.getConfigurationSetting('backgroundPattern');
                     backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
-                        @(state)(1 * (state.pattern == backgroundPattern - 1)));
+                        @(state)(patternSelect(state, backgroundPattern)));
                     presentation.addController(backgroundPatternController);
-                end
-                presentation.insertStimulus(1, background);
+                    
+                case 'twoPattern'
+                    intensity1 = obj.getConfigurationSetting('backgroundIntensity');
+                    intensity2 = obj.getConfigurationSetting('backgroundIntensity2');
+                    backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
+                        @(state)(intensity1 * patternSelect(state, 1) + intensity2 * patternSelect(state, 2)));
+                    presentation.addController(backgroundPatternController);
             end
+            
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
+            end            
+
+            presentation.insertStimulus(1, background);
             
             % FRAME TRACKER
             tracker = stage.builtin.stimuli.Rectangle();

@@ -3,6 +3,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
     properties
         meanLevel = 0.0     % Background light intensity (0-1)
+        meanLevel1 = 0.5    % background intensity value pattern 1
+        meanLevel2 = 0.5    % background intensity value pattern 2
+        contrast1 = 1       % weber contrast from mean for object, color 1
+        contrast2 = 1       % weber contrast from mean for object, color 2
         offsetX = 0         % um
         offsetY = 0         % um
         
@@ -17,7 +21,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         primaryObjectPattern = 1
         secondaryObjectPattern = 1
         backgroundPattern = 2
-        colorCombinationMode = 'add'
+        colorCombinationMode = 'contrast'
     end
     
     properties (Dependent)
@@ -42,8 +46,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
-        colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace'});
-        forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','pr on','pr off'});
+        colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace','contrast'});
+        forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','prerender on','prerender off'});
 
         colorMode = '';
         filterWheelNdfValues
@@ -61,8 +65,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             d = getPropertyDescriptor@sa_labs.protocols.BaseProtocol(obj, name);
             
             switch name
-%                 case {'meanLevel', 'intensity'}
-%                     d.category = '1 Basic';
+                case {'meanLevel', 'intensity'}
+                    if obj.numberOfPatterns > 1
+                        if strcmp(obj.colorCombinationMode, 'contrast')
+                            d.isHidden = true;
+                        end
+                    end
                     
                 case {'offsetX','offsetY','NDF','blueLED','greenLED'}
                     d.category = '7 Projector';
@@ -84,8 +92,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                         'prerender','forcePrerender'}
                     d.category = '8 Color';
                 
-                case {'colorCombinationMode','primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
+                case {'meanLevel1','meanLevel2','contrast1','contrast2'}
+                    if obj.numberOfPatterns == 1 || ~strcmp(obj.colorCombinationMode, 'contrast')
+                        d.isHidden = true;
+                    end
+                    
+                case {'colorCombinationMode'}
                     if obj.numberOfPatterns == 1
+                        d.isHidden = true;
+                    end
+                    d.category = '8 Color';
+                    
+                case {'primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
+                    if obj.numberOfPatterns == 1 || logical(strcmp(obj.colorCombinationMode, 'contrast'))
                         d.isHidden = true;
                     end
                     d.category = '8 Color';
@@ -171,18 +190,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     filterWheel.setNdfValue(obj.NDF);
                 end
             end
-            
-            % check for pattern setting correctness
-%             if obj.numberOfPatterns >= 2
-%                 if ~obj.prerender
-%                     error('Must have prerender enabled to use multiple patterns')
-%                 end
-%             end
-            
+                        
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
-                lightCrafter.setBackground(obj.meanLevel, obj.backgroundPattern);
+                if obj.numberOfPatterns > 1
+                    if strcmp(obj.colorCombinationMode, 'contrast')
+                        lightCrafter.setBackground('twoPattern', obj.meanLevel1, obj.meanLevel2);
+                    else
+                        lightCrafter.setBackground('singlePattern', obj.meanLevel, obj.backgroundPattern);
+                    end
+                else
+                    lightCrafter.setBackground('noPattern', obj.meanLevel);
+                end
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
@@ -214,7 +234,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
                 epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
             end
-            
+                        
         end
        
             
@@ -249,6 +269,52 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
     
+        % shared controller setup code for multi-pattern objects
+        function setColorController(obj, p, stageObject)
+            
+            function c = patternSelect(state, activePatternNumber)
+                c = 1 * (state.pattern == activePatternNumber - 1);
+            end
+            
+            if obj.numberOfPatterns > 1
+                % replace mode uses the intensity value and 
+                % puts the object on a separate pattern, with 0 on the background pattern
+                if strcmp(obj.colorCombinationMode, 'replace')
+                    pattern = obj.primaryObjectPattern;
+                    patternController = stage.builtin.controllers.PropertyController(stageObject, 'color', ...
+                        @(s)(obj.intensity * patternSelect(s, pattern)));
+                    p.addController(patternController);
+                    
+                % add mode uses the intensity value on one pattern,
+                % but keeps the object on at the meanLevel at the other pattern    
+                elseif strcmp(obj.colorCombinationMode, 'add')
+                    pattern = obj.primaryObjectPattern;
+                    bgPattern = obj.backgroundPattern;
+                    patternController = stage.builtin.controllers.PropertyController(stageObject, 'color', ...
+                        @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
+                    p.addController(patternController);
+                else
+                    % two-color contrast mode has separate intensity values as weber contrast of the mean
+                    intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
+                    intensity2 = obj.meanLevel2 * (1 + obj.contrast2);
+                    patternController = stage.builtin.controllers.PropertyController(stageObject, 'color', ...
+                        @(s)(intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)));
+                    p.addController(patternController);
+                end
+            else
+                stageObject.color = obj.intensity; % wasn't life simpler back then?
+            end
+        end
+        
+        function setOnDuringStimController(obj, p, stageObject)
+            function c = onDuringStim(state, preTime, stimTime)
+                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
+            end
+            
+            controller = stage.builtin.controllers.PropertyController(stageObject, 'opacity', ...
+                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
+            p.addController(controller);
+        end
         
         function RstarMean = get.RstarMean(obj)
             props = {'meanLevel'};
@@ -261,37 +327,37 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
     
         function RstarIntensity = get.RstarIntensity1(obj)
-            props = {'intensity','baseIntensity1','intensity1','colorMeanIntensity1'};
+            props = {'intensity','baseIntensity1','intensity1','meanLevel1'};
             pattern = 1;
             [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
         end
         
         function MstarIntensity = get.MstarIntensity1(obj)
-            props = {'intensity','baseIntensity1','intensity1','colorMeanIntensity1'};
+            props = {'intensity','baseIntensity1','intensity1','meanLevel1'};
             pattern = 1;
             [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
         end
         
         function SstarIntensity = get.SstarIntensity1(obj)
-            props = {'intensity','baseIntensity1','intensity1','colorMeanIntensity1'};
+            props = {'intensity','baseIntensity1','intensity1','meanLevel1'};
             pattern = 1;
             [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
         end
         
         function RstarIntensity = get.RstarIntensity2(obj)
-            props = {'baseIntensity2','intensity2','meanLevel','colorMeanIntensity2'};
+            props = {'baseIntensity2','intensity2','meanLevel2','meanLevel'};
             pattern = 2;
             [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
         end
         
         function MstarIntensity = get.MstarIntensity2(obj)
-            props = {'baseIntensity2','intensity2','meanLevel','colorMeanIntensity2'};
+            props = {'baseIntensity2','intensity2','meanLevel2','meanLevel'};
             pattern = 2;
             [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
         end
         
         function SstarIntensity = get.SstarIntensity2(obj)
-            props = {'baseIntensity2','intensity2','meanLevel','colorMeanIntensity2'};
+            props = {'baseIntensity2','intensity2','meanLevel2','meanLevel'};
             pattern = 2;
             [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
         end
