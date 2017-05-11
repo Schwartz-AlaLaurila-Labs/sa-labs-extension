@@ -196,12 +196,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 lightCrafter = obj.rig.getDevice('LightCrafter');
                 if obj.numberOfPatterns > 1
                     if strcmp(obj.colorCombinationMode, 'contrast')
-                        lightCrafter.setBackground('twoPattern', obj.meanLevel1, obj.meanLevel2);
+                        lightCrafter.setBackgroundConfiguration('twoPattern', obj.meanLevel1, obj.meanLevel2);
                     else
-                        lightCrafter.setBackground('singlePattern', obj.meanLevel, obj.backgroundPattern);
+                        lightCrafter.setBackgroundConfiguration('singlePattern', obj.meanLevel, obj.backgroundPattern);
                     end
                 else
-                    lightCrafter.setBackground('noPattern', obj.meanLevel);
+                    lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
                 end
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
