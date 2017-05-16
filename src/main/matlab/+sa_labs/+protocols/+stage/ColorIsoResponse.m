@@ -117,7 +117,8 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 centerMask.position = canvasSize / 2;
                 p.addStimulus(centerMask);
                 centerMaskColorController = stage.builtin.controllers.PropertyController(centerMask, 'color',...
-                    @(s) surroundColor(s, [obj.meanLevel1, obj.meanLevel2]));
+                  @(state)(obj.meanLevel1 * (state.pattern == 0) + obj.meanLevel2 * (state.pattern == 1)));
+                
                 p.addController(centerMaskColorController);
             end
                 
