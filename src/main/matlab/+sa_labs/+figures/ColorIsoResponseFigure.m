@@ -182,7 +182,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'String', 'Lead w/ null',...
                         'Parent', obj.handles.actionButtonBox);
             obj.handles.repeatStimCheckbox = uicontrol('Style', 'checkbox', ...
-                        'Value', false, ...
+                        'Value', true, ...
                         'String', 'Repeat added stim',...
                         'Parent', obj.handles.actionButtonBox);
                     
@@ -361,6 +361,10 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             int = hit.IntersectionPoint;
             c1 = int(1);
             c2 = int(2);
+            
+            np = obj.clipPoints([c1,c2])
+            c1 = np(1);
+            c2 = np(2);
             newPoints = [];
             newInfo = {};
             
@@ -528,27 +532,32 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.addToStimulusWithRepeats(points);
         end        
         
+        function newPoints = clipPoints(obj, newPoints)
+            % move invalid points within bounds
+            for i = 1:size(newPoints,1)
+                if newPoints(i,1) < obj.contrastRange1(1)
+                    newPoints(i,1) = obj.contrastRange1(1);
+                end
+                if newPoints(i,1) > obj.contrastRange1(2)
+                    newPoints(i,1) = obj.contrastRange1(2);
+                end
+                if newPoints(i,2) < obj.contrastRange2(1)
+                    newPoints(i,2) = obj.contrastRange2(1);
+                end
+                if newPoints(i,2) > obj.contrastRange2(2)
+                    newPoints(i,2) = obj.contrastRange2(2);
+                end
+            end
+        end
+        
         % unified function for adding points to the next stim list
         function addToStimulusWithRepeats(obj, newPoints, newInfo)
             if ~isempty(newPoints)
                 % remove duplicates
                 newPoints = unique(newPoints, 'rows');
                 
-                % move invalid points within bounds
-                for i = 1:size(newPoints,1)
-                    if newPoints(i,1) < obj.contrastRange1(1)
-                        newPoints(i,1) = obj.contrastRange1(1);
-                    end
-                    if newPoints(i,1) > obj.contrastRange1(2)
-                        newPoints(i,1) = obj.contrastRange1(2);
-                    end
-                    if newPoints(i,2) < obj.contrastRange2(1)
-                        newPoints(i,2) = obj.contrastRange2(1);
-                    end
-                    if newPoints(i,2) > obj.contrastRange2(2)
-                        newPoints(i,2) = obj.contrastRange2(2);
-                    end
-                end
+                newPoints = obj.clipPoints(newPoints);
+                
                 
                 % setup repeats
                 if obj.handles.repeatStimCheckbox.Value
