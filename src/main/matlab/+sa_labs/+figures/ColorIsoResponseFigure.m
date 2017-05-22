@@ -354,17 +354,26 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function generateNextStimulusPoint(obj)
             obj.isoPlotClickMode = 'newpoint';
             obj.isoPlotClickCountRemaining = 1;
+            obj.isoPlotClickHistory = [];
         end
         
         function generateNextStimulusLine(obj)
             obj.isoPlotClickMode = 'newline';
             obj.isoPlotClickCountRemaining = 2;
+            obj.isoPlotClickHistory = [];
         end
         
         function generateNextStimulusGrid(obj)
             obj.isoPlotClickMode = 'newgrid';
             obj.isoPlotClickCountRemaining = 2;
+            obj.isoPlotClickHistory = [];
         end
+        
+        function generateRamps(obj)    
+            obj.isoPlotClickMode = 'ramps';
+            obj.isoPlotClickCountRemaining = 1;            
+            obj.isoPlotClickHistory = [];
+        end        
         
         function clickIsoPlot(obj, ~, hit)
             int = hit.IntersectionPoint;
@@ -490,15 +499,12 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             if obj.isoPlotClickCountRemaining > 0
                 obj.updateUi();
+            else
+                obj.isoPlotClickHistory = [];
             end
         end
         
-        function generateRamps(obj)    
-            
-            obj.isoPlotClickMode = 'ramps';
-            obj.isoPlotClickCountRemaining = 1;            
 
-        end
         
         function addSelectedPoint(obj)
             obj.addToStimulusWithRepeats(obj.selectedPoint);
@@ -604,17 +610,15 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         end
         
         function savePoints(obj)
-            if size(obj.pointData, 1) < n
+            if isempty(obj.pointData)
                 return
             end
             points = obj.pointData(:,1:2); %#ok<NASGU>
             save('colorIsoPointsSaveFile','points');
+            fprintf('Saved %g points to colorIsoPointsSaveFile.mat\n', size(obj.pointData, 1));
         end
         
         function loadPoints(obj)
-            if size(obj.pointData, 1) < n
-                return
-            end
             if ~exist('colorIsoPointsSaveFile.mat', 'file')
                 disp('cannot find colorIsoPointsSaveFile')
                 return
@@ -722,7 +726,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             % next stimulus points
             if ~isempty(obj.nextStimulus)
                 scatter(obj.handles.isoAxes, obj.nextStimulus(:,1), obj.nextStimulus(:,2), 60, 'CData', [1,1,1], ...
-                    'LineWidth', 2, 'MarkerEdgeColor', 'k', 'Marker', 'x')
+                    'LineWidth', 2, 'MarkerEdgeColor', 'k', 'Marker', 'x', 'PickableParts', 'none')
             end
             
             % plot click points
