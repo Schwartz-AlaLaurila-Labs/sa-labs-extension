@@ -189,9 +189,18 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             uicontrol('Style', 'pushbutton', ...
                         'String', 'Resume', 'FontWeight', 'bold', 'FontSize', 16, ...
                         'Parent', obj.handles.actionButtonBox,...
-                        'Callback', @(a,b) obj.resumeProtocol());                    
+                        'Callback', @(a,b) obj.resumeProtocol());
                     
             obj.handles.figureBox.Widths = [300, -1, 100];
+            
+            % menu bar
+            obj.handles.menuPointLoading = uimenu(obj.figureHandle, 'Label','Point loading');
+            obj.handles.menuPointLoading_save = uimenu(obj.handles.menuPointLoading,...
+                                'Label','Save points', ...
+                                'Callback', @(a,b) obj.savePoints());
+            obj.handles.menuPointLoading_load = uimenu(obj.handles.menuPointLoading,...
+                                'Label','Load points', ...
+                                'Callback', @(a,b) obj.loadPoints());
         end
         
         
@@ -362,7 +371,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             c1 = int(1);
             c2 = int(2);
             
-            np = obj.clipPoints([c1,c2])
+            np = obj.clipPoints([c1,c2]);
             c1 = np(1);
             c2 = np(2);
             newPoints = [];
@@ -569,7 +578,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 if nargin < 3
                     newInfo = {};
                     for i = 1:size(newPoints,1)
-                        newInfo{i,1} = containers.Map({'stimulusMode'},{'default'},'UniformValues',false);
+                        newInfo{i,1} = containers.Map({'stimulusMode'},{'default'},'UniformValues',false); %#ok<*AGROW>
                     end
                 end
                 for i = 1:count
@@ -594,6 +603,26 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.updateUi();
         end
         
+        function savePoints(obj)
+            if size(obj.pointData, 1) < n
+                return
+            end
+            points = obj.pointData(:,1:2); %#ok<NASGU>
+            save('colorIsoPointsSaveFile','points');
+        end
+        
+        function loadPoints(obj)
+            if size(obj.pointData, 1) < n
+                return
+            end
+            if ~exist('colorIsoPointsSaveFile.mat', 'file')
+                disp('cannot find colorIsoPointsSaveFile')
+                return
+            end
+            l = load('colorIsoPointsSaveFile');
+            obj.addToStimulusWithRepeats(l.points);
+        end
+        
         function resumeProtocol(obj)
             if isempty(obj.nextStimulus)
                 disp('empty stimulus list!')
@@ -605,8 +634,10 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
         function waitIfNecessary(obj)
             if isempty(obj.nextStimulus)
                 disp('waiting for input')
+                set(obj.figureHandle, 'Name', 'Color Response Figure: RUN PAUSED');
                 obj.runPausedSoMayNeedNullEpoch = true;
                 uiwait(obj.figureHandle);
+                set(obj.figureHandle, 'Name', 'Color Response Figure');
             end
         end
             

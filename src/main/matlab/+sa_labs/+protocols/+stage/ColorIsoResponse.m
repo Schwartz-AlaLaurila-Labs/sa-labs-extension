@@ -3,7 +3,7 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     properties
         preTime = 500                  % Spot leading duration (ms)
         stimTime = 500                  % Spot duration (ms)
-        tailTime = 1500                 % Spot trailing duration (ms)
+        tailTime = 1000                 % Spot trailing duration (ms)
         
         spotDiameter = 130
         
