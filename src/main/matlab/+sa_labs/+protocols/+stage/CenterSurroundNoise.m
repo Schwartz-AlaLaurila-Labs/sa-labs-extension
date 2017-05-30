@@ -5,19 +5,19 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         
     properties
         preTime = 500 % ms
-        stimTime = 10000 % ms
+        stimTime = 20000 % ms
         tailTime = 500 % ms
         centerDiameter = 150 % um
         annulusInnerDiameter = 300 % um
-        annulusOuterDiameter = 600 % um
+        annulusOuterDiameter = 2000 % um
         frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
-        contrastValues = 10000000000 %contrast, as fraction of mean (set very high for binary noise)
+        contrast = 10 %contrast, as fraction of mean (set high for binary noise)
         seedStartValue = 1
         seedChangeMode = 'repeat only';
         locationMode = 'Center';
         colorNoiseMode = '1 pattern';
 
-        numberOfEpochs = uint16(30) % number of epochs to queue
+        numberOfEpochs = uint16(60) % number of epochs to queue
     end
 
     properties (Hidden)
@@ -32,7 +32,6 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
         centerNoiseStream
         surroundNoiseStream
         currentStimulus
-        currentContrast
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'centerNoiseSeed';
@@ -43,6 +42,17 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
     end
     
     methods
+        
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case {'contrast'}
+                    if obj.numberOfPatterns > 1
+                        d.isHidden = true;
+                    end
+            end
+        end        
         
         function prepareRun(obj)
             if obj.numberOfPatterns == 1 && obj.meanLevel == 0
@@ -75,7 +85,6 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
 %             else
 %                 contrastIndex = 1;
 %             end
-            obj.currentContrast = obj.contrastValues(1); % cycle later
             
             obj.centerNoiseSeed = seed;
             fprintf('Using center seed %g\n', obj.centerNoiseSeed);
@@ -194,7 +203,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
                         intensity = obj.meanLevel + ... 
-                            obj.currentContrast * obj.meanLevel * obj.centerNoiseStream.randn;
+                            obj.contrast * obj.meanLevel * obj.centerNoiseStream.randn;
                     end
                 end
                 
@@ -208,7 +217,7 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
                         intensity = obj.meanLevel + ... 
-                            obj.currentContrast * obj.meanLevel * obj.surroundNoiseStream.randn;
+                            obj.contrast * obj.meanLevel * obj.surroundNoiseStream.randn;
                     end
                 end
           
@@ -220,15 +229,17 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 persistent intensity;
                 if pattern == 0
                     mn = obj.meanLevel1;
+                    c = obj.contrast1;
                 else
                     mn = obj.meanLevel2;
+                    c = obj.contrast2;
                 end
                 
                 if frame<0 %pre frames. frame 0 starts stimPts
                     intensity = mn;
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = mn + obj.currentContrast * mn * obj.centerNoiseStream.randn;
+                        intensity = mn + c * mn * obj.centerNoiseStream.randn;
                     end
                 end
           
@@ -239,15 +250,17 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 persistent intensity;
                 if pattern == 0
                     mn = obj.meanLevel1;
+                    c = obj.contrast1;
                 else
                     mn = obj.meanLevel2;
+                    c = obj.contrast2;
                 end
                 
                 if frame<0 %pre frames. frame 0 starts stimPts
                     intensity = mn;
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = mn + obj.currentContrast * mn * obj.surroundNoiseStream.randn;
+                        intensity = mn + c * mn * obj.surroundNoiseStream.randn;
                     end
                 end
           
