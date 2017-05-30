@@ -201,6 +201,14 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.handles.menuPointLoading_load = uimenu(obj.handles.menuPointLoading,...
                                 'Label','Load points', ...
                                 'Callback', @(a,b) obj.loadPoints());
+                            
+            obj.handles.queueManipulation = uimenu(obj.figureHandle, 'Label','Queue manipulation');
+            obj.handles.menuPointLoading_save = uimenu(obj.handles.queueManipulation,...
+                                'Label','Flip Queue in C1', ...
+                                'Callback', @(a,b) obj.flipQueueC1());
+            obj.handles.menuPointLoading_load = uimenu(obj.handles.queueManipulation,...
+                                'Label','Flip Queue in C2', ...
+                                'Callback', @(a,b) obj.flipQueueC2());
         end
         
         
@@ -608,22 +616,25 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             obj.nextStimulusInfo = {};
             obj.updateUi();
         end
+         
         
         function savePoints(obj)
             if isempty(obj.pointData)
                 return
             end
             points = obj.pointData(:,1:2); %#ok<NASGU>
-            save('colorIsoPointsSaveFile','points');
-            fprintf('Saved %g points to colorIsoPointsSaveFile.mat\n', size(obj.pointData, 1));
+            [filename, pathname] = uiputfile('*.mat');
+            save(fullfile(pathname,filename),'points');
+            fprintf('Saved %g points to %s\n', size(obj.pointData, 1), filename);
         end
         
         function loadPoints(obj)
-            if ~exist('colorIsoPointsSaveFile.mat', 'file')
+            filename = uigetfile();
+            if ~exist(filename, 'file')
                 disp('cannot find colorIsoPointsSaveFile')
                 return
             end
-            l = load('colorIsoPointsSaveFile');
+            l = load(filename);
             obj.addToStimulusWithRepeats(l.points);
         end
         
@@ -632,6 +643,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 disp('empty stimulus list!')
             else
                 uiresume(obj.figureHandle);
+                set(obj.figureHandle, 'Name', 'Color Response Figure');
             end
         end
         
@@ -641,7 +653,6 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                 set(obj.figureHandle, 'Name', 'Color Response Figure: RUN PAUSED');
                 obj.runPausedSoMayNeedNullEpoch = true;
                 uiwait(obj.figureHandle);
-                set(obj.figureHandle, 'Name', 'Color Response Figure');
             end
         end
             
