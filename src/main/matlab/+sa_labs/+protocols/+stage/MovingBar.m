@@ -18,7 +18,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         angles                          % Moving bar with Number of angles range between [0 - 360]
         barAngle                        % Moving bar angle for the current epoch @see prepareEpoch 
         
-        responsePlotMode = 'polar';
+        responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'barAngle';
     end
     
