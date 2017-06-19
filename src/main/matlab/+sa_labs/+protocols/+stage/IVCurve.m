@@ -2,16 +2,16 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         
     properties
         
-        preTime = 250	% Spot leading duration (ms)
+        preTime = 500	% Spot leading duration (ms)
         stimTime = 1000	% Spot duration (ms)
-        tailTime = 250	% Spot trailing duration (ms)
+        tailTime = 1000	% Spot trailing duration (ms)
         
         %mean (bg) and amplitude of pulse
         intensity = 0.5; %make it contrast instead?
         
         spotSize = 200; %microns
         
-        holdSignalMin = -100 %mV
+        holdSignalMin = -90 %mV
         holdSignalMax = 40; %mV
         numberOfHoldSignalSteps = 10;
         
@@ -26,7 +26,7 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         version = 2
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = '';
+        responsePlotSplitParameter = 'holdSignal';
     end
     
     properties (Hidden, Dependent)
@@ -46,42 +46,40 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
             % Randomize sizes if this is a new set
             index = mod(obj.numEpochsPrepared, obj.numberOfHoldSignalSteps);
-            if index == 1
+            if index == 0
                 obj.holdValues = obj.holdValues(randperm(obj.numberOfHoldSignalSteps)); 
             end
                         
             %get current position
-            obj.curHoldValue = obj.holdValues(index);
+            obj.curHoldValue = obj.holdValues(index+1);
             epoch.addParameter('holdSignal', obj.curHoldValue);
-            
-            % Call the base method.
-            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
             % Set amp hold signal.
             for ci = 1:obj.numberOfAmpsToUse
                 channelName = sprintf('chan%d', ci);
-%                 modeName = sprintf('chan%dMode', ci);
-                holdName = sprintf('chan%dHold', ci);
-                signal = obj.(holdName);
-                
+
                 if strcmp(obj.(channelName),'None')
                     continue
                 end
                 ampName = obj.(channelName);
                 device = obj.rig.getDevice(ampName);
                 
-                device.background = symphonyui.core.Measurement(signal, device.background.displayUnits);
+                device.background = symphonyui.core.Measurement(obj.curHoldValue, device.background.displayUnits);
                 device.applyBackground();
             end
+            
+            % Call the base method.
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
-        function preparePresentation(obj)
+        function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
                                     
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
             spot.radiusY = spot.radiusX;
             spot.color = obj.intensity;
+            spot.opacity = 1;
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             spot.position = canvasSize / 2;
             p.addStimulus(spot);

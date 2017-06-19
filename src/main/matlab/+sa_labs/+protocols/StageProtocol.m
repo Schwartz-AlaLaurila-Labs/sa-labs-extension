@@ -179,7 +179,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             obj.rig.getDevice('Stage').play(obj.createPresentation());
         end
         
-        function prepareRun(obj)
+        function prepareRun(obj, setAmpHoldSignals)
+            
+            if nargin < 2
+                setAmpHoldSignals = true;
+            end            
             
             obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
 
@@ -210,7 +214,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
                 pause(0.2); % let the projector get set up
             end
-            prepareRun@sa_labs.protocols.BaseProtocol(obj);
+            prepareRun@sa_labs.protocols.BaseProtocol(obj, setAmpHoldSignals);
         end
 
         function prepareEpoch(obj, epoch)
