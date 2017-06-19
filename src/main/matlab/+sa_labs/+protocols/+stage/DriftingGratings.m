@@ -33,7 +33,7 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
         angles
         gratingProfileType = symphonyui.core.PropertyType('char', 'row', {'sine', 'square', 'sawtooth'})
    
-        responsePlotMode = 'cartesian';
+        responsePlotMode = 'polar';
         responsePlotSplitParameter = 'gratingAngle';
     end
     

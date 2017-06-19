@@ -44,7 +44,7 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
         sensitivitySteps
         curSensitivityStep = -1;
         
-        responsePlotMode = 'cartesian';
+        responsePlotMode = 'polar';
         responsePlotSplitParameter = 'textureAngle';
     end
     

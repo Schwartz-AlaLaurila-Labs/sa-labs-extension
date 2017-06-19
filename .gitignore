@@ -18,8 +18,3 @@ startSymphony.m
 startStageServer.m
 startStageServer.m
 startStageServer.m
-src/main/matlab/+sa_labs/+protocols/+stage/DriftingGratings.m
-src/main/matlab/+sa_labs/+protocols/+stage/DriftingGratings.m
-src/main/matlab/+sa_labs/+protocols/+stage/DriftingTexture.m
-src/main/matlab/+sa_labs/+protocols/+stage/MovingBar.m
-src/main/matlab/+sa_labs/+protocols/+stage/DriftingTexture.m
