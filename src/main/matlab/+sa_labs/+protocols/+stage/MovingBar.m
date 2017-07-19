@@ -9,12 +9,12 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         barSpeed = 1000                 % Bar speed (um / s)
         distance = 3000                 % Bar distance (um)
         numberOfAngles = 12
-        numberOfCycles = 2
-        
+        numberOfCycles = 3
+        singleEdgeMode = false         % Only display leading edge of bar
     end
     
     properties (Hidden)
-        version = 4                 % v4: added initial distance offset for bar movement centering
+        version = 5                 % v5: added single edge mode
         angles                          % Moving bar with Number of angles range between [0 - 360]
         barAngle                        % Moving bar angle for the current epoch @see prepareEpoch 
         
@@ -54,7 +54,10 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             [~, pixelDistance] = obj.um2pix(obj.distance);
             xStep = pixelSpeed * cosd(obj.barAngle);
             yStep = pixelSpeed * sind(obj.barAngle);
-                        
+
+            if obj.singleEdgeMode
+                pixelDistance = pixelDistance + obj.um2pix(obj.barLength / 2); % move bar back half a length to time-center leading edge
+            end
             xStartPos = canvasSize(1)/2 - pixelDistance / 2 * cosd(obj.barAngle);
             yStartPos = canvasSize(2)/2 - pixelDistance / 2 * sind(obj.barAngle);
             
