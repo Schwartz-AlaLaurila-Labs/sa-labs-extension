@@ -56,10 +56,12 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             yStep = pixelSpeed * sind(obj.barAngle);
 
             if obj.singleEdgeMode
-                pixelDistance = pixelDistance + obj.um2pix(obj.barLength / 2); % move bar back half a length to time-center leading edge
+                stepBack = obj.um2pix(obj.barLength / 2); % move bar back half a length to time-center leading edge
+            else
+                stepBack = 0;
             end
-            xStartPos = canvasSize(1)/2 - pixelDistance / 2 * cosd(obj.barAngle);
-            yStartPos = canvasSize(2)/2 - pixelDistance / 2 * sind(obj.barAngle);
+            xStartPos = canvasSize(1)/2 - (pixelDistance / 2 + stepBack) * cosd(obj.barAngle);
+            yStartPos = canvasSize(2)/2 - (pixelDistance / 2 + stepBack) * sind(obj.barAngle);
             
             function pos = movementController(state)
                 pos = [NaN, NaN];
