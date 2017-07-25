@@ -52,6 +52,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorMode = '';
         filterWheelNdfValues
         filterWheelAttenuationValues
+        lightCrafterParams
     end
     
     properties (Hidden, Transient)
@@ -134,11 +135,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if ~isempty(lcrSearch)
                 lightCrafter = obj.rig.getDevice('LightCrafter');
                 obj.lightCrafterParams = struct();
-                obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
-                obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
-                obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
-                obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
-                obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
+                %obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
+                %obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
+                %obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
+                %obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
+                %obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
             else
                 obj.colorMode = '';
                 obj.lightCrafterParams = [];
@@ -189,8 +190,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if nargin < 2
                 setAmpHoldSignals = true;
             end
-            
-            obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
+            % obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
             
             % set the NDF filter wheel
             if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
@@ -334,7 +334,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function p = isomerizationParameters(obj)
             source = [];
             
-            if ~ isempty(obj.persistor)
+            if ~ isempty(obj.persistor) && ~ isempty(obj.persistor.currentEpochGroup) 
                 source = obj.persistor.currentEpochGroup.source.getPropertyMap();
             end
             
