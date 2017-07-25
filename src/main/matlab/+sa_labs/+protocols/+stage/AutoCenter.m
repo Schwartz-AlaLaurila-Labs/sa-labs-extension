@@ -164,7 +164,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                         p.mode = 'receptiveField';
                         
                         increasedRes = false;
-                        while true;
+                        while true
                             runConfig = sa_labs.util.shape.generateShapeStimulus(p, analysisData); %#ok<*PROPLC,*PROP>
                             if runConfig.stimTime > 1e3 * obj.epochTimeLimit
                                 p.mapResolution = round(p.mapResolution * 1.1);
@@ -398,15 +398,18 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 
 
                 
-                if obj.numberOfPatterns > 1
-                    pattern = obj.primaryObjectPattern;                
-                    controllerFlickerWithPattern = stage.builtin.controllers.PropertyController(circ, 'color', @(s)(patternSelect(s, pattern) * shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
+                if obj.numberOfPatterns > 1 % run it in contrast mode
+                    intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
+                    intensity2 = obj.meanLevel2 * (1 + obj.contrast2);           
+                    
+                    controllerFlickerWithPattern = stage.builtin.controllers.PropertyController(circ, 'color', @(s) ...
+                        ((intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)) * shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
                         obj.shapeDataMatrix(:,col_startTime), ...
                         obj.shapeDataMatrix(:,col_endTime), ...
                         sdm_intflicstart, ci)));
                     p.addController(controllerFlickerWithPattern);
                 else
-                    p.addController(controllerFlicker);
+                    p.addController(controllerFlicker); 
                 end
                 
             end % circle loop

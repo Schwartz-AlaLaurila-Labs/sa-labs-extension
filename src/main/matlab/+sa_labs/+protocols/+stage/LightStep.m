@@ -10,13 +10,16 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         
         spotSize = 200; % um
         numberOfEpochs = 500;
+        
+        alternatePatterns = false % alternates spot pattern between PRIMARY and SECONDARY OBJECT PATTERNS
     end
     
     properties (Hidden)
         version = 4
+        currentSpotPattern
         
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = '';
+        responsePlotSplitParameter = 'currentSpotPattern';
     end
     
     properties (Hidden, Dependent)
@@ -24,6 +27,27 @@ classdef LightStep < sa_labs.protocols.StageProtocol
     end
     
     methods
+        
+        function prepareEpoch(obj, epoch)
+            obj.currentSpotPattern = obj.primaryObjectPattern;
+            if obj.numberOfPatterns > 1
+                if obj.alternatePatterns
+                    if mod(obj.numEpochsPrepared, 2) == 1
+                        obj.currentSpotPattern = obj.secondaryObjectPattern;
+                        currentSpotColor = obj.colorPattern2;
+                    else
+                        obj.currentSpotPattern = obj.primaryObjectPattern;
+                        currentSpotColor = obj.colorPattern1;
+                    end
+                    disp(currentSpotColor)
+                end
+            end
+            epoch.addParameter('currentSpotPattern', obj.currentSpotPattern);
+            
+            % Call the base method.
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+                        
+        end        
       
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
@@ -37,24 +61,10 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-            function c = patternSelect(state, activePatternNumber)
-                c = 1 * (state.pattern == activePatternNumber - 1);
-            end
-
-            function c = onDuringStim(state, preTime, stimTime)
-                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
-            end
-                        
-            if obj.numberOfPatterns > 1
-                pattern = obj.primaryObjectPattern;
-                patternController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                    @(s)(obj.intensity * patternSelect(s, pattern)));
-                p.addController(patternController);
-            end
-                        
-            controller = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
-                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
-            p.addController(controller);
+            obj.setOnDuringStimController(p, spot);
+            
+            % shared code for multi-pattern objects
+            obj.setColorController(p, spot);
 
         end
         

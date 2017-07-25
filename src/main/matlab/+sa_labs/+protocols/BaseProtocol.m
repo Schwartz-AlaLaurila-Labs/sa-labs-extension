@@ -18,8 +18,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Mode = 'Off'
         chan4Hold = 0
         
-        spikeDetectorMode = 'Filtered Threshold';
-        spikeThreshold = 20 % pA or std
+        spikeDetectorMode = 'advanced';
+        spikeThreshold = -6 % pA or (pseudo-)std
     end
     
     properties (Transient, Hidden)
@@ -46,7 +46,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         ampList
         
-        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});
+        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'advanced', 'Simple Threshold', 'Filtered Threshold', 'none'});
     end
     
     methods
@@ -61,16 +61,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             obj.chan3Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
             obj.chan4Type = symphonyui.core.PropertyType('char', 'row', obj.ampList);
             
-            % make device list for analysis figure
-            obj.devices = {};
-            for ci = 1:4
-                ampName = obj.(['chan' num2str(ci)]);
-                ampMode = obj.(['chan' num2str(ci) 'Mode']);
-                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
-                    device = obj.rig.getDevice(ampName);
-                    obj.devices{end+1} = device; %#ok<AGROW>
-                end
-            end            
+
         end
 
         function d = getPropertyDescriptor(obj, name)
@@ -128,7 +119,16 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
             end
 
-
+            % make device list for analysis figure
+            obj.devices = {};
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                ampMode = obj.(['chan' num2str(ci) 'Mode']);
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
+                    device = obj.rig.getDevice(ampName);
+                    obj.devices{end+1} = device; %#ok<AGROW>
+                end
+            end
             
             if obj.responsePlotMode ~= false
                 obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', obj.devices, ...
@@ -148,6 +148,9 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             prepareEpoch@symphonyui.core.Protocol(obj, epoch);
             
             epoch.addParameter('symphonyVersion', 2);
+            if isprop(obj, 'version')
+                epoch.addParameter('protocolVersion', obj.version);
+            end
             
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
@@ -181,7 +184,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 g.freqCutoff = 100;
                 g.numFilters = 1;
                 g.stDev = 2;
-                g.mean = 0;
+                g.mean = 100;
                 g.seed = randi(100000);
                 g.preTime = obj.preTime;
                 g.tailTime = obj.tailTime;

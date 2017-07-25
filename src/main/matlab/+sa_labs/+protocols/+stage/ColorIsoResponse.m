@@ -1,38 +1,28 @@
 classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 250                  % Spot leading duration (ms)
+        preTime = 500                  % Spot leading duration (ms)
         stimTime = 500                  % Spot duration (ms)
-        tailTime = 500                 % Spot trailing duration (ms)
+        tailTime = 1000                 % Spot trailing duration (ms)
         
-        spotDiameter = 200
+        spotDiameter = 130
         
-        baseIntensity1 = .33;
-        contrastRange1 = [-.9, 2];
-        
-        baseIntensity2 = .33;
-        contrastRange2 = [-.9, 2];
-        
-        enableSurround = false
-        surroundDiameter = 1000
+        annulusMode = false;
+        annulusInnerDiameter = 300;
+        annulusOuterDiameter = 2000;
 
     end
-    
+        
     properties (Hidden)   
         responsePlotMode = false;
-        responsePlotSplitParameter = 'sortColors';
-        
-        colorChangeModeType = symphonyui.core.PropertyType('char', 'row', {'swap','ramp'});
-        
-        intensity1
-        intensity2
-        contrast1
-        contrast2
+        responsePlotSplitParameter = '';
+
+        sessionId
     end
     
     properties (Hidden, Dependent)
         totalNumEpochs
-
+        
     end    
     
     properties (Transient, Hidden)
@@ -42,18 +32,36 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
     
     methods
         
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case {'contrast1', 'contrast2'}
+                    d.isHidden = true;
+            end
+        end
+        
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
+            
+            obj.colorCombinationMode = 'contrast';
+        end        
+        
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
+            
+            obj.sessionId = [regexprep(num2str(fix(clock),'%1d'),' +','') '_']; % this is how you get a datetime string in MATLAB            
             
             if obj.numberOfPatterns == 1
                 error('Must have > 1 pattern enabled to use color stim');
             end
             
             obj.isoResponseFigure = obj.showFigure('sa_labs.figures.ColorIsoResponseFigure', obj.devices, ...
-                'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime + 0.5],...
+                'responseMode', obj.chan1Mode, ...
+                'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime] + [0.005, 0],...
                 'spikeThreshold', obj.spikeThreshold, ...
                 'spikeDetectorMode', obj.spikeDetectorMode, ...
-                'contrastRange1', obj.contrastRange1, 'contrastRange2', obj.contrastRange2, ...
+                'baseIntensity1', obj.meanLevel1, 'baseIntensity2', obj.meanLevel2, ...
                 'colorNames', {obj.colorPattern1, obj.colorPattern2});
             
         end
@@ -61,15 +69,21 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
             obj.contrast1 = obj.isoResponseFigure.nextContrast1;
             obj.contrast2 = obj.isoResponseFigure.nextContrast2;
-            obj.intensity1 = obj.baseIntensity1 * (1 + obj.contrast1);
-            obj.intensity2 = obj.baseIntensity2 * (1 + obj.contrast2);
+            intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
+            intensity2 = obj.meanLevel2 * (1 + obj.contrast2);
+            stimulusInfo = obj.isoResponseFigure.nextStimulusInfoOutput;
 
-            epoch.addParameter('intensity1', obj.intensity1);
-            epoch.addParameter('intensity2', obj.intensity2);
+            epoch.addParameter('sessionId', obj.sessionId);
+            epoch.addParameter('intensity1', intensity1);
+            epoch.addParameter('intensity2', intensity2);
             epoch.addParameter('contrast1', obj.contrast1);
             epoch.addParameter('contrast2', obj.contrast2);
-%             epoch.addParameter('sortColors', sum([1000,1] .* round([obj.intensity1, obj.intensity2]*100))); % for plot display
-            
+            keys = stimulusInfo.keys();
+            values = stimulusInfo.values();
+            for ki = 1:length(keys)
+                epoch.addParameter(keys{ki}, values{ki});
+            end
+%             epoch.addParameter('sortColors', sum([1000,1] .* round([*100))); % for plot display
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
@@ -78,50 +92,61 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
-            function c = surroundColor(state, backgroundColor)
-                c = backgroundColor(state.pattern + 1);
+            if ~obj.annulusMode
+                spotOrAnnulus = stage.builtin.stimuli.Ellipse();
+                spotOrAnnulus.color = 1;
+                spotOrAnnulus.opacity = 1;
+                spotOrAnnulus.radiusX = obj.um2pix(obj.spotDiameter/2);
+                spotOrAnnulus.radiusY = spotOrAnnulus.radiusX;
+                spotOrAnnulus.position = canvasSize / 2;
+                p.addStimulus(spotOrAnnulus);
+            else
+                spotOrAnnulus = stage.builtin.stimuli.Ellipse();
+                spotOrAnnulus.color = 1;
+                spotOrAnnulus.opacity = 1;
+                spotOrAnnulus.radiusX = obj.um2pix(obj.annulusOuterDiameter/2);
+                spotOrAnnulus.radiusY = spotOrAnnulus.radiusX;
+                spotOrAnnulus.position = canvasSize / 2;
+                p.addStimulus(spotOrAnnulus);
+                
+                centerMask = stage.builtin.stimuli.Ellipse();
+                centerMask.color = 1;
+                centerMask.opacity = 1;
+                centerMask.radiusX = obj.um2pix(obj.annulusInnerDiameter/2);
+                centerMask.radiusY = centerMask.radiusX;
+                centerMask.position = canvasSize / 2;
+                p.addStimulus(centerMask);
+                centerMaskColorController = stage.builtin.controllers.PropertyController(centerMask, 'color',...
+                  @(state)(obj.meanLevel1 * (state.pattern == 0) + obj.meanLevel2 * (state.pattern == 1)));
+                
+                p.addController(centerMaskColorController);
             end
-            
-            if obj.enableSurround
-                surround = stage.builtin.stimuli.Ellipse();
-                surround.color = 1;
-                surround.opacity = 1;
-                surround.radiusX = obj.um2pix(obj.surroundDiameter/2);
-                surround.radiusY = surround.radiusX;
-                surround.position = canvasSize / 2;
-                p.addStimulus(surround);
-                surroundColorController = stage.builtin.controllers.PropertyController(surround, 'color',...
-                    @(s) surroundColor(s, [obj.baseIntensity1, obj.baseIntensity2]));
-                p.addController(surroundColorController);
-            end
-            
-            
-            spot = stage.builtin.stimuli.Ellipse();
-            spot.color = 1;
-            spot.opacity = 1;
-            spot.radiusX = obj.um2pix(obj.spotDiameter/2);
-            spot.radiusY = spot.radiusX;
-            spot.position = canvasSize / 2;
-            p.addStimulus(spot);
-            
-            function c = spotColor(state, onColor, backgroundColor)
-                if state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3
-                    c = onColor(state.pattern + 1);
-                else
-                    c = backgroundColor(state.pattern + 1);
-                end
-            end
-            
-            spotColorController = stage.builtin.controllers.PropertyController(spot, 'color',...
-                @(s) spotColor(s, [obj.intensity1, obj.intensity2], [obj.baseIntensity1, obj.baseIntensity2]));
-            p.addController(spotColorController);
+                
+            obj.setOnDuringStimController(p, spotOrAnnulus);
+            obj.setColorController(p, spotOrAnnulus);
             
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = inf;
         end
-
+        
+        function tf = shouldContinuePreparingEpochs(obj)
+            if ~isvalid(obj.isoResponseFigure)
+                tf = false;
+            else
+                tf = ~obj.isoResponseFigure.protocolShouldStop;
+            end
+        end
+        
+        function tf = shouldContinueRun(obj)
+            if ~isvalid(obj.isoResponseFigure)
+                tf = false;
+            else
+                tf = ~obj.isoResponseFigure.protocolShouldStop;
+            end
+        end
+               
     end
     
 end

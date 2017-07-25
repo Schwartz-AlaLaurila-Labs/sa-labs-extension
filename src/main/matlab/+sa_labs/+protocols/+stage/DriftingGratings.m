@@ -73,8 +73,8 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             grat.orientation = obj.curAngle;
             grat.contrast = obj.contrast;
             grat.size = obj.um2pix([obj.gratingLength, obj.gratingWidth]);
-            [~, sf] = obj.um2pix(1); % gets the unrounded value
-            grat.spatialFreq = sf/(2*obj.cycleHalfWidth);
+            [~, pixelsPerMicron] = obj.um2pix(1);
+            grat.spatialFreq = 1/(pixelsPerMicron*(2*obj.cycleHalfWidth)); % in cycles per pixel
             grat.phase = 0;
             p.addStimulus(grat);
             %             pixelSpeed = obj.gratingSpeed./obj.rigConfig.micronsPerPixel;

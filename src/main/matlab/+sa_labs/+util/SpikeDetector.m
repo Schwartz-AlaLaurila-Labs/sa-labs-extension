@@ -11,6 +11,9 @@ classdef SpikeDetector < handle
 %         thres_std
         spikeDetectorMode
         spikeThreshold
+        
+        % advanced:
+        spikeFilter
     end
     
     methods
@@ -26,6 +29,8 @@ classdef SpikeDetector < handle
             %             [b,a] = butter(21, [obj.freq_driftAndNoise, obj.freq_spikeLowerThreshold] / (.5/obj.sampleInterval));
             %             obj.bandPassFilter = {b,a};
             %             end
+            
+            obj.spikeFilter = designfilt('bandpassiir', 'StopbandFrequency1', 200, 'PassbandFrequency1', 300, 'PassbandFrequency2', 3000, 'StopbandFrequency2', 3500, 'StopbandAttenuation1', 60, 'PassbandRipple', 1, 'StopbandAttenuation2', 60, 'SampleRate', 10000);
         end
         
         function Xfilt = BandPassFilter(obj, X,low,high,SampleInterval)
@@ -243,10 +248,66 @@ classdef SpikeDetector < handle
                 results.minSpikePeakInd = minSpikePeakInd;
                 results.violation_ind = violation_ind;
                 
+            elseif strcmp(obj.spikeDetectorMode, 'advanced')
+                response = data - mean(data);
+                [fresponse, noise] = obj.filterResponse(response);
+                spikeIndices = obj.getThresCross(fresponse, noise * obj.spikeThreshold, sign(obj.spikeThreshold));
+
+                % refine spike locations to tips
+                if obj.spikeThreshold < 0
+                    for si = 1:length(spikeIndices)
+                        sp = spikeIndices(si);
+                        if sp < 100 || sp > length(response) - 100
+                            continue
+                        end
+                        while response(sp) > response(sp+1)
+                            sp = sp+1;
+                        end
+                        while response(sp) > response(sp-1)
+                            sp = sp-1;
+                        end
+                        spikeIndices(si) = sp;
+                    end
+                else
+                    for si = 1:length(spikeIndices)
+                        sp = spikeIndices(si);
+                        if sp < 100 || sp > length(response) - 100
+                            continue
+                        end                             
+                        while response(sp) < response(sp+1)
+                            sp = sp+1;
+                        end
+                        while response(sp) < response(sp-1)
+                            sp = sp-1;
+                        end
+                        spikeIndices(si) = sp;
+                    end
+                end
+                
+                %remove double-counted spikes
+                if length(spikeIndices) >= 2
+                    ISItest = diff(spikeIndices);
+                    spikeIndices = spikeIndices([(ISItest > (0.001 * 10000)) true]);
+                end
+                
+                results.sp = spikeIndices;
+%                 results.spikeAmps = spikeAmps;
+%                 results.minSpikePeakInd = minSpikePeakInd;
+%                 results.violation_ind = violation_ind;
+                results.filtered = fresponse;
+                
             else
                 warning('unknown spike detector mode')
             end
         end
+        
+        function [fdata, noise] = filterResponse(obj, fdata)
+            fdata = [fdata(1) + zeros(1,2000), fdata, fdata(end) + zeros(1,2000)];
+            fdata = filtfilt(obj.spikeFilter, fdata);
+            fdata = fdata(2001:(end-2000));
+            noise = median(abs(fdata) / 0.6745);
+        end        
+        
     end
     
 end
