@@ -1,26 +1,26 @@
 classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     
-    % This class handles protocol control which is not visual stimulus specific
-    
+    % This class handles protocol control which is not visual stimulus
+    % specific. The assumptions are following,
+    %   - It can handle upto 4 different amplifier channels
+    %   - It strongly relies on logical naming of the amplifier channels
+    %   @see chan1, etc
+   
     properties
-        chan1 = 'Amp1';
-        chan1Mode = 'Cell attached'
-        chan1Hold = 0
-        chan2 = 'None';
-        chan2Mode = 'Off'
-        chan2Hold = 0
-        chan3  = 'None';
-        chan3Mode = 'Off'
-        chan3Hold = 0
-        chan4  = 'None';
-        chan4Mode = 'Off'
-        chan4Hold = 0
-        spikeDetectorMode = 'advanced';
-        spikeThreshold = -6 % pA or (pseudo-)std
-    end
-    
-    properties (Transient, Hidden)
-        responseFigure
+        chan1 = 'Amp1';                 % Wired to MultiClamp(1)/AxoClamp(1) channel 1, Logical naming 'Amp1' 
+        chan1Mode = 'Cell attached'     % Recording mode for 'Amp1'
+        chan1Hold = 0                   % Holding potential for 'Amp1'
+        chan2 = 'None';                 % Wired to MultiClamp(1)/AxoClamp(1) channel 2, Logical naming 'Amp2' 
+        chan2Mode = 'Off'               % Recording mode for 'Amp2'
+        chan2Hold = 0                   % Holding potential for 'Amp2'
+        chan3  = 'None';                % Wired to MultiClamp(2)/AxoClamp(2) channel 1, Logical naming 'Amp3' 
+        chan3Mode = 'Off'               % Recording mode for 'Amp3'
+        chan3Hold = 0                   % Holding potential for 'Amp3'
+        chan4  = 'None';                % Wired to MultiClamp(2)/AxoClamp(2) channel 2, Logical naming 'Amp4' 
+        chan4Mode = 'Off'               % Recording mode for 'Amp4'
+        chan4Hold = 0                   % Holding potential for 'Amp4'
+        spikeDetectorMode = 'advanced'; % Online spike detection mode 
+        spikeThreshold = -6             % Spike detection threshold (pA) or (pseudo-)std
     end
     
     properties (Abstract)
@@ -107,7 +107,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         
         function createResponseFigure(obj, class, device, mode)
             
-            obj.responseFigure = obj.showFigure(class, device, ...
+            obj.showFigure(class, device, ...
                 'activeFunctionNames', {'mean'}, ...
                 'totalNumEpochs', obj.totalNumEpochs,...
                 'epochSplitParameter', obj.responsePlotSplitParameter,...
@@ -185,7 +185,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     
     methods
         
-        % Only used in test rig
+        % Only used in Test rig
         
         function addGaussianLoopbackSignals(obj, epoch)
             % make fake input data via loopback
