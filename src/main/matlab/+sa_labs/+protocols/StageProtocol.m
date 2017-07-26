@@ -50,12 +50,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','prerender on','prerender off'});
         
         colorMode = '';
-        filterWheelNdfValues
-        filterWheelAttenuationValues
-        lightCrafterParams
-    end
-    
-    properties (Hidden, Transient)
         rigProperty
     end
     
@@ -70,26 +64,18 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             switch name
                 case {'meanLevel', 'intensity'}
-                    if obj.numberOfPatterns > 1
-                        if strcmp(obj.colorCombinationMode, 'contrast')
-                            d.isHidden = true;
-                        end
-                    end
+                    d.isHidden = obj.numberOfPatterns > 1 && strcmp(obj.colorCombinationMode, 'contrast');
                     
                 case {'offsetX','offsetY','NDF','blueLED','greenLED'}
                     d.category = '7 Projector';
                     
                 case 'redLED'
                     d.category = '7 Projector';
-                    if strcmp(obj.colorMode, 'uv')
-                        d.isHidden = true;
-                    end
+                    d.isHidden = strcmp(obj.colorMode, 'uv');
                     
                 case 'uvLED'
                     d.category = '7 Projector';
-                    if strcmp(obj.colorMode, 'standard')
-                        d.isHidden = true;
-                    end
+                    d.isHidden = strcmp(obj.colorMode, 'standard');
                     
                 case {'numberOfPatterns','frameRate','bitDepth',...
                         'colorPattern1','colorPattern2','colorPattern3',...
@@ -97,52 +83,30 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     d.category = '8 Color';
                     
                 case {'meanLevel1','meanLevel2','contrast1','contrast2'}
-                    if obj.numberOfPatterns == 1 || ~strcmp(obj.colorCombinationMode, 'contrast')
-                        d.isHidden = true;
-                    end
+                    d.isHidden = obj.numberOfPatterns == 1 || ~strcmp(obj.colorCombinationMode, 'contrast');
                     
                 case {'colorCombinationMode'}
-                    if obj.numberOfPatterns == 1
-                        d.isHidden = true;
-                    end
+                    d.isHidden = obj.numberOfPatterns == 1;
                     d.category = '8 Color';
                     
                 case {'primaryObjectPattern','secondaryObjectPattern','backgroundPattern'}
-                    if obj.numberOfPatterns == 1 || logical(strcmp(obj.colorCombinationMode, 'contrast'))
-                        d.isHidden = true;
-                    end
+                    d.isHidden = obj.numberOfPatterns == 1 || logical(strcmp(obj.colorCombinationMode, 'contrast'));
                     d.category = '8 Color';
                     
                 case {'RstarIntensity2','MstarIntensity2','SstarIntensity2'}
                     d.category = '6 Isomerizations';
-                    if obj.numberOfPatterns == 1
-                        d.isHidden = true;
-                    end
+                    d.isHidden = obj.numberOfPatterns == 1;
                     
                 case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                     d.category = '6 Isomerizations';
             end
-            
         end
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.BaseProtocol(obj);
             
-            lcrSearch = obj.rig.getDevices('LightCrafter');
-            obj.rigProperty = sa_labs.factory.getInstance('rigProperty');
-            obj.colorMode = obj.rigProperty.rigDescription.projectorColorMode;
-            
-            if ~isempty(lcrSearch)
-                lightCrafter = obj.rig.getDevice('LightCrafter');
-                obj.lightCrafterParams = struct();
-                %obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
-                %obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
-                %obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
-                %obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
-                %obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
-            else
-                obj.colorMode = '';
-                obj.lightCrafterParams = [];
+            if ~isempty(obj.rig.getDevices('LightCrafter'))
+                obj.colorMode = obj.rig.getDevice('LightCrafter').getColorMode();
             end
             
             if strcmp(obj.colorMode, 'uv')
@@ -159,16 +123,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.colorPattern1 = 'blue';
             end
             
-            if isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                % useless defaults
-                obj.filterWheelNdfValues = [0];
-                obj.filterWheelAttenuationValues = [1.0];
-            else
-                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                obj.filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
-                obj.filterWheelAttenuationValues = filterWheel.getResource('filterWheelAttenuationValues');
-                obj.NDF = filterWheel.getResource('defaultNdfValue');
+            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
+                obj.NDF = obj.rig.getDevice('neutralDensityFilterWheel').getResource('defaultNdfValue');
             end
+            obj.rigProperty = sa_labs.factory.getInstance('rigProperty');
         end
         
         function p = getPreview(obj, panel)
@@ -190,35 +148,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if nargin < 2
                 setAmpHoldSignals = true;
             end
+            
             % obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
             
             % set the NDF filter wheel
             if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
-                if filterWheel.getConfigurationSetting('comPort') > 0
-                    filterWheel.setNdfValue(obj.NDF);
-                end
+                filterWheel.setNdfValue(obj.NDF);
             end
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
-                % Set the projector configuration
-                % TODO move the logic to light crafter
-                lightCrafter = obj.rig.getDevice('LightCrafter');
-                if obj.numberOfPatterns > 1
-                    if strcmp(obj.colorCombinationMode, 'contrast')
-                        lightCrafter.setBackgroundConfiguration('twoPattern', obj.meanLevel1, obj.meanLevel2);
-                    else
-                        lightCrafter.setBackgroundConfiguration('singlePattern', obj.meanLevel, obj.backgroundPattern);
-                    end
-                else
-                    lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
-                end
-                lightCrafter.setPrerender(obj.prerender);
-                lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
-                lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
-                lightCrafter.setLedEnables(true, 0, 0, 0, 0); % auto mode, should be set from pattern
-                lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
-                pause(0.2); % let the projector get set up
+                obj.prepareProjector();
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj, setAmpHoldSignals);
         end
@@ -226,21 +165,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
-            % add the microns per pixel value for later upkeep
-            if ~ isempty(obj.rig.getDevices('LightCrafter'))
-                lightCrafter = obj.rig.getDevice('LightCrafter');
-                
-                % TODO how about setting this later h5 parsing, since h5 will have all the device configurations ?
-                epoch.addParameter('micronsPerPixel', lightCrafter.getConfigurationSetting('micronsPerPixel'));
-                epoch.addParameter('angleOffsetFromRig', lightCrafter.getConfigurationSetting('angleOffset'));
-            end
-            
             % uses the frame tracker on the monitor to inform the HEKA that
             % the stage presentation has begun. Improves temporal alignment
             epoch.shouldWaitForTrigger = true;
             
-            
-            if obj.rigProperty.testMode
+            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
+            if testMode
                 % gaussian noise for analysis testing
                 obj.addGaussianLoopbackSignals(epoch);
             else
@@ -252,7 +182,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
         end
         
-        
         function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>
             tf = false;
         end
@@ -262,11 +191,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function completeEpoch(obj, epoch)
-            
-            if ~ obj.rigProperty.testMode
+            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
+            if ~ testMode
                 epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
             end
-            
             completeEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
         end
         
@@ -277,7 +205,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function [tf, msg] = isValid(obj)
             [tf, msg] = isValid@sa_labs.protocols.BaseProtocol(obj);
-            
             if tf
                 tf = ~isempty(obj.rig.getDevices('Stage'));
                 msg = 'No stage';
@@ -331,53 +258,47 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             p.addController(controller);
         end
         
-        function p = isomerizationParameters(obj)
-            source = [];
-            
-            if ~ isempty(obj.persistor) && ~ isempty(obj.persistor.currentEpochGroup) 
-                source = obj.persistor.currentEpochGroup.source.getPropertyMap();
-            end
-            
-            p = struct();
-            p.NDF = obj.NDF;
-            p.blueLED = obj.blueLED;
-            p.greenLED = obj.greenLED;
-            p.uvLED = obj.uvLED;
-            p.colorPattern1 = obj.colorPattern1;
-            p.numberOfPatterns = obj.numberOfPatterns;
-            
-            p.ledCurrents = [obj.blueLED, obj.greenLED obj.uvLED];
-            p.ledTypes = sort(strsplit(obj.colorPattern1, '+'));
-            p.mouse = source;
-        end
-        
         function RstarMean = get.RstarMean(obj)
-            rigDesc =  obj.rigProperty.rigDescription;
-            [RstarMean, ~, ~] = rigDesc.getIsomerizations(obj.meanLevel, obj.isomerizationParameters());
+            pattern = 1;
+            if obj.numberOfPatterns == 1
+                [RstarMean, ~, ~] = obj.invokeGetIsomerizations(pattern);
+            else
+                [RstarMean, ~, ~] = obj.invokeGetIsomerizations(obj.backgroundPattern);
+            end
         end
         
         function RstarIntensity = get.RstarIntensity1(obj)
-            RstarIntensity = [];
+            pattern = 1;
+            [RstarIntensity, ~, ~] = obj.invokeGetIsomerizations(pattern);
         end
         
         function MstarIntensity = get.MstarIntensity1(obj)
-            MstarIntensity = [];
+            pattern = 1;
+            [~, MstarIntensity, ~] = obj.invokeGetIsomerizations(pattern);
         end
         
         function SstarIntensity = get.SstarIntensity1(obj)
-            SstarIntensity = [];
+            pattern = 1;
+            [~, ~, SstarIntensity] = obj.invokeGetIsomerizations(pattern);
         end
         
         function RstarIntensity = get.RstarIntensity2(obj)
-            RstarIntensity = [];
+            pattern = 2;
+            [RstarIntensity, ~, ~] = obj.invokeGetIsomerizations(pattern);
         end
         
         function MstarIntensity = get.MstarIntensity2(obj)
-            MstarIntensity = [];
+            pattern = 2;
+            [~, MstarIntensity, ~] = obj.invokeGetIsomerizations(pattern);
         end
         
         function SstarIntensity = get.SstarIntensity2(obj)
-            SstarIntensity = [];
+            pattern = 2;
+            [~, ~, SstarIntensity] = obj.invokeGetIsomerizations(pattern);
+        end
+        
+        function [rStar, mStar, sStar] = invokeGetIsomerizations(obj, pattern)
+            [rStar, mStar, sStar] = obj.rigProperty.rigDescription.getIsomerizations(obj, pattern);
         end
         
         function bitDepth = get.bitDepth(obj)
@@ -393,30 +314,25 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function prerender = get.prerender(obj)
-            if strcmp(obj.forcePrerender, 'auto')
-                if obj.numberOfPatterns == 1
-                    prerender = false;
-                else
-                    prerender = true;
-                end
+            prerender = false;
+            
+            if strcmp(obj.forcePrerender, 'auto') && obj.numberOfPatterns ~= 1
+                prerender = true;
             elseif strcmp(obj.forcePrerender, 'pr on')
                 prerender = true;
-            else
-                prerender = false;
             end
         end
         
         function numberOfPatterns = get.numberOfPatterns(obj)
-            if ~strcmp(obj.colorPattern3, 'none')
+            if ~ strcmp(obj.colorPattern3, 'none')
                 numberOfPatterns = 3;
-            elseif ~strcmp(obj.colorPattern2, 'none')
+            elseif ~ strcmp(obj.colorPattern2, 'none')
                 numberOfPatterns = 2;
             else
                 numberOfPatterns = 1;
             end
         end
     end
-    
     
     methods (Access = protected)
         
@@ -427,6 +343,25 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             pround = round(p);
         end
         
+        function prepareProjector(obj)
+            % Set the projector configuration
+            lightCrafter = obj.rig.getDevice('LightCrafter');
+            if obj.numberOfPatterns > 1
+                if strcmp(obj.colorCombinationMode, 'contrast')
+                    lightCrafter.setBackgroundConfiguration('twoPattern', obj.meanLevel1, obj.meanLevel2);
+                else
+                    lightCrafter.setBackgroundConfiguration('singlePattern', obj.meanLevel, obj.backgroundPattern);
+                end
+            else
+                lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
+            end
+            lightCrafter.setPrerender(obj.prerender);
+            lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
+            lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
+            lightCrafter.setLedEnables(true, 0, 0, 0, 0); % auto mode, should be set from pattern
+            lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
+            pause(0.2); % let the projector get set up
+        end
     end
     
 end
