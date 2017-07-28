@@ -8,6 +8,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         barWidth = 200                   % Bar Width size (um)
         barSpeed = 1000                 % Bar speed (um / s)
         distance = 3000                 % Bar distance (um)
+        startAngle = 0
         numberOfAngles = 12
         numberOfCycles = 3
         singleEdgeMode = false         % Only display leading edge of bar
@@ -35,7 +36,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            obj.angles = round(0:360/obj.numberOfAngles:(360-.01));
+            obj.angles = round(0:360/obj.numberOfAngles:(360-.01)) + obj.startAngle;
         end
         
         function p = createPresentation(obj)
