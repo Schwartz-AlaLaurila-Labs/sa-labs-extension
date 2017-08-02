@@ -50,8 +50,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','prerender on','prerender off'});
         
         colorMode = '';
-        rigProperty
     end
+
+    properties (Hidden, Transient)
+        rigProperty
+    end 
     
     methods (Abstract)
         p = createPresentation(obj);
