@@ -11,7 +11,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         angleOffset = 0                 % Angle set offset (deg)
         numberOfAngles = 12             % Number of angles to stimulate
         numberOfCycles = 3              % Number of times through the set
-        singleEdgeMode = false          % Only display leading edge of bar
+        singleEdgeMode = false          % Only display leading edge of bar, set length > 2 * distance
     end
     
     properties (Hidden)
