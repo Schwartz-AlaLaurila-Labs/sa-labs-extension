@@ -5,17 +5,18 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         tailTime = 250                  % Bar trailing duration (ms)
         intensity = 1.0                 % Bar light intensity (0-1)
         barLength = 600                 % Bar length size (um)
-        barWidth = 200                   % Bar Width size (um)
+        barWidth = 200                  % Bar Width size (um)
         barSpeed = 1000                 % Bar speed (um / s)
         distance = 3000                 % Bar distance (um)
-        numberOfAngles = 12
-        numberOfCycles = 3
-        singleEdgeMode = false         % Only display leading edge of bar
+        angleOffset = 0                 % Angle set offset (deg)
+        numberOfAngles = 12             % Number of angles to stimulate
+        numberOfCycles = 3              % Number of times through the set
+        singleEdgeMode = false          % Only display leading edge of bar, set length > 2 * distance
     end
     
     properties (Hidden)
-        version = 5                 % v5: added single edge mode
-        angles                          % Moving bar with Number of angles range between [0 - 360]
+        version = 6                     % v6: added angleOffset @sam
+        angles                          % angles for epochs, range between [0 - 360]
         barAngle                        % Moving bar angle for the current epoch @see prepareEpoch 
         
         responsePlotMode = 'polar';
@@ -35,7 +36,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            obj.angles = round(0:360/obj.numberOfAngles:(360-.01));
+            obj.angles = mod(round(0:360/obj.numberOfAngles:(360-.01)) + obj.angleOffset, 360);
         end
         
         function p = createPresentation(obj)

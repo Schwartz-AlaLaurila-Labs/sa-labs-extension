@@ -13,7 +13,7 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         
         holdSignalMin = -90 %mV
         holdSignalMax = 40; %mV
-        numberOfHoldSignalSteps = 10;
+        numberOfHoldSignalSteps = 8;
         
         numberOfCycles = 2;
         
@@ -67,6 +67,7 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
                 device.background = symphonyui.core.Measurement(obj.curHoldValue, device.background.displayUnits);
                 device.applyBackground();
             end
+            pause(2)
             
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
