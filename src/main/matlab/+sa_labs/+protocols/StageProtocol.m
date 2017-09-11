@@ -63,7 +63,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function d = getPropertyDescriptor(obj, name)
             d = getPropertyDescriptor@sa_labs.protocols.BaseProtocol(obj, name);
-            
+
             switch name
                 case {'meanLevel', 'intensity'}
                     d.isHidden = obj.numberOfPatterns > 1 && strcmp(obj.colorCombinationMode, 'contrast');
@@ -101,6 +101,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     
                 case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                     d.category = '6 Isomerizations';
+            end
+            
+            if obj.rigProperty.rigDescription.toBeHidden(name)
+                d.isHidden = true;
             end
         end
         
