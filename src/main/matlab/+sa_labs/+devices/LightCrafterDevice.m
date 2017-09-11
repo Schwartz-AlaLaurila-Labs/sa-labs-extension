@@ -56,7 +56,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('backgroundPattern', 1);
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', 0);
-                        
+            obj.addConfigurationSetting('backgroundSize', canvasSize);   
+            obj.addConfigurationSetting('backgroundShape', {'Rectangle'});                     
         end
         
         function setLightCrafter(obj, orientation, colorMode)
@@ -142,6 +143,24 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
         end
         
+        function background = getBackground(obj)
+            backGroundSize = obj.getBackgroundSize();
+            canvasSize = obj.getCanvasSize();
+            canvasTranslation = obj.getConfigurationSetting('canvasTranslation');
+            background = stage.builtin.stimuli.Rectangle();
+            background.size = backGroundSize;
+            background.position = canvasSize/2 - canvasTranslation;
+            background.opacity = 1;
+        end
+
+        function backGroundSize = getBackgroundSize(obj)
+            backGroundSize = obj.getConfigurationSetting('backgroundSize');
+        end
+
+        function setBackgroundSize(obj, backGroundSize)
+            obj.setConfigurationSetting('backgroundSize', backGroundSize);
+        end
+
         function tf = getPrerender(obj)
             tf = obj.getConfigurationSetting('prerender');
         end
@@ -157,13 +176,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));            
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
 
-            % BACKGROUND
-            
-            background = stage.builtin.stimuli.Rectangle();
-            background.size = canvasSize;
-            background.position = canvasSize/2 - canvasTranslation;
-            background.opacity = 1;
-            
+            background = obj.getBackground();
             mode = obj.getConfigurationSetting('backgroundPatternMode');
             intensity1 = obj.getConfigurationSetting('backgroundIntensity');
             intensity2 = obj.getConfigurationSetting('backgroundIntensity2');

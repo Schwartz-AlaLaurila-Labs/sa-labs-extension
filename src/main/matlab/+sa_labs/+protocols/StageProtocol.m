@@ -1,27 +1,27 @@
 classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
-    % this class handles protocol control which is visual stimulus specific
+    % This class handles protocol control which is visual stimulus specific
     
     properties
-        meanLevel = 0.0     % Background light intensity (0-1)
-        meanLevel1 = 0.5    % background intensity value pattern 1
-        meanLevel2 = 0.5    % background intensity value pattern 2
-        contrast1 = 1       % weber contrast from mean for object, color 1
-        contrast2 = 1       % weber contrast from mean for object, color 2
-        offsetX = 0         % um
-        offsetY = 0         % um
-        
-        NDF = 5             % Filter NDF value
-        blueLED = 20        % 0-255
-        greenLED = 0   % 0-255
-        redLED = 0   % 0-255
-        uvLED = 0
-        colorPattern1 = 'blue';
+        meanLevel = 0.0         % Background light intensity (0-1)
+        meanLevel1 = 0.5        % Background intensity value pattern 1
+        meanLevel2 = 0.5        % Background intensity value pattern 2
+        contrast1 = 1           % Weber contrast from mean for object, color 1
+        contrast2 = 1           % Weber contrast from mean for object, color 2
+        offsetX = 0             % um
+        offsetY = 0             % um
+        NDF = 5                 % Filter NDF value
+        blueLED = 20            % 0-255
+        greenLED = 0            % 0-255
+        redLED = 0              % 0-255
+        uvLED = 0               % 0-255
+        colorPattern1 = 'blue'; 
         colorPattern2 = 'none';
         colorPattern3 = 'none';
         primaryObjectPattern = 1
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'contrast'
+        backgroundSize
     end
     
     properties (Dependent)
@@ -48,7 +48,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace','contrast'});
         forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','prerender on','prerender off'});
-        
         colorMode = '';
     end
 
@@ -69,7 +68,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 case {'meanLevel', 'intensity'}
                     d.isHidden = obj.numberOfPatterns > 1 && strcmp(obj.colorCombinationMode, 'contrast');
                     
-                case {'offsetX','offsetY','NDF','blueLED','greenLED'}
+                case {'offsetX','offsetY','NDF','blueLED','greenLED', 'backgroundSize'}
                     d.category = '7 Projector';
                     
                 case 'redLED'
@@ -109,7 +108,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             didSetRig@sa_labs.protocols.BaseProtocol(obj);
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
-                obj.colorMode = obj.rig.getDevice('LightCrafter').getColorMode();
+                lcr = obj.rig.getDevice('LightCrafter');
+                obj.backgroundSize = lcr.getBackgroundSize();
+                obj.colorMode = lcr.getColorMode();
             end
             
             if strcmp(obj.colorMode, 'uv')
@@ -363,6 +364,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
             lightCrafter.setLedEnables(true, 0, 0, 0, 0); % auto mode, should be set from pattern
             lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
+            lightCrafter.setConfigurationSetting('backgroundSize', obj.backgroundSize);
             pause(0.2); % let the projector get set up
         end
     end

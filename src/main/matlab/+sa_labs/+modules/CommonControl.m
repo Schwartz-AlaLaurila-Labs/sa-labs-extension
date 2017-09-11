@@ -4,6 +4,7 @@ classdef CommonControl < symphonyui.ui.Module
         % projector
         offsetX = 0 % um
         offsetY = 0 % um
+        backgroundSize
         
         NDF = 5 % Filter wheel position
         frameRate = 60;% Hz
@@ -30,14 +31,12 @@ classdef CommonControl < symphonyui.ui.Module
         chan4  = 'None';
         chan4Mode = 'Off'
         chan4Hold = 0
+        applyToAllProtocol = false;
     end
     
     properties(Hidden)
-        color = 'cyan'       
-        colorType = symphonyui.core.PropertyType('char', 'row', {'cyan','blue','green'});
         
-        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode','color','NDF', 'blueLED','greenLED','offsetX','offsetY'};
-        
+        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize'};
         chan1Type
         chan2Type
         chan3Type
@@ -46,8 +45,8 @@ classdef CommonControl < symphonyui.ui.Module
         chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
         chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
-  
-        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});       
+        
+        spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});
         protocolPropertyGrid
         ampList
     end
@@ -61,22 +60,56 @@ classdef CommonControl < symphonyui.ui.Module
         
         function bind(obj)
             bind@symphonyui.ui.Module(obj);
-
+            
             c = obj.configurationService;
             obj.addListener(c, 'InitializedRig', @obj.onServiceInitializedRig);
+            obj.addListener(obj.acquisitionService, 'SelectedProtocol', @obj.onServiceSelectedProtocol);
         end
     end
-
+    
     methods
+        
+        function createUi(obj, figureHandle)
+            set(figureHandle, ...
+                'Name', 'Common Control', ...
+                'Position', appbox.screenCenter(240, 340));
+            
+            layout = uix.VBox( ...
+                'Parent', figureHandle, ...
+                'Padding', 11);
+            
+            obj.protocolPropertyGrid = uiextras.jide.PropertyGrid(layout);
+            
+            uicontrol( ...
+                'Parent', layout, ...
+                'Style', 'pushbutton', ...
+                'String', 'Apply', ...
+                'Callback', @obj.cbSetParameters);
+            
+            set(layout, 'Heights', [-1, 30]);
+        end
         
         function onServiceInitializedRig(obj, ~, ~)
             obj.updateDeviceList();
             obj.populateProtocolProperties();
         end
-
+        
+        function onServiceSelectedProtocol(obj, ~, ~)
+            if obj.applyToAllProtocol
+                obj.updateProtocolProperties();
+            end
+        end
+        
         function updateDeviceList(obj)
             
             devices = obj.configurationService.getDevices('Amp');
+            try
+                lcr = obj.configurationService.getDevices('lightcrafter');
+                obj.backgroundSize = lcr{1}.getCanvasSize();
+            catch exception %#ok
+                % ignore if the lcr is not found
+            end
+            
             obj.ampList = {};
             for i = 1:length(devices)
                 obj.ampList{i} = devices{i}.name;
@@ -97,51 +130,42 @@ classdef CommonControl < symphonyui.ui.Module
             obj.chan4Type = symphonyui.core.PropertyType('char', 'row', strsplit(channelTypes{4}, ','));
         end
         
-        function createUi(obj, figureHandle)
-            set(figureHandle, ...
-                'Name', 'Common Control', ...
-                'Position', appbox.screenCenter(240, 340));
-            
-            layout = uix.VBox( ...
-                'Parent', figureHandle, ...
-                'Padding', 11);
-            
-            obj.protocolPropertyGrid = uiextras.jide.PropertyGrid(layout);
-
-            uicontrol( ...
-                'Parent', layout, ...
-                'Style', 'pushbutton', ...
-                'String', 'Apply to Protocol', ...
-                'Callback', @obj.cbSetParameters);
-            
-            set(layout, 'Heights', [-1, 30]);
-        end
         
         function cbSetParameters(obj, ~, ~)
             % set values in the protocol (callback on change settings in this module)
+            obj.updateProtocolProperties();
+        end
+        
+        function updateProtocolProperties(obj)
+            
             propertyMap = containers.Map();
             rawProperties = get(obj.protocolPropertyGrid, 'Properties');
-            for p = 1:length(rawProperties)
+            
+            for p = 1 : length(rawProperties)
                 prop = rawProperties(p);
-                propertyMap(prop.Name) = prop.Value;
+                
+                if strcmp(prop.Name, 'applyToAllProtocol')
+                    obj.applyToAllProtocol = prop.Value;
+                else
+                    propertyMap(prop.Name) = prop.Value;
+                end
             end
-
             obj.acquisitionService.setProtocolPropertyMap(propertyMap);
         end
         
         function populateProtocolProperties(obj)
             
             numberOfActiveChannels = numel(obj.ampList);
-
+            
             % usage:  ampParamGen('chan', 'Hold') returns chan1Hold,
             % chan2Hold if there exist two amplifier configuration
             
             ampParamGen = @(preFix, postFix) arrayfun(@(i) strcat(preFix, num2str(i), postFix), 1 : numberOfActiveChannels, 'UniformOutput', false);
-            ampPropertynames = [ampParamGen('chan', ''), ampParamGen('chan', 'Hold'), ampParamGen('chan', 'Mode')]; 
+            ampPropertynames = [ampParamGen('chan', ''), ampParamGen('chan', 'Hold'), ampParamGen('chan', 'Mode')];
             
             index = 0;
             n = numel(ampPropertynames) + numel(obj.projectorPropertyNames);
-            descriptors = symphonyui.core.PropertyDescriptor.empty(0, n);
+            descriptors = symphonyui.core.PropertyDescriptor.empty(0, n + 1);
             
             % set amplifer specific properties
             for i = 1 : numel(ampPropertynames)
@@ -155,6 +179,9 @@ classdef CommonControl < symphonyui.ui.Module
                 descriptors(index + i) = symphonyui.core.PropertyDescriptor.fromProperty(obj, obj.projectorPropertyNames{i});
                 descriptors(index + i).category = 'Projector';
             end
+            
+            descriptors(n + 1) = symphonyui.core.PropertyDescriptor.fromProperty(obj, 'applyToAllProtocol');
+            descriptors(n + 1).category = 'Protocol';
             
             fields = symphonyui.ui.util.desc2field(descriptors);
             set(obj.protocolPropertyGrid, 'Properties', fields);
