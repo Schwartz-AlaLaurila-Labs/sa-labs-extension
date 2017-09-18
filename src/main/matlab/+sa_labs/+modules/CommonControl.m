@@ -5,6 +5,7 @@ classdef CommonControl < symphonyui.ui.Module
         offsetX = 0 % um
         offsetY = 0 % um
         backgroundSize
+        backGroundIntensity = 0.5
         
         NDF = 5 % Filter wheel position
         frameRate = 60;% Hz
@@ -36,7 +37,7 @@ classdef CommonControl < symphonyui.ui.Module
     
     properties(Hidden)
         
-        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize'};
+        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'backGroundIntensity'};
         chan1Type
         chan2Type
         chan3Type
