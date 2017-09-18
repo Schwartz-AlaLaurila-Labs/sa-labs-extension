@@ -161,7 +161,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             % set the NDF filter wheel
             if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                filterWheel.setNdfValue(obj.NDF);
+                ndfs = obj.rig.getDevices('neutralDensityFilterWheel');
+                ndfs{1}.setNdfValue(obj.NDF);
             end
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))

@@ -64,7 +64,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             if isnan(position)
                 value = -1;
             else
-                value = values{position};
+                value = values(position);
             end
         end
         
