@@ -24,6 +24,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         valueMax = 1.0;
         numValues = 1;
         numValueRepeats = 1;
+        meanLevel = 0;
     end
     
     properties (Hidden)

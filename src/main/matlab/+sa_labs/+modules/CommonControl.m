@@ -4,8 +4,8 @@ classdef CommonControl < symphonyui.ui.Module
         % projector
         offsetX = 0 % um
         offsetY = 0 % um
-        backgroundSize
-        backGroundIntensity = 0.5
+        backgroundSize  % um
+        backGroundIntensity = 0.0
         
         NDF = 5 % Filter wheel position
         frameRate = 60;% Hz
@@ -106,7 +106,7 @@ classdef CommonControl < symphonyui.ui.Module
             devices = obj.configurationService.getDevices('Amp');
             try
                 lcr = obj.configurationService.getDevices('lightcrafter');
-                obj.backgroundSize = lcr{1}.getCanvasSize();
+                obj.backgroundSize = lcr{1}.getBackgroundSizeInMicrons();
             catch exception %#ok
                 % ignore if the lcr is not found
             end

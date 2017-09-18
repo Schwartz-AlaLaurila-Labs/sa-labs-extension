@@ -3,7 +3,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     
     properties
         backGroundIntensity = 0.0         % Background light intensity (0-1)
-        backgroundSize
+        backgroundSize          % um
         meanLevel1 = 0.5        % Background intensity value pattern 1
         meanLevel2 = 0.5        % Background intensity value pattern 2
         contrast1 = 1           % Weber contrast from mean for object, color 1
@@ -113,7 +113,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 lcr = obj.rig.getDevice('LightCrafter');
-                obj.backgroundSize = lcr.getBackgroundSize();
+                obj.backgroundSize = lcr.getBackgroundSizeInMicrons();
                 obj.colorMode = lcr.getColorMode();
             end
             
