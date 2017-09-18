@@ -144,7 +144,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         end
         
         function background = getBackground(obj)
-            backGroundSize = obj.getBackgroundSize();
+            backGroundSize = obj.getConfigurationSetting('backgroundSize');
             canvasSize = obj.getCanvasSize();
             canvasTranslation = obj.getConfigurationSetting('canvasTranslation');
             background = stage.builtin.stimuli.Rectangle();
@@ -153,12 +153,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             background.opacity = 1;
         end
 
-        function backGroundSize = getBackgroundSize(obj)
-            backGroundSize = obj.getConfigurationSetting('backgroundSize');
+        function backGroundSize = getBackgroundSizeInMicrons(obj)
+            backGroundSize = obj.pix2um(obj.getConfigurationSetting('backgroundSize'));
         end
 
-        function setBackgroundSize(obj, backGroundSize)
-            obj.setConfigurationSetting('backgroundSize', backGroundSize);
+        function setBackgroundSizeInMicrons(obj, backGroundSize)
+            obj.setConfigurationSetting('backgroundSize', um2pix(backGroundSize));
         end
 
         function tf = getPrerender(obj)
@@ -278,6 +278,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             p = round(um / micronsPerPixel);
         end
         
+        function um = pix2um(obj, pixel)
+            micronsPerPixel = obj.getConfigurationSetting('micronsPerPixel');
+            um = round(pixel * micronsPerPixel);
+        end
     end
     
 end

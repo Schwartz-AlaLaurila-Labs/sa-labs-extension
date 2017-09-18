@@ -15,6 +15,7 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         
         numberOfPositions = 11;
         numberOfCycles = 2;
+        meanLevel = 0.0;
     end
     
     properties (Dependent)
