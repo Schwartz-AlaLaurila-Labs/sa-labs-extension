@@ -255,19 +255,46 @@ classdef LightCrafterDevice < symphonyui.core.Device
         end
         
         function setPatternAttributes(obj, bitDepth, color, numPatterns)
-            % configure the lightcrafter
-            obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
-            obj.setConfigurationSetting('numberOfPatterns', numPatterns)
+            setState = false;
+            attempt = 0;
             
-            % configure the stage renderer
-            renderer = stage.builtin.renderers.PatternRenderer(numPatterns, bitDepth);
-            obj.stageClient.setCanvasRenderer(renderer);
+            while ~ setState
+                try
+                    set();
+                catch exception
+                    if attempt > 2
+                        rethrow(exception);
+                    end
+                    warning(exception.message);
+                    attempt = attempt + 1;
+                    disp('retrying in 0.1 second');
+                    obj.reconnectLightCrafter();
+                end
+            end
+            
+            function set()
+                % configure the lightcrafter
+                obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+                obj.setConfigurationSetting('numberOfPatterns', numPatterns)
+                % configure the stage renderer
+                renderer = stage.builtin.renderers.PatternRenderer(numPatterns, bitDepth);
+                obj.stageClient.setCanvasRenderer(renderer);
+                setState = true;
+            end
         end
         
         function [bitDepth, color, numPatterns] = getPatternAttributes(obj)
             [bitDepth, color, numPatterns] = obj.lightCrafter.getPatternAttributes();
-        end                
-            
+        end
+        
+        
+        function reconnectLightCrafter(obj)
+            obj.lightCrafter.disconnect();
+            pause(0.1);
+            obj.lightCrafter.connect();
+            obj.lightCrafter.setMode('pattern');
+        end
+        
             
         function r = getPatternRate(obj)
             r = obj.lightCrafter.currentPatternRate();
