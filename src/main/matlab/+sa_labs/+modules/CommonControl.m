@@ -2,42 +2,45 @@ classdef CommonControl < symphonyui.ui.Module
     
     properties
         % projector
-        offsetX = 0 % um
-        offsetY = 0 % um
-        backgroundSize  % um
-        backGroundIntensity = 0.0
+        offsetX = 0         % um
+        offsetY = 0         % um
+        backgroundSize      % um
+        meanLevel = 0.0     % (0 - 1)    
+       
+        NDF = 5             % Filter wheel position
+        frameRate = 60      % Hz
+        patternRate = 60    % Hz
+        blueLED = 20        % 0-255
+        greenLED = 0        % 0-255
         
-        NDF = 5 % Filter wheel position
-        frameRate = 60;% Hz
-        patternRate = 60;% Hz
-        blueLED = 20 % 0-255
-        greenLED = 0 % 0-255
-        
-        spikeDetectorMode = 'Filtered Threshold';
+        spikeDetectorMode = 'Filtered Threshold'
         spikeThreshold = 22 % pA or std
         
-        % amplifiers
-        chan1 = 'Amp1';
+        % Amplifiers
+        chan1 = 'Amp1'
         chan1Mode = 'Cell attached'
         chan1Hold = 0
         
-        chan2 = 'None';
+        chan2 = 'None'
         chan2Mode = 'Off'
         chan2Hold = 0
         
-        chan3  = 'None';
+        chan3  = 'None'
         chan3Mode = 'Off'
         chan3Hold = 0
         
-        chan4  = 'None';
+        chan4  = 'None'
         chan4Mode = 'Off'
         chan4Hold = 0
-        applyToAllProtocol = false;
+        applyToAllProtocol = false
+        
+        stageX = 0          % X co-ordinates of stage
+        stageY = 0          % Y co-ordinates of stage
     end
     
     properties(Hidden)
         
-        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'backGroundIntensity'};
+        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'meanLevel'};
         chan1Type
         chan2Type
         chan3Type

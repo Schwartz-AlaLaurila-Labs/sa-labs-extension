@@ -21,6 +21,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan4Hold = 0                   % Holding potential for 'Amp4'
         spikeDetectorMode = 'advanced'; % Online spike detection mode
         spikeThreshold = -6             % Spike detection threshold (pA) or (pseudo-)std
+        stageX                          % X co-ordinates of stage
+        stageY                          % Y co-ordinates of stage
     end
     
     properties (Abstract)
