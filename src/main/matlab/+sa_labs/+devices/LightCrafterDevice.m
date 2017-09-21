@@ -45,7 +45,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPositionDefault);
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false);
-            obj.addConfigurationSetting('micronsPerPixel', 1);
+            obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel);
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
             obj.addConfigurationSetting('frameTrackerDuration', inf);
             obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
@@ -107,11 +107,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         function s = getFrameTrackerDuration(obj)
             s = obj.getConfigurationSetting('frameTrackerDuration');
         end        
-        
-%         function setFrameTrackerDuration(obj, s)
-%             obj.setConfigurationSetting('frameTrackerDuration', s);
-%         end        
-        
+
         function s = getCanvasTranslation(obj)
             s = obj.getConfigurationSetting('canvasTranslation');
         end     
@@ -310,6 +306,5 @@ classdef LightCrafterDevice < symphonyui.core.Device
             um = round(pixel * micronsPerPixel);
         end
     end
-    
 end
 

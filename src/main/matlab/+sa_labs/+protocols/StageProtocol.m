@@ -2,7 +2,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     % This class handles protocol control which is visual stimulus specific
     
     properties
-        backGroundIntensity = 0.0         % Background light intensity (0-1)
+        meanLevel = 0.0         % Background light intensity (0-1)
         backgroundSize          % um
         meanLevel1 = 0.5        % Background intensity value pattern 1
         meanLevel2 = 0.5        % Background intensity value pattern 2
@@ -65,7 +65,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             d = getPropertyDescriptor@sa_labs.protocols.BaseProtocol(obj, name);
 
             switch name
-                case {'backGroundIntensity', 'intensity'}
+                case {'meanLevel', 'intensity'}
                     d.isHidden = obj.numberOfPatterns > 1 && strcmp(obj.colorCombinationMode, 'contrast');
                     
                 case {'offsetX','offsetY','NDF','blueLED','greenLED', 'backgroundSize'}
@@ -156,19 +156,23 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if nargin < 2
                 setAmpHoldSignals = true;
             end
+            prepareRun@sa_labs.protocols.BaseProtocol(obj, setAmpHoldSignals);
             
+            import sa_labs.common.DaqLogger;
             % obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
             
             % set the NDF filter wheel
             if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
                 ndfs = obj.rig.getDevices('neutralDensityFilterWheel');
                 ndfs{1}.setNdfValue(obj.NDF);
+                DaqLogger.log('Set the NDF position to ', num2str(obj.NDF));
             end
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 obj.prepareProjector();
             end
-            prepareRun@sa_labs.protocols.BaseProtocol(obj, setAmpHoldSignals);
+            DaqLogger.log(sprintf('%s ', evalc('disp(obj)')));
+            DaqLogger.log('Preparing epoch ...');           
         end
         
         function prepareEpoch(obj, epoch)
@@ -181,6 +185,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
             if testMode
                 % gaussian noise for analysis testing
+                sa_labs.daq.log('Running the rig in test mode ');
                 obj.addGaussianLoopbackSignals(epoch);
             else
                 % it is required to have an amp stimulus for stage protocols
@@ -200,6 +205,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function completeEpoch(obj, epoch)
+           
             testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
             if ~ testMode
                 epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
@@ -210,7 +216,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function completeRun(obj)
             completeRun@sa_labs.protocols.BaseProtocol(obj);
             obj.rig.getDevice('Stage').clearMemory();
-        end
+         end
         
         function [tf, msg] = isValid(obj)
             [tf, msg] = isValid@sa_labs.protocols.BaseProtocol(obj);
@@ -237,12 +243,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     p.addController(patternController);
                     
                     % add mode uses the intensity value on one pattern,
-                    % but keeps the object on at the backGroundIntensity at the other pattern
+                    % but keeps the object on at the meanLevel at the other pattern
                 elseif strcmp(obj.colorCombinationMode, 'add')
                     pattern = obj.primaryObjectPattern;
                     bgPattern = obj.backgroundPattern;
                     patternController = stage.builtin.controllers.PropertyController(stageObject, 'color', ...
-                        @(s)(obj.intensity * patternSelect(s, pattern) + obj.backGroundIntensity * patternSelect(s, bgPattern)));
+                        @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
                     p.addController(patternController);
                 else
                     % two-color contrast mode has separate intensity values as weber contrast of the mean
@@ -359,10 +365,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 if strcmp(obj.colorCombinationMode, 'contrast')
                     lightCrafter.setBackgroundConfiguration('twoPattern', obj.meanLevel1, obj.meanLevel2);
                 else
-                    lightCrafter.setBackgroundConfiguration('singlePattern', obj.backGroundIntensity, obj.backgroundPattern);
+                    lightCrafter.setBackgroundConfiguration('singlePattern', obj.meanLevel, obj.backgroundPattern);
                 end
             else
-                lightCrafter.setBackgroundConfiguration('noPattern', obj.backGroundIntensity);
+                lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
             end
             lightCrafter.setPrerender(obj.prerender);
             lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);

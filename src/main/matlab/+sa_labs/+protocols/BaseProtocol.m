@@ -5,21 +5,21 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     %   - It can handle upto 4 different amplifier channels
     %   - It strongly relies on logical naming of the amplifier channels
     %   @see chan1, etc
-   
+    
     properties
-        chan1 = 'Amp1';                 % Wired to MultiClamp(1)/AxoClamp(1) channel 1, Logical naming 'Amp1' 
+        chan1 = 'Amp1';                 % Wired to MultiClamp(1)/AxoClamp(1) channel 1, Logical naming 'Amp1'
         chan1Mode = 'Cell attached'     % Recording mode for 'Amp1'
         chan1Hold = 0                   % Holding potential for 'Amp1'
-        chan2 = 'None';                 % Wired to MultiClamp(1)/AxoClamp(1) channel 2, Logical naming 'Amp2' 
+        chan2 = 'None';                 % Wired to MultiClamp(1)/AxoClamp(1) channel 2, Logical naming 'Amp2'
         chan2Mode = 'Off'               % Recording mode for 'Amp2'
         chan2Hold = 0                   % Holding potential for 'Amp2'
-        chan3  = 'None';                % Wired to MultiClamp(2)/AxoClamp(2) channel 1, Logical naming 'Amp3' 
+        chan3  = 'None';                % Wired to MultiClamp(2)/AxoClamp(2) channel 1, Logical naming 'Amp3'
         chan3Mode = 'Off'               % Recording mode for 'Amp3'
         chan3Hold = 0                   % Holding potential for 'Amp3'
-        chan4  = 'None';                % Wired to MultiClamp(2)/AxoClamp(2) channel 2, Logical naming 'Amp4' 
+        chan4  = 'None';                % Wired to MultiClamp(2)/AxoClamp(2) channel 2, Logical naming 'Amp4'
         chan4Mode = 'Off'               % Recording mode for 'Amp4'
         chan4Hold = 0                   % Holding potential for 'Amp4'
-        spikeDetectorMode = 'advanced'; % Online spike detection mode 
+        spikeDetectorMode = 'advanced'; % Online spike detection mode
         spikeThreshold = -6             % Spike detection threshold (pA) or (pseudo-)std
     end
     
@@ -51,7 +51,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             
             % Initialize chanTypes with 'None' & Amp device name if exist
             % Like {'None, Amp1', 'None, Amp2'} .. etc
-
+            
             channelTypes = cell(1, 4);
             channelTypes(:) = {'None'};
             for i = 1 : numel(ampDeviceNames)
@@ -103,6 +103,12 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     end
                 end
             end
+            
+            % start making logger header for epochs
+            import sa_labs.common.DaqLogger;
+            DaqLogger.addLogTableHeader('(E)Epoch-No');
+            DaqLogger.addLogTableHeader('(C)Epoch-No');
+            DaqLogger.addLogTableHeader('(P)Epoch-No');
         end
         
         function createResponseFigure(obj, class, device, mode)
@@ -133,6 +139,46 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     epoch.addResponse(ampDevice);
                 end
             end
+            
+            if obj.hasValidPersistor()
+                epochNumber = obj.addRunningEpochNumber();
+                epoch.addParameter('epochNumber', epochNumber);
+                epochNumberByExp = obj.addRunningEpochNumberByExperiment();
+               
+                import sa_labs.common.DaqLogger;
+                DaqLogger.addLogTableColumn('(E)Epoch-No', epochNumberByExp);
+                DaqLogger.addLogTableColumn('(C)Epoch-No', epochNumber);
+                DaqLogger.addLogTableColumn('(P)Epoch-No', obj.numEpochsPrepared);
+            end
+
+        end
+        
+        function completeRun(obj)
+            completeRun@symphonyui.core.Protocol(obj);
+            sa_labs.common.DaqLogger.flushTable();
+        end
+        
+        function n = addRunningEpochNumber(obj)
+            p = obj.persistor;
+            try
+                n = p.currentEpochGroup.source.getProperty('epochsRecorded') + 1;
+                p.currentEpochGroup.source.setProperty('epochsRecorded', n);
+            catch exception %#ok
+                n = 1;
+                p.currentEpochGroup.source.addProperty('epochsRecorded', n);
+            end
+            
+        end
+        
+        function n = addRunningEpochNumberByExperiment(obj)
+            p = obj.persistor;
+            try
+                n = p.experiment.getProperty('totalEpochsRecorded') + 1;
+                p.experiment.setProperty('totalEpochsRecorded', n);
+            catch exception %#ok
+                n = 1;
+                p.experiment.addProperty('totalEpochsRecorded', n);
+            end
         end
         
         function tf = shouldContinuePreparingEpochs(obj)
@@ -156,11 +202,18 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 tf = ~ strcmpi(obj.responsePlotMode, 'false');
             end
         end
+        
+        function tf = hasValidPersistor(obj)
+            p = obj.persistor;
+            tf =  ~ isempty(p) && ~ isempty(p.currentEpochBlock);
+        end
     end
     
     methods (Access = private)
         
         function applyBackground(obj)
+            import sa_labs.common.DaqLogger;
+            
             for ci = 1:4
                 channelName = sprintf('chan%d', ci);
                 holdName = sprintf('chan%dHold', ci);
@@ -175,9 +228,12 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 
                 device.background = symphonyui.core.Measurement(newBackground, device.background.displayUnits);
                 device.applyBackground();
+                DaqLogger.log('Applying background.');
                 
                 if prevBackground.quantity ~= newBackground
+                    DaqLogger.log('Please wait for 5 seconds...');
                     pause(5);
+                    DaqLogger.log('Done.');
                 end
             end
         end

@@ -23,10 +23,27 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
-            
             obj.NDF = 2;
         end
-                
+        
+        function prepareRun(obj)
+            import sa_labs.common.DaqLogger;
+            
+            DaqLogger.flushTable();
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
+            DaqLogger.log(DaqLogger.getHeader());
+        end
+        
+        function prepareEpoch(obj, epoch)
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+        end
+        
+        function completeEpoch(obj, epoch)
+            completeEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+            import sa_labs.common.DaqLogger;
+            DaqLogger.log(DaqLogger.getCurrentRow());
+        end
+        
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             
@@ -68,7 +85,7 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
                 hbar.color = obj.intensity;
                 hbar.position = [canvasSize(1)/2, canvasSize(2)/2];
                 p.addStimulus(hbar);
-                 
+                
                 vbar = stage.builtin.stimuli.Rectangle();
                 vbar.size = [armLengthPix, armWidthPix];
                 vbar.color = obj.intensity;

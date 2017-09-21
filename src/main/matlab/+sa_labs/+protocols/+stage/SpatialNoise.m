@@ -10,7 +10,6 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         sizeX = 300 % um
         sizeY = 300 % um
         contrast = 1; 
-        meanLevel = 0;
         frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
         seedStartValue = 1
         seedChangeMode = 'repeat only';
