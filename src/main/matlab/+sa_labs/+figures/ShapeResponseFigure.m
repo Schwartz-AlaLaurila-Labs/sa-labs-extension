@@ -149,8 +149,10 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             obj.epochIndex = obj.epochIndex + 1;
             obj.epochData{obj.epochIndex, 1} = sd;
             
+            tic
             obj.analyzeData(newSession);
-
+            disp('Time for data analysis')
+            toc
             if strcmp(obj.shapePlotMode, 'plotSpatial_mean') && obj.epochIndex == 1
                 obj.shapePlotMode = 'temporalResponses';
             end

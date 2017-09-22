@@ -158,7 +158,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             prepareRun@sa_labs.protocols.BaseProtocol(obj, setAmpHoldSignals);
             
-            import sa_labs.common.DaqLogger;
             % obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
             
             % set the NDF filter wheel
@@ -171,8 +170,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 obj.prepareProjector();
             end
-            DaqLogger.log(sprintf('%s ', evalc('disp(obj)')));
-            DaqLogger.log('Preparing epoch ...');           
         end
         
         function prepareEpoch(obj, epoch)

@@ -25,25 +25,7 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
             didSetRig@sa_labs.protocols.StageProtocol(obj);
             obj.NDF = 2;
         end
-        
-        function prepareRun(obj)
-            import sa_labs.common.DaqLogger;
-            
-            DaqLogger.flushTable();
-            prepareRun@sa_labs.protocols.StageProtocol(obj);
-            DaqLogger.log(DaqLogger.getHeader());
-        end
-        
-        function prepareEpoch(obj, epoch)
-            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-        end
-        
-        function completeEpoch(obj, epoch)
-            completeEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-            import sa_labs.common.DaqLogger;
-            DaqLogger.log(DaqLogger.getCurrentRow());
-        end
-        
+
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             

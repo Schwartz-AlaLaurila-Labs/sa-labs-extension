@@ -130,7 +130,6 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             if generateNewStimulus
                 
                 analysisData = obj.shapeResponseFigure.analysisData;
-                
                 p = struct();
                 p.generatePositions = true;
                 obj.pointSetIndex = obj.pointSetIndex + 1;

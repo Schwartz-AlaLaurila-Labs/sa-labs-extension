@@ -105,12 +105,6 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     end
                 end
             end
-            
-            % start making logger header for epochs
-            import sa_labs.common.DaqLogger;
-            DaqLogger.addLogTableHeader('(E)Epoch-No');
-            DaqLogger.addLogTableHeader('(C)Epoch-No');
-            DaqLogger.addLogTableHeader('(P)Epoch-No');
         end
         
         function createResponseFigure(obj, class, device, mode)
@@ -141,23 +135,10 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     epoch.addResponse(ampDevice);
                 end
             end
-            
-            if obj.hasValidPersistor()
-                epochNumber = obj.addRunningEpochNumber();
-                epoch.addParameter('epochNumber', epochNumber);
-                epochNumberByExp = obj.addRunningEpochNumberByExperiment();
-               
-                import sa_labs.common.DaqLogger;
-                DaqLogger.addLogTableColumn('(E)Epoch-No', epochNumberByExp);
-                DaqLogger.addLogTableColumn('(C)Epoch-No', epochNumber);
-                DaqLogger.addLogTableColumn('(P)Epoch-No', obj.numEpochsPrepared);
-            end
-
         end
         
         function completeRun(obj)
             completeRun@symphonyui.core.Protocol(obj);
-            sa_labs.common.DaqLogger.flushTable();
         end
         
         function n = addRunningEpochNumber(obj)
@@ -214,7 +195,6 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     methods (Access = private)
         
         function applyBackground(obj)
-            import sa_labs.common.DaqLogger;
             
             for ci = 1:4
                 channelName = sprintf('chan%d', ci);
@@ -230,12 +210,9 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 
                 device.background = symphonyui.core.Measurement(newBackground, device.background.displayUnits);
                 device.applyBackground();
-                DaqLogger.log('Applying background.');
                 
                 if prevBackground.quantity ~= newBackground
-                    DaqLogger.log('Please wait for 5 seconds...');
                     pause(5);
-                    DaqLogger.log('Done.');
                 end
             end
         end
