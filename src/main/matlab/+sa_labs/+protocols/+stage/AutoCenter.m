@@ -24,6 +24,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         valueMax = 1.0;
         numValues = 1;
         numValueRepeats = 1;
+        responsePlotMode = 'false';
     end
     
     properties (Hidden)
@@ -40,10 +41,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         currentVoltageIndex
         runConfig
         pointSetIndex
-        
-        responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'presentationId';
-        
     end
 
     properties (Hidden, Dependent)
@@ -78,12 +76,14 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             end
             
             % make device list for shape response figure
-            for i = 1 : 4
-                channelProperty = strcat('chan', num2str(i));
-                if obj.isChannelActive(channelProperty)
-                    device = obj.rig.getDevice(obj.(channelProperty));
-                    class = strcat('sa_labs.figures.ShapeResponseFigure', num2str(i));
-                    obj.createShapeResponseFigure(class, {device}, obj.([channelProperty 'Mode']));
+            if obj.isPlotEnabled()
+                for i = 1 : 4
+                    channelProperty = strcat('chan', num2str(i));
+                    if obj.isChannelActive(channelProperty)
+                        device = obj.rig.getDevice(obj.(channelProperty));
+                        class = strcat('sa_labs.figures.ShapeResponseFigure', num2str(i));
+                        obj.createShapeResponseFigure(class, {device}, obj.([channelProperty 'Mode']));
+                    end
                 end
             end
             prepareRun@sa_labs.protocols.StageProtocol(obj);
