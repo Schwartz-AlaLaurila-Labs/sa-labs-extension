@@ -42,6 +42,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         runConfig
         pointSetIndex
         responsePlotSplitParameter = 'presentationId';
+        responsePlotModeType = symphonyui.core.PropertyType('char', 'row', {'cartesian', 'false'})
     end
 
     properties (Hidden, Dependent)

@@ -179,8 +179,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             % the stage presentation has begun. Improves temporal alignment
             epoch.shouldWaitForTrigger = true;
             
-            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
-            if testMode
+
+            if obj.rigProperty.testMode
                 % gaussian noise for analysis testing
                 obj.addGaussianLoopbackSignals(epoch);
             else
@@ -202,8 +202,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function completeEpoch(obj, epoch)
            
-            testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
-            if ~ testMode
+            if ~ obj.rigProperty.testMode
                 epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
             end
             completeEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
