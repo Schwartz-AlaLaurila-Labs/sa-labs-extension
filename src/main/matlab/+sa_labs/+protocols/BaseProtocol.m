@@ -192,7 +192,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         end
     end
     
-    methods (Access = private)
+    methods (Access = protected)
         
         function applyBackground(obj)
             

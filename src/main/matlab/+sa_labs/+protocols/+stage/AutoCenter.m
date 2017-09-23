@@ -45,11 +45,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         responsePlotSplitParameter = 'presentationId';
         
     end
-    
-    properties (Transient, Hidden)
-        shapeResponseFigure
-    end
-    
+
     properties (Hidden, Dependent)
         totalNumEpochs
     end
@@ -64,46 +60,46 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
-            
             obj.NDF = 4;
         end
         
         function prepareRun(obj)
             obj.sessionId = regexprep(num2str(fix(clock),'%1d'),' +',''); % this is how you get a datetime string in MATLAB
             obj.epochNum = 0;
-            %             obj.startTime = clock;
             obj.autoContinueRun = true;
             obj.pointSetIndex = 0;
             
-%             if strcmp(obj.ampMode, 'Cell attached')
-%                 obj.alternateVoltage = false;
-%             end
+%           if strcmp(obj.ampMode, 'Cell attached')
+%              obj.alternateVoltage = false;
+%           end
+
             if obj.alternateVoltage
                 obj.currentVoltageIndex = 1;
             end
             
-            % make device list for figure
-            devices = {};
-            for ci = 1:4
-                ampName = obj.(['chan' num2str(ci)]);
-                if ~strcmp(ampName, 'None')
-                    device = obj.rig.getDevice(ampName);
-                    devices{end+1} = device; %#ok<AGROW>
+            % make device list for shape response figure
+            for i = 1 : 4
+                channelProperty = strcat('chan', num2str(i));
+                if obj.isChannelActive(channelProperty)
+                    device = obj.rig.getDevice(obj.(channelProperty));
+                    class = strcat('sa_labs.figures.ShapeResponseFigure', num2str(i));
+                    obj.createShapeResponseFigure(class, {device}, obj.([channelProperty 'Mode']));
                 end
             end
-            
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
+        end
+
+        function createShapeResponseFigure(obj, class, device, mode)
+
             % store this protocol's params as a struct for the figure handler
             warning('off','MATLAB:structOnObject')
             propertyStruct = struct(obj);
             
-            obj.shapeResponseFigure = obj.showFigure('sa_labs.figures.ShapeResponseFigure', devices, ...
-                propertyStruct,...
+            obj.showFigure(class, device, propertyStruct,...
                 'shapePlotMode','plotSpatial_mean',...
-                'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
+                'responseMode', mode,... 
                 'spikeThreshold', obj.spikeThreshold, ...
                 'spikeDetectorMode', obj.spikeDetectorMode);
-            
-            prepareRun@sa_labs.protocols.StageProtocol(obj);
         end
         
         
@@ -115,21 +111,13 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             % alternate ex/in for same spots and settings
             if obj.alternateVoltage && strcmp(obj.chan1Mode, 'Whole cell')
                 obj.chan1Hold = obj.voltages(obj.currentVoltageIndex);
-                if obj.currentVoltageIndex ~= 1 % only generate a new stim if we're on the first voltage
-                    generateNewStimulus = false;
-                end
-                fprintf('setting chan 1 voltage: %d mV; waiting 5 sec for stability\n', obj.chan1Hold);
-                
+                obj.applyBackground();
                 epoch.addParameter('chan1Hold',obj.chan1Hold);
-                device = obj.rig.getDevice(obj.chan1);
-                device.background = symphonyui.core.Measurement(obj.chan1Hold, device.background.displayUnits);
-                device.applyBackground();
-                pause(5)
+                generateNewStimulus = obj.currentVoltageIndex == 1;
             end
             
             if generateNewStimulus
-                
-                analysisData = obj.shapeResponseFigure.analysisData;
+                analysisData = struct();
                 p = struct();
                 p.generatePositions = true;
                 obj.pointSetIndex = obj.pointSetIndex + 1;

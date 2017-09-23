@@ -182,7 +182,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
             if testMode
                 % gaussian noise for analysis testing
-                sa_labs.daq.log('Running the rig in test mode ');
                 obj.addGaussianLoopbackSignals(epoch);
             else
                 % it is required to have an amp stimulus for stage protocols
