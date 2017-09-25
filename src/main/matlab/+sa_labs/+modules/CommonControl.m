@@ -40,7 +40,7 @@ classdef CommonControl < symphonyui.ui.Module
     
     properties(Hidden)
         
-        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'meanLevel'};
+        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'meanLevel', 'stageX', 'stageY'};
         chan1Type
         chan2Type
         chan3Type
