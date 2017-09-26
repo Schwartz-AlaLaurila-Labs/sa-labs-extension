@@ -369,7 +369,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
             lightCrafter.setLedEnables(true, 0, 0, 0, 0); % auto mode, should be set from pattern
             lightCrafter.setCanvasTranslation(round([obj.um2pix(obj.offsetX), obj.um2pix(obj.offsetY)]));
-            lightCrafter.setConfigurationSetting('backgroundSize', obj.backgroundSize);
+            lightCrafter.setBackgroundSizeInMicrons(obj.backgroundSize);
             pause(0.2); % let the projector get set up
         end
     end

@@ -5,8 +5,8 @@ classdef CommonControl < symphonyui.ui.Module
         offsetX = 0         % um
         offsetY = 0         % um
         backgroundSize      % um
-        meanLevel = 0.0     % (0 - 1)    
-       
+        meanLevel = 0.0     % (0 - 1)
+        
         NDF = 5             % Filter wheel position
         frameRate = 60      % Hz
         patternRate = 60    % Hz
@@ -36,6 +36,8 @@ classdef CommonControl < symphonyui.ui.Module
         
         stageX = 0          % X co-ordinates of stage
         stageY = 0          % Y co-ordinates of stage
+        settings
+        log
     end
     
     properties(Hidden)
@@ -60,6 +62,11 @@ classdef CommonControl < symphonyui.ui.Module
         function willGo(obj)
             obj.updateDeviceList();
             obj.populateProtocolProperties();
+            try
+                obj.loadSettings();
+            catch x
+                obj.log.debug(['Failed to load settings: ' x.message], x);
+            end
         end
         
         function bind(obj)
@@ -69,9 +76,22 @@ classdef CommonControl < symphonyui.ui.Module
             obj.addListener(c, 'InitializedRig', @obj.onServiceInitializedRig);
             obj.addListener(obj.acquisitionService, 'SelectedProtocol', @obj.onServiceSelectedProtocol);
         end
+        
+        function willStop(obj)
+            try
+                obj.saveSettings();
+            catch x
+                obj.log.debug(['Failed to save settings: ' x.message], x);
+            end
+        end
     end
     
     methods
+        
+        function obj = CommonControl()
+            obj.settings = sa_labs.modules.settings.CommonControlSettings();
+            obj.log = log4m.LogManager.getLogger(class(obj));
+        end
         
         function createUi(obj, figureHandle)
             set(figureHandle, ...
@@ -91,6 +111,7 @@ classdef CommonControl < symphonyui.ui.Module
                 'Callback', @obj.cbSetParameters);
             
             set(layout, 'Heights', [-1, 30]);
+            obj.settings = sa_labs.modules.settings.CommonControlSettings();
         end
         
         function onServiceInitializedRig(obj, ~, ~)
@@ -110,8 +131,8 @@ classdef CommonControl < symphonyui.ui.Module
             try
                 lcr = obj.configurationService.getDevices('lightcrafter');
                 obj.backgroundSize = lcr{1}.getBackgroundSizeInMicrons();
-            catch exception %#ok
-                % ignore if the lcr is not found
+            catch x 
+                obj.log.debug(['Failed to get background size: ' x.message], x);
             end
             
             obj.ampList = {};
@@ -189,6 +210,19 @@ classdef CommonControl < symphonyui.ui.Module
             
             fields = symphonyui.ui.util.desc2field(descriptors);
             set(obj.protocolPropertyGrid, 'Properties', fields);
+        end
+        
+        function loadSettings(obj)
+            if ~isempty(obj.settings.viewPosition)
+                p1 = obj.view.position;
+                p2 = obj.settings.viewPosition;
+                obj.view.position = [p2(1) p2(2) p1(3) p1(4)];
+            end
+        end
+        
+        function saveSettings(obj)
+            obj.settings.viewPosition = obj.view.position;
+            obj.settings.save();
         end
     end
     

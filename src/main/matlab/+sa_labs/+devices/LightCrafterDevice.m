@@ -154,7 +154,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         end
 
         function setBackgroundSizeInMicrons(obj, backGroundSize)
-            obj.setConfigurationSetting('backgroundSize', um2pix(backGroundSize));
+            obj.setConfigurationSetting('backgroundSize', obj.um2pix(backGroundSize));
         end
 
         function tf = getPrerender(obj)
