@@ -4,37 +4,36 @@ classdef SplitField < sa_labs.protocols.StageProtocol
         
         %times in ms
         preTime = 500 %will be rounded to account for frame rate
-        tailTime = 500; %will be rounded to account for frame rate
-        stimTime = 1000;
+        tailTime = 250; %will be rounded to account for frame rate
+        stimTime = 500;
         
-        contrast = 0.3
+        contrast = 0.5
 
-        Npositions = 2;
-        barSeparation = 20; %microns
+        numberOfPositions = 9;
+        barSeparation = 10; %microns
         
-        Nangles = 2;
-        barWidth = 1500; %microns
+        numberOfAngles = 2;
+        angleOffset = 0;
+        barWidth = 3000; %microns
         barLength = 3000; %microns
         
-        numberOfCycles = 3              % Number of times through the set
+        numberOfCycles = 3  % Number of times through the set
         
     end
     
     properties (Hidden)
-       version = 1        
-       curPosX
-       curPosY   
-       curStep
-       curAngle
-       stepList
-       blackSideList
-       angleList
-       curBlackSide %0 = negative position side, 1 = positive position side
-       
-    end
-    
-    properties (Dependent)
-        Nconditions
+        version = 1        
+        curPosX
+        curPosY   
+        curStep
+        curAngle
+        stepList
+        blackSideList
+        angleList
+        curBlackSide %0 = negative position side, 1 = positive position side
+
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = 'barStep';       
     end
     
     properties (Hidden, Dependent)
@@ -49,40 +48,38 @@ classdef SplitField < sa_labs.protocols.StageProtocol
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
             %set positions
-            pixelStep = round(obj.barSeparation / obj.rigConfig.micronsPerPixel);           
-            firstStep =  -floor(obj.Npositions/2) * pixelStep;          
-            steps = firstStep:pixelStep:firstStep+(obj.Npositions-1)*pixelStep;  
+            firstStep =  -floor(obj.numberOfPositions/2) * obj.barSeparation;          
+            steps = firstStep:obj.barSeparation:firstStep+(obj.numberOfPositions-1)*obj.barSeparation;
             %these are the step distances from center
             
             %set angles
-            angles = round(0:180/obj.Nangles:179); %degrees
-            
+            angles = mod(round(0:180/obj.numberOfAngles:(180-.01)) + obj.angleOffset, 180);
+            numberOfConditions = obj.numberOfAngles * obj.numberOfPositions * 2;
             %make the list of positions and angles and randomize
             z = 1;
             for i=1:obj.numberOfCycles
-                R = randperm(obj.Nconditions);
-                for j=1:obj.Nconditions
-                    stepList_temp(z) = steps(rem(R(j), obj.Npositions) + 1);
-                    angleList_temp(z) = angles(rem(R(j), obj.Nangles) + 1);
-                    blackSideList_temp(z) = R(j)<obj.Nconditions/2;
+                R = randperm(numberOfConditions);
+                for j=1:numberOfConditions
+                    stepList_temp(z) = steps(rem(R(j), obj.numberOfPositions) + 1);
+                    angleList_temp(z) = angles(rem(R(j), obj.numberOfAngles) + 1);
+                    blackSideList_temp(z) = R(j) < numberOfConditions/2;
                     z=z+1;
                 end
             end
                         
-            obj.stepList = stepList_temp(1:obj.numberOfAverages);
-            obj.angleList = angleList_temp(1:obj.numberOfAverages);
-            obj.blackSideList = blackSideList_temp(1:obj.numberOfAverages);
+            obj.stepList = stepList_temp;
+            obj.angleList = angleList_temp;
+            obj.blackSideList = blackSideList_temp;
 
             
         end
         
         function prepareEpoch(obj, epoch)
             
-           
             %current step and angle
-            obj.curStep = obj.stepList(obj.numEpochsQueued+1);
-            obj.curAngle = obj.angleList(obj.numEpochsQueued+1);
-            obj.curBlackSide = obj.blackSideList(obj.numEpochsQueued+1);
+            obj.curStep = obj.stepList(obj.numEpochsPrepared+1);
+            obj.curAngle = obj.angleList(obj.numEpochsPrepared+1);
+            obj.curBlackSide = obj.blackSideList(obj.numEpochsPrepared+1);
 
             %get current position
             obj.curPosX = obj.curStep * cosd(obj.curAngle);
@@ -103,19 +100,19 @@ classdef SplitField < sa_labs.protocols.StageProtocol
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
                                     
-            barOffset = [obj.barWidth * cosd(obj.curAngle), obj.barLength * sind(obj.curAngle)];
-            barOffsetPx = obj.um2pix(barOffset);
+            barOffsetFromCenter = [obj.barWidth * cosd(obj.curAngle), obj.barLength * sind(obj.curAngle)] / 2;
+            barOffsetFromCenterPx = obj.um2pix(barOffsetFromCenter);
             curPosPx = obj.um2pix([obj.curPosX, obj.curPosY]);
             
             rect1 = stage.builtin.stimuli.Rectangle();
             rect1.size = [obj.um2pix(obj.barWidth), obj.um2pix(obj.barLength)];         
-            rect1.position = canvasSize / 2 + curPosPx - barOffsetPx;
+            rect1.position = canvasSize / 2 + curPosPx - barOffsetFromCenterPx;
             rect1.orientation = obj.curAngle;
             p.addStimulus(rect1);
             
             rect2 = stage.builtin.stimuli.Rectangle();
             rect2.size = [obj.um2pix(obj.barWidth), obj.um2pix(obj.barLength)];
-            rect2.position = canvasSize / 2 + curPosPx + barOffsetPx;
+            rect2.position = canvasSize / 2 + curPosPx + barOffsetFromCenterPx;
             rect2.orientation = obj.curAngle;
             p.addStimulus(rect2);
             
@@ -142,7 +139,7 @@ classdef SplitField < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfCycles * obj.Nangles * obj.Npositions * 2; %2 is for On and Off contrast flip
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles * obj.numberOfPositions * 2; %2 is for On and Off contrast flip
         end   
         
 
