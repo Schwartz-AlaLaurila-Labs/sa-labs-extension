@@ -39,6 +39,19 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             obj.angles = mod(round(0:360/obj.numberOfAngles:(360-.01)) + obj.angleOffset, 360);
         end
         
+        function prepareEpoch(obj, epoch)
+            
+            index = mod(obj.numEpochsPrepared, obj.numberOfAngles);
+            if index == 0
+                obj.angles = obj.angles(randperm(obj.numberOfAngles));
+            end
+            
+            obj.barAngle = obj.angles(index+1);
+            epoch.addParameter('barAngle', obj.barAngle);
+
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+        end        
+        
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             
@@ -81,19 +94,6 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             
         end
                 
-        function prepareEpoch(obj, epoch)
-            
-            index = mod(obj.numEpochsPrepared, obj.numberOfAngles);
-            if index == 0
-                obj.angles = obj.angles(randperm(obj.numberOfAngles));
-            end
-            
-            obj.barAngle = obj.angles(index+1);
-            epoch.addParameter('barAngle', obj.barAngle);
-
-            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-        end
-        
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
