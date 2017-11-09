@@ -7,7 +7,8 @@ classdef SplitField < sa_labs.protocols.StageProtocol
         tailTime = 250; %will be rounded to account for frame rate
         stimTime = 500;
         
-        contrast = 0.5
+        contrastSide1 = 0.5 % more pos contrast
+        contrastSide2 = 0 % more neg contrast
 
         numberOfPositions = 9;
         barSeparation = 10; %microns
@@ -126,11 +127,11 @@ classdef SplitField < sa_labs.protocols.StageProtocol
             
             
             if obj.curBlackSide
-                controller1 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrast, obj.meanLevel));
-                controller2 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, -obj.contrast, obj.meanLevel));
+                controller1 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide1, obj.meanLevel));
+                controller2 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide2, obj.meanLevel));
             else
-                controller1 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrast, obj.meanLevel));
-                controller2 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, -obj.contrast, obj.meanLevel));
+                controller1 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide1, obj.meanLevel));
+                controller2 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide2, obj.meanLevel));
             end
             
             p.addController(controller1);    

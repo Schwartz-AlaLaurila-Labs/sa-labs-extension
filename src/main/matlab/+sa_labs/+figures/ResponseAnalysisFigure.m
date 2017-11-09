@@ -137,7 +137,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             % right side signals over time for each param value
             obj.rightBox = uix.VBox('Parent', fullBox);
             obj.signalAxes = [];
-            
+            set(fullBox, 'Widths', [-1, -.5]);
         end
         
         function refreshUi(obj)
