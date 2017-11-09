@@ -22,7 +22,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         %PREVIOUS fitBlue = [1.0791E-11 -6.3562E-09 1.8909E-06 2.8196E-05];
         
         projectorColorMode = 'standard';
-        numberOfAmplifiers = 1;
+        numberOfAmplifiers = 2;
     end
     
     methods
