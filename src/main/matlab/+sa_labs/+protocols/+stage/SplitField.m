@@ -43,6 +43,11 @@ classdef SplitField < sa_labs.protocols.StageProtocol
     
     methods
         
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
+            
+            obj.meanLevel = 0.2;
+        end        
         
         function prepareRun(obj)
             % Call the base method.
