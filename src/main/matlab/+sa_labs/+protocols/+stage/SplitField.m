@@ -7,11 +7,11 @@ classdef SplitField < sa_labs.protocols.StageProtocol
         tailTime = 250; %will be rounded to account for frame rate
         stimTime = 500;
         
-        contrastSide1 = 0.5 % more pos contrast
+        contrastSide1 = 1 % more pos contrast
         contrastSide2 = 0 % more neg contrast
 
         numberOfPositions = 9;
-        barSeparation = 10; %microns
+        barSeparation = 30; %microns
         
         numberOfAngles = 2;
         angleOffset = 0;
