@@ -3,18 +3,17 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
     
     properties
         %times in ms
-        preTime = 250;
-        tailTime = 250;
+        preTime = 0;
+        tailTime = 0;
         stimTime = 10000;
         
-        movementDelay = 200;
-
         intensity = 0.1;
         barLength = 100;
         barWidth = 3000;
         
         randomSeed = 1;
-        numberOfAngles = 2; % set to a positive value to use a single fixed angle
+        numberOfAngles = 2;
+        angleOffset = 0;
         
         motionSeed = 1;
         motionStandardDeviation = 60; % µm
@@ -57,7 +56,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
             %set directions
-            obj.angles = rem(0:round(360/obj.numberOfAngles):359, 360);
+            obj.angles = rem((0:round(180/obj.numberOfAngles):179) + obj.angleOffset, 180);
 
             
             % create the motion path
@@ -96,6 +95,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             bar.size = [obj.um2pix(obj.barLength), obj.um2pix(obj.barWidth)];
             p.addStimulus(bar);
             
+            disp(obj.curAngle)
             % random motion controller
             function pos = movementController(state, angle, center, motionPath)
                 
