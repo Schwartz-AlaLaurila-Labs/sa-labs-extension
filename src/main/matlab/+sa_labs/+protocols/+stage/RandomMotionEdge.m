@@ -16,12 +16,12 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         randomSeed = 1;
         numberOfAngles = 2; % set to a positive value to use a single fixed angle
         
-        randomMotion = true;
         motionSeed = 1;
-        motionStandardDeviation = 60;
-        motionLowpassFilterParams = [8,10];
+        motionStandardDeviation = 60; % µm
+        motionLowpassFilterPassband = 8; % Hz
+        motionLowpassFilterStopband = 10; % Hz
         
-        numberOfCycles = 2;
+        numberOfCycles = 3;
         
     end
     
@@ -45,7 +45,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);        
             
             switch name
-                case {'randomMotion','motionSeed','motionLowpassFilterParams'}
+                case {'motionSeed','motionStandardDeviation','motionLowpassFilterPassband','motionLowpassFilterStopband'}
                     d.category = '5 Random Motion';
             end
             
@@ -59,11 +59,12 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             %set directions
             obj.angles = rem(0:round(360/obj.numberOfAngles):359, 360);
 
-                                 
+            
             % create the motion path
-            motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterParams(1),'StopbandFrequency',obj.motionLowpassFilterParams(2),'SampleRate',60);
+            frameRate = 60;
+            motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassband,'StopbandFrequency',obj.motionLowpassFilterStopband,'SampleRate',frameRate);
             stream = RandStream('mt19937ar', 'Seed', obj.motionSeed);
-            obj.motionPath = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * 60 + 200, 1);
+            obj.motionPath = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * frameRate + 100, 1);
             obj.motionPath = filtfilt(motionFilter, obj.motionPath);
             
         end
@@ -122,9 +123,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         function totalNumEpochs = get.totalNumEpochs(obj)
             
             totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
-            if obj.movementSensitivity
-                totalNumEpochs = obj.numberOfCycles * obj.numberOfMovementSensitivitySteps;
-            end
+
         end
         
     end
