@@ -11,7 +11,6 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         barLength = 100;
         barWidth = 3000;
         
-        randomSeed = 1;
         numberOfAngles = 2;
         angleOffset = 0;
         
