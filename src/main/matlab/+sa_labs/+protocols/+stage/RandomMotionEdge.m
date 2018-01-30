@@ -11,15 +11,15 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         barLength = 100;
         barWidth = 3000;
         singleEdgeMode = false;
-        singleEdgePolarity = 1; % or -1
+        singleEdgePolarity = 1; % 1 or -1
         
         numberOfAngles = 2;
         angleOffset = 0;
         
         motionSeed = 1;
-        motionStandardDeviation = 60; % µm
-        motionLowpassFilterPassband = 8; % Hz
-        motionLowpassFilterStopband = 10; % Hz
+        motionStandardDeviation = 400; % µm
+        motionLowpassFilterPassband = 6; % Hz
+        motionLowpassFilterStopband = 8; % Hz
         
         numberOfCycles = 3;
         
