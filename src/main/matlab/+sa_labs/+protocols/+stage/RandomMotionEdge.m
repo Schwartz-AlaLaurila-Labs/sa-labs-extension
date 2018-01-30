@@ -10,6 +10,8 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         intensity = 0.1;
         barLength = 100;
         barWidth = 3000;
+        singleEdgeMode = false;
+        singleEdgePolarity = 1; % or -1
         
         numberOfAngles = 2;
         angleOffset = 0;
@@ -87,14 +89,28 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);           
             
+            if obj.singleEdgeMode
+                lengthIncreaseForSingleEdgeMode = 2000;
+            else
+                lengthIncreaseForSingleEdgeMode = 0;
+            end                  
+             
             bar = stage.builtin.stimuli.Rectangle();
             bar.color = obj.intensity;
             bar.opacity = 1;
             bar.orientation = obj.curAngle;
-            bar.size = [obj.um2pix(obj.barLength), obj.um2pix(obj.barWidth)];
+            bar.size = [obj.um2pix(obj.barLength + lengthIncreaseForSingleEdgeMode), obj.um2pix(obj.barWidth)];
             p.addStimulus(bar);
             
-            disp(obj.curAngle)
+            if obj.singleEdgeMode
+                edgeOffsetForSingleEdgeMode = obj.um2pix((obj.barLength + lengthIncreaseForSingleEdgeMode) / 2); % move bar back half a length to time-center leading edge
+            else
+                edgeOffsetForSingleEdgeMode = 0;
+            end
+            if obj.singleEdgePolarity < 0 
+                edgeOffsetForSingleEdgeMode = edgeOffsetForSingleEdgeMode * -1;
+            end
+            
             % random motion controller
             function pos = movementController(state, angle, center, motionPath)
                 
@@ -104,8 +120,8 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
                     frame = state.frame;
                 end
                 if size(motionPath,2) == 1
-                    y = sind(angle) * motionPath(frame);
-                    x = cosd(angle) * motionPath(frame);
+                    y = sind(angle) * (motionPath(frame) + edgeOffsetForSingleEdgeMode);
+                    x = cosd(angle) * (motionPath(frame) + edgeOffsetForSingleEdgeMode);
                 else
                     y = sind(angle) * motionPath(frame, 1);
                     x = cosd(angle) * motionPath(frame, 2);
