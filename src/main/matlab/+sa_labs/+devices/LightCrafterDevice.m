@@ -193,14 +193,9 @@ classdef LightCrafterDevice < symphonyui.core.Device
             % appears on all patterns
             trackerDuration = obj.getFrameTrackerDuration();
             frameRate = obj.getFrameRate();
-            
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
                 @(s)mod(s.frame, 2) && s.time < trackerDuration && s.time < (presentation.duration - (1/frameRate)));
             presentation.addController(trackerColor);
-            
-            trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
-                @(s)s.time < trackerDuration && s.time < (presentation.duration - (1/frameRate)));
-            presentation.addController(trackerOpacity);
             
             % RENDER
             if obj.getPrerender()

@@ -13,6 +13,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         singleEdgeMode = false;
         singleEdgePolarity = 1; % 1 or -1
         
+        randomSeed = 1;
         numberOfAngles = 2;
         angleOffset = 0;
         
