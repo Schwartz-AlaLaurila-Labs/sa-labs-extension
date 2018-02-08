@@ -5,22 +5,20 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         %times in ms
         preTime = 0;
         tailTime = 0;
-        stimTime = 10000;
+        stimTime = 20000;
         
-        intensity = 0.1;
+        intensity = 0.5;
         barLength = 100;
         barWidth = 3000;
         singleEdgeMode = false;
         singleEdgePolarity = 1; % 1 or -1
         
-        randomSeed = 1;
         numberOfAngles = 2;
         angleOffset = 0;
         
         motionSeed = 1;
         motionStandardDeviation = 400; % µm
-        motionLowpassFilterPassband = 6; % Hz
-        motionLowpassFilterStopband = 8; % Hz
+        motionLowpassFilterPassband = 5; % Hz
         
         numberOfCycles = 3;
         
@@ -37,8 +35,13 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         responsePlotSplitParameter = 'movementAngle';
     end
     
+    properties (Dependent)
+        motionLowpassFilterStopband
+    end
+    
     properties (Hidden, Dependent)
         totalNumEpochs
+        
     end
     
     methods
@@ -140,6 +143,10 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             
             totalNumEpochs = obj.numberOfCycles * obj.numberOfAngles;
 
+        end
+        
+        function motionLowpassFilterStopband = get.motionLowpassFilterStopband(obj)
+            motionLowpassFilterStopband = obj.motionLowpassFilterPassband * 1.2;
         end
         
     end
