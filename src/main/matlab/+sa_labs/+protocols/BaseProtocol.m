@@ -44,6 +44,10 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'advanced', 'Simple Threshold', 'Filtered Threshold', 'none'});
     end
     
+    properties (Access = protected)
+       waitingForHardwareToStart 
+    end
+    
     methods
         
         function didSetRig(obj)
@@ -122,6 +126,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@symphonyui.core.Protocol(obj, epoch);
+            obj.waitingForHardwareToStart = true;
             
             epoch.addParameter('symphonyVersion', 2);
             if isprop(obj, 'version')

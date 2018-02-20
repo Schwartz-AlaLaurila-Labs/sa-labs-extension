@@ -148,7 +148,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function controllerDidStartHardware(obj)
             controllerDidStartHardware@sa_labs.protocols.BaseProtocol(obj);
-            obj.rig.getDevice('Stage').play(obj.createPresentation());
+            if obj.waitingForHardwareToStart
+                obj.waitingForHardwareToStart = false;
+                obj.rig.getDevice('Stage').play(obj.createPresentation());
+            end 
         end
         
         function prepareRun(obj, setAmpHoldSignals)
