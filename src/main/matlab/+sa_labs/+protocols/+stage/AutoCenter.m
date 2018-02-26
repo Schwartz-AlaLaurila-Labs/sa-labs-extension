@@ -353,17 +353,18 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 %                 presentation.addController(controllerIntensity);
                 
                 % diameter X
+                diameter_transformed = obj.um2pix(obj.shapeDataMatrix(:,col_diameter));
                 controllerDiameterX = stage.builtin.controllers.PropertyController(circ, 'radiusX', @(s)shapeController(s, obj.preTime, 100, ...
                     obj.shapeDataMatrix(:,col_startTime), ...
                     obj.shapeDataMatrix(:,col_endTime), ...
-                    obj.shapeDataMatrix(:,col_diameter) / 2, ci));
+                    diameter_transformed / 2, ci));
                 p.addController(controllerDiameterX);
                 
                 % diameter Y
                 controllerDiameterY = stage.builtin.controllers.PropertyController(circ, 'radiusY', @(s)shapeController(s, obj.preTime, 100, ...
                     obj.shapeDataMatrix(:,col_startTime), ...
                     obj.shapeDataMatrix(:,col_endTime), ...
-                    obj.shapeDataMatrix(:,col_diameter) / 2, ci));
+                    diameter_transformed / 2, ci));
                 p.addController(controllerDiameterY);
                 
                 % position
