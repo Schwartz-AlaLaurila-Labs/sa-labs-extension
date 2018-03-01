@@ -28,7 +28,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 4 % Symphony 2
+        version = 5 % Corrected spot sizes, Symphony 2
         displayName = 'Auto Center'
         
         shapeDataMatrix
