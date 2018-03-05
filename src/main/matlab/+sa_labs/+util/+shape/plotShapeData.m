@@ -1,4 +1,5 @@
-function [] = plotShapeData(ax, ad, mode)
+function [] = plotShapeData(ad, mode, options)
+% display the shape data in ad (analysisData), using the string mode, with struct options
 
 if ~isfield(ad,'observations')
     disp('no observations');
@@ -6,8 +7,12 @@ if ~isfield(ad,'observations')
 end
 obs = ad.observations;
 
+if nargin < 3
+    options = struct();
+end
 
 if strcmp(mode, 'printParameters')
+    % display of epoch parameters
     firstEpoch = ad.epochData{1};
     fprintf('num positions: %d\n', length(ad.positions));
     fprintf('num values: %d\n', firstEpoch.numValues);
@@ -23,27 +28,40 @@ if strcmp(mode, 'printParameters')
     disp(ad.epochData{end})
    
     
-    
 elseif strncmp(mode, 'plotSpatial', 11)
-% elseif strcmp(mode, 'plotSpatial_tHalfMax')
+    
+    % general purpose spatial display function, shows all observations by voltage and intensity
 
     if isempty(obs)
         disp('empty observations')
         return
     end
 
-    if strfind(mode, 'mean')
+    combinationMode = 'mean';
+    if contains(mode, 'mean')
         mode_col = 5;
-        smode = 'mean';
-    elseif strfind(mode, 'peak')
+        modeLabel = 'mean';
+    elseif contains(mode, 'peak')
         mode_col = 6;
-        smode = 'peak';
-    elseif strfind(mode, 'tHalfMax')
-        mode_col = 7;
-        smode = 't half max';
-    elseif strfind(mode, 'saveMaps')
+        modeLabel = 'peak';
+    elseif contains(mode, 'median')
         mode_col = 5;
-        smode = 'saveMaps';        
+        modeLabel = 'median of means';
+        combinationMode = 'median';
+    elseif contains(mode, 'first')
+        mode_col = 5;
+        modeLabel = 'first';
+        combinationMode = 'first';        
+    elseif contains(mode, 'last')
+        mode_col = 5;
+        modeLabel = 'last';
+        combinationMode = 'last';            
+    elseif contains(mode, 'tHalfMax')
+        mode_col = 7;
+        modeLabel = 't half max';
+    elseif contains(mode, 'saveMaps')
+        mode_col = 5;
+        modeLabel = 'saveMaps';        
     end
    
     
@@ -53,9 +71,10 @@ elseif strncmp(mode, 'plotSpatial', 11)
     intensities = sort(unique(obs(:,3)));
     num_intensities = length(intensities);
     
-    data = cell(num_voltages, num_intensities, 2);
+    dataByVoltageIntensity = cell(num_voltages, num_intensities, 2);
+    gfits = {};
     
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, num_intensities, num_voltages);
+    ha = tight_subplot(num_intensities, num_voltages+1);
     for vi = 1:num_voltages
         for ii = 1:num_intensities
             intensity = intensities(ii);
@@ -70,7 +89,23 @@ elseif strncmp(mode, 'plotSpatial', 11)
                 obs_sel = ismember(obs(:,1:2), pos, 'rows');
                 obs_sel = obs_sel & obs(:,3) == intensity;
                 obs_sel = obs_sel & obs(:,4) == voltage;
-                val = nanmean(obs(obs_sel, mode_col),1);
+                if strcmp(combinationMode, 'mean')
+                    val = nanmean(obs(obs_sel, mode_col),1);
+                elseif strcmp(combinationMode, 'median')
+                    val = nanmedian(obs(obs_sel, mode_col),1);
+                elseif strcmp(combinationMode, 'first')
+                    val = obs(obs_sel, mode_col);
+                    try
+                        val = val(1);
+                    catch
+                    end
+                elseif strcmp(combinationMode, 'last')
+                    val = obs(obs_sel, mode_col);
+                    try
+                        val = val(end);
+                    catch
+                    end
+                end
                 if any(obs_sel) && ~isnan(val)
                     posIndex = posIndex + 1;
                     vals(posIndex,1) = val;
@@ -78,25 +113,190 @@ elseif strncmp(mode, 'plotSpatial', 11)
                 end
             end
             
-            plotIndex = vi + (ii-1) * num_voltages;
+            a = vi + (ii-1) * (num_voltages+1);
             
+            axes(ha(a));
+
             if posIndex >= 3
-                plotSpatial(axisHandles(plotIndex), goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', smode, voltage, intensity), 1, sign(voltage));
-    %             caxis([0, max(vals)]);
-    %             colormap(flipud(colormap))
+                gfits{a,1} = plotSpatial(goodPositions, vals, sprintf('%s at V = %d mV, intensity = %f', modeLabel, voltage, intensity), 1, sign(voltage) + .001);
+                gfits(a, 2:3) = {voltage, intensity};
+%                 if ~isnan(gfit)
+%     %             caxis([0, max(vals)]);
+%     %             colormap(flipud(colormap))
+%                     disp(gfit.keys)
+%                     disp(cell2mat(gfit.values))
+%                 else
+%                     disp('NaN fit');
+%                 end
             end
-            
-            data(vi, ii, 1:2) = {goodPositions, vals};
+
+            dataByVoltageIntensity(vi, ii, 1:2) = {goodPositions, vals};
         end
     end
     
-    if strcmp(smode, 'saveMaps')
+    % plot all the pathway gaussian fits on one graph
+    axes(ha(num_voltages+1))
+    for a = 1:size(gfits,1)
+        gfit = gfits{a,1};
+        if isempty(gfit)
+            continue
+        end
+        
+        voltage = gfits{a,2};
+        intensity = gfits{a,3};
+        if voltage < 0
+            % excitation
+            if intensity > 0.5
+                % ON (blue)
+                num_columns = [0,0,1];
+            else
+                % OFF (green)
+                num_columns = [0,1,0];
+            end
+        else
+            % inhibition
+            if intensity > 0.5
+                % ON (red)
+                num_columns = [1 0 0];
+            else
+                % OFF (yellow)
+                num_columns = [.6 .6 0];
+            end
+        end
+        
+        e = ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), num_columns);
+        set(e, 'LineWidth', 2);
+        line(gfit('centerX') + [-l, l]/2, gfit('centerY') * [1,1], 'LineWidth', 1.5, 'Color', num_columns);
+        line(gfit('centerX') * [1,1], gfit('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', num_columns);
+        
+    end
+%     axis square
+    axis equal
+    
+    if strcmp(modeLabel, 'saveMaps')
         save('savedMaps.mat', 'data','voltages','intensities');
         disp('saved maps to savedMaps.mat');
     end
     
     
-elseif strcmp(mode, 'subunit')
+elseif strcmp(mode, 'overlap')
+    % pretty print of thresholded spatial RFs, overlaid by On Off and Ex In pathways.
+    % default: options.overlapThresoldPercentile = 80
+
+    if isempty(obs)
+        disp('empty observations')
+        return
+    end
+    
+    mode_col = 5; % mean
+    
+    voltages = sort(unique(obs(:,4)));
+    voltages = [voltages(1), voltages(end)];
+    num_voltages = length(voltages);
+        
+    intensities = sort(unique(obs(:,3)));
+    num_intensities = length(intensities);
+        
+    paramsByPlot = {[1 1; 0 0], [0 0; 1 1], [0 1; 0 1], [1 0; 1 0]};
+    titlesByPlot = {'Excitation','Inhibition','On','Off'};
+    
+    hh = {};
+    for i = 1:4
+        hh{i} = tight_subplot(num_intensities, num_voltages, 0);
+    end
+    
+    for pp = 1:length(paramsByPlot)
+        for vi = 1:num_voltages
+            for ii = 1:num_intensities
+                a = vi + (ii-1) * num_voltages;
+                ax = hh{a};
+                axes(ax(pp))
+                axis(ax(pp), 'off');
+                
+                if ~paramsByPlot{pp}(vi, ii)
+                    continue
+                end
+                
+                intensity = intensities(ii);
+                voltage = voltages(vi);
+
+    %             vals = zeros(length(ad.positions),1);
+                vals = [];
+                posIndex = 0;
+                goodPositions = [];
+                for poi = 1:length(ad.positions)
+                    pos = ad.positions(poi,:);
+                    obs_sel = ismember(obs(:,1:2), pos, 'rows');
+                    obs_sel = obs_sel & obs(:,3) == intensity;
+                    obs_sel = obs_sel & obs(:,4) == voltage;
+                    val = nanmean(obs(obs_sel, mode_col),1);
+                    if any(obs_sel) && ~isnan(val)
+                        posIndex = posIndex + 1;
+                        vals(posIndex,1) = val;
+                        goodPositions(posIndex,:) = pos;
+                    end
+                end
+
+                % thresholding
+                vals = sign(voltage) * vals;
+                if isfield(options, 'overlapThresoldPercentile')
+                    percentile = options.overlapThresoldPercentile;
+                else
+                    percentile = 80;
+                end
+                thresholdLevel = prctile(vals, percentile);
+
+                n = 1;
+                % make colormaps for each surface
+                if sign(voltage) < 0
+                    % excitation
+                    if intensity > 0.5
+                        % ON (blue)
+                        cmap = horzcat(zeros(n,2), linspace(.6,1,n)');
+                    else
+                        % OFF (green)
+                        cmap = horzcat(zeros(n,1), linspace(.6,1,n)', zeros(n,1));
+                    end
+                else
+                    % inhibition
+                    if intensity > 0.5
+                        % ON (red)
+                        cmap = horzcat(linspace(.6,1,n)', zeros(n,2));
+                    else
+                        % OFF (yellow)
+                        cmap = horzcat(linspace(.2,.6,n)', linspace(.2,.6,n)', zeros(n,1));
+                    end
+                end
+
+
+                if posIndex >= 3
+                    positions = goodPositions;
+                    values = vals;
+                    largestDistanceOffset = .8*max(abs(positions(:)));
+                    X = linspace(-1*largestDistanceOffset, largestDistanceOffset, 200);
+                    [xq,yq] = meshgrid(X, X);
+                    num_columns = griddata(positions(:,1), positions(:,2), values, xq, yq);
+
+                    num_columns(num_columns < thresholdLevel) = nan;
+
+                    s = surface(xq, yq, zeros(size(xq)), num_columns);
+                    alpha(s, .4);
+                    grid off
+                    axis equal
+                    shading interp
+                    colormap(gca(), cmap);
+                    l = 100;
+                    line([-l, l]/2, [0,0], 'LineWidth', 1, 'Color', 'k');
+                    line([0,0], [-l, l]/2, 'LineWidth', 1, 'Color', 'k');
+                end
+
+            end
+        end
+        
+        title(titlesByPlot{pp})
+    end
+    
+elseif strcmp(mode, 'subunit') % contrast responses for each position
 
 %     if ad.numValues > 1
     
@@ -104,19 +304,34 @@ elseif strcmp(mode, 'subunit')
     %     figure(12);
 
 
-%         distance_to_center = zeros(num_positions, 1);
-%         for p = 1:num_positions
-%             gfp = ad.gaussianFitParams_ooi{3};
-%             distance_to_center(p,1) = sqrt(sum((ad.positions(p,:) - [gfp('centerX'),gfp('centerY')]).^2));
-%         end
-%         sorted_positions = sortrows([distance_to_center, (1:num_positions)'], 1);
-
-
-        num_positions = size(ad.positions,1);
+        % only use positions with observations (ignore 0,0)
+        positions = [];
+        i = 1;
+        for pp = 1:size(ad.positions,1)
+            pos = ad.positions(pp,1:2);
+            if any(ismember(obs(:,1:2), pos, 'rows'))
+                positions(i,1:2) = pos;
+                i = i + 1;
+            end
+        end
+        num_positions = size(positions,1);
         dim1 = floor(sqrt(num_positions));
         dim2 = ceil(num_positions / dim1);
         
-        axisHandles = sa_labs.util.tightSubplotWithParent(ax, dim1,dim2);
+        % nice way of displaying plots with an aligned-to-grid location using percentiles
+        pos_sorted = flipud(sortrows(positions, 2));
+        for i = 1:dim1 % chunk positions by display rows
+            l = ((i-1) * dim2) + (1:dim2);
+            l(l > num_positions) = [];
+            pos_sorted(l,:) = sortrows(pos_sorted(l,:), 1);
+        end
+        positions = pos_sorted;
+        
+%         num_positions = size(ad.positions,1);
+%         dim1 = floor(sqrt(num_positions));
+%         dim2 = ceil(num_positions / dim1);
+        
+        ha = tight_subplot(dim1,dim2, .02);
         
         obs = ad.observations;
         if isempty(obs)
@@ -131,43 +346,47 @@ elseif strcmp(mode, 'subunit')
         goodSlopes = [];
         for p = 1:num_positions
 %             tight_subplot(dim1,dim2,p)
-%             h = axes() %#ok<*LAXES>
+            axes(ha(p)) %#ok<*LAXES>
             hold on
             
-            pos = ad.positions(p,:);
+            pos = positions(p,:);
             obs_sel = ismember(obs(:,1:2), pos, 'rows');
             
             for vi = 1:num_voltages
                 voltage = voltages(vi);
                 obs_sel_v = obs_sel & obs(:,4) == voltage;
             
-                responses = obs(obs_sel_v, 5); % peak: 6, mean: 5
+                responses = obs(obs_sel_v, 6); % peak: 6, mean: 5
                 intensities = obs(obs_sel_v, 3);
 
-                plot(axisHandles(p), intensities, responses, 'o')
+                plot(intensities, responses, 'o')
                 if length(unique(intensities)) > 1
                     pfit = polyfit(intensities, responses, 1);
-                    plot(axisHandles(p), intensities, polyval(pfit,intensities))
+                    plot(intensities, polyval(pfit,intensities))
                     
                     
                     goodPosIndex = goodPosIndex + 1;
                     goodPositions(goodPosIndex, :) = pos;
+%                     goodSlopes(goodPosIndex, 1) = mean(responses(intensities == 1)) - mean(responses(intensities == 0))
                     goodSlopes(goodPosIndex, 1) = pfit(1);
                 end
-%                 title(pfit)
-    %             ylim([0,max(rate)+.1])
+%                 title(pos)
+%                 ylim([0,6])
+%                 yticks([])
+                xticks([])
             end
             grid on
             hold off
             
-            set(axisHandles(p), 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-            set(axisHandles(p), 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+%             set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+            set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
 
         end
         
         if ~isempty(goodPositions)
-            figure(99)
-            plotSpatial(axisHandles(p), goodPositions, goodSlopes, 'intensity response slope', 1, 0)
+            figure(99);clf;
+%             goodSlopes(abs(goodSlopes) < 2) = 0;
+            plotSpatial(goodPositions, goodSlopes, 'intensity response slope', 1, 0)
         end
         
 %         set(ha(1:end-dim2),'XTickLabel','');
@@ -176,50 +395,192 @@ elseif strcmp(mode, 'subunit')
 %         disp('No multiple value subunits measured');
 %     end
     
-elseif strcmp(mode, 'temporalResponses')
-    num_plots = length(ad.epochData);
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03);
+
+
+elseif strcmp(mode, 'currentVoltage')
+        % IV plots by position
     
-%     ax = axes(ax)
+        % only use positions with observations (ignore 0,0)
+        positions = [];
+        i = 1;
+        for pp = 1:size(ad.positions,1)
+            pos = ad.positions(pp,1:2);
+            if any(ismember(obs(:,1:2), pos, 'rows'))
+                positions(i,1:2) = pos;
+                i = i + 1;
+            end
+        end
+        
+        num_positions = size(positions,1);
+        dim1 = floor(sqrt(num_positions));
+        dim2 = ceil(num_positions / dim1);
+        
+        % nice way of displaying plots with an aligned-to-grid location using percentiles
+        pos_sorted = flipud(sortrows(positions, 2));
+        for i = 1:dim1 % chunk positions by display rows
+            l = ((i-1) * dim2) + (1:dim2);
+            l(l > num_positions) = [];
+            pos_sorted(l,:) = sortrows(pos_sorted(l,:), 1);
+        end
+        positions = pos_sorted;
+        
+%         num_positions = size(ad.positions,1);
+%         dim1 = floor(sqrt(num_positions));
+%         dim2 = ceil(num_positions / dim1);
+        
+        ha = tight_subplot(dim1,dim2, .01);
+        
+        obs = ad.observations;
+        if isempty(obs)
+            return
+        end
+              
+        
+%         goodPosIndex = 0;
+%         goodPositions = [];
+%         goodSlopes = [];
+        for p = 1:num_positions
+%             tight_subplot(dim1,dim2,p)
+%             axes() %#ok<*LAXES>
+%             hold on
+            
+            pos = positions(p,:);
+            obs_sel = ismember(obs(:,1:2), pos, 'rows');
+            intensities = unique(obs(obs_sel, 3));
+            
+            for ii = 1:length(intensities)
+                intensity = intensities(ii);
+                obs_sel_i = obs_sel & obs(:,3) == intensity;
+            
+                voltages = unique(obs(obs_sel,4));
+                num_voltages = length(voltages);
+
+                responses = [];
+                for vi = 1:num_voltages
+                    voltage = voltages(vi);
+                    obs_sel_v = obs_sel_i & obs(:,4) == voltage;
+
+                    responses(vi) = mean(obs(obs_sel_v, 5)); % peak: 6, mean: 5
+                end
+                plot(ha(p), voltages, responses)
+                hold(ha(p), 'on');
+            end
+
+
+%                 if length(unique(intensities)) > 1
+%                     pfit = polyfit(intensities, responses, 1);
+%                     plot(intensities, polyval(pfit,intensities))
+%                     
+%                     
+%                     goodPosIndex = goodPosIndex + 1;
+%                     goodPositions(goodPosIndex, :) = pos;
+% %                     goodSlopes(goodPosIndex, 1) = mean(responses(intensities == 1)) - mean(responses(intensities == 0))
+%                     goodSlopes(goodPosIndex, 1) = pfit(1);
+%                 end
+%                 title(pos)
+%                 ylim([0,6])
+%                 yticks([])
+%                 xticks([])
+%             end
+%             grid on
+%             hold off
+            
+%             set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+            set(ha(p), 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+            xlim(ha(p), [min(voltages),max(voltages)])
+            line(xlim(ha(p)), [0,0], 'Parent',ha(p), 'color','k')
+
+        end
+        
+        linkaxes(ha)
+        
+%         if ~isempty(goodPositions)
+%             figure(99);clf;
+% %             goodSlopes(abs(goodSlopes) < 2) = 0;
+%             plotSpatial(goodPositions, goodSlopes, 'intensity response slope', 1, 0)
+%         end
+        
+%         set(ha(1:end-dim2),'XTickLabel','');
+        set(ha,'YTickLabel','')
+        set(ha,'XTickLabel','')
+        legend(ha(1),{'off','on'},'location','best')
+%     else
+%         disp('No multiple value subunits measured');
+%     end
+
+
+elseif strcmp(mode, 'temporalResponses')
+    % simple display of temporal responses, which are the raw input to the system
+    % displays spot intensity using the same signal used for cross correlation
+    
+    num_plots = length(ad.epochData);
+    ha = tight_subplot(num_plots, 1, .03);
+    
     for ei = 1:num_plots
-        h = axisHandles(ei);
         t = ad.epochData{ei}.t;
         resp = ad.epochData{ei}.response;
-%         ha = subplot(num_plots, 1, ei, 'Parent',ax);
+        
+        % play with exponential fitting:
+%         if max(t) > 5
+%             resp = resp - mean(resp((end-100):end)); % set end to 0
+%             startA = mean(resp(1:100))/exp(0);
+%             startB = -0.3;
+%             f = fit(t(1:end), resp(1:end), 'exp1','StartPoint',[startA, startB]);
+%             expFit = f(t);
+%             f
+%         else
+%             expFit = zeros(size(t));
+%         end
         
         % display original and shifted light On signal
-        plot(h, t, resp,'b');
-        hold(h, 'on');
+        plot(ha(ei), t, resp,'b');
+        hold(ha(ei), 'on');
         light = ad.epochData{ei}.signalLightOn;
         if abs(min(resp)) > abs(max(resp))
             light = light * -1;
         end
         light = light * max(abs(resp)) * 0.5;
-        plot(h, ad.epochData{ei}.timeOffset + t, light,'r')
-
-        hold(h, 'off');
+        plot(ha(ei), ad.epochData{ei}.timeOffset + t, light,'r')
+        
+%         resp = smooth(resp, 20);
+%         plot(ha(ei), t, resp,'g');
+        hold(ha(ei), 'off');
         
         
-%         hold(ha, 'on');
-%         plot(ha, t, expFit)
-%         plot(ha, t, resp - expFit);
-%         hold(ha, 'off');
+%         hold(ha(ei), 'on');
+%         plot(ha(ei), t, expFit)
+%         plot(ha(ei), t, resp - expFit);
+%         hold(ha(ei), 'off');
         
-        title(h, sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
+        title(ha(ei), sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
+%         disp('Normalization parameters:');
+%         disp(ad.epochData{ei}.signalNormalizationParameters)
     end
     
     
 elseif strcmp(mode, 'temporalComponents')
+    % splits spot time period into two components (using a peak finding algorithm) and maps them separately, can find On and Off from a single polarity
     
     warning('off', 'stats:regress:RankDefDesignMat')
     
     % start with finding the times with highest variance, by voltage
     obs = ad.observations;
-    voltages = sort(unique(obs(:,4)));
+    paramColumn = 4; % intensity 3, voltage 4
+    voltages = sort(unique(obs(:,paramColumn)));
 
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, length(voltages), 1, .03, .03);
+    ha = tight_subplot(length(voltages), 1, .03, .03);
+
+    positions = [];
+    i = 1;
+    for pp = 1:size(ad.positions,1)
+        pos = ad.positions(pp,1:2);
+        if any(ismember(obs(:,1:2), pos, 'rows'))
+            positions(i,1:2) = pos;
+            i = i + 1;
+        end
+    end    
     
-    num_positions = size(ad.positions,1);
+    num_positions = size(positions,1);
     signalsByVoltageByPosition = {};
     peakIndicesByVoltage = {};
     basisByVoltageComp = {};
@@ -230,10 +591,10 @@ elseif strcmp(mode, 'temporalComponents')
 
         signalsByPosition = cell(num_positions,1);
         for poi = 1:num_positions
-            pos = ad.positions(poi,:);
+            pos = positions(poi,:);
 
             obs_sel = ismember(obs(:,1:2), pos, 'rows');
-            obs_sel = obs_sel & obs(:,4) == v;
+            obs_sel = obs_sel & obs(:,paramColumn) == v;
             indices = find(obs_sel);
                         
             signalsThisPos = {};
@@ -250,23 +611,25 @@ elseif strcmp(mode, 'temporalComponents')
             
 %             kk = cellfun(@(x)size(x,1),signalsThisPos,'UniformOutput',false)
             
-            plotIndex = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsThisPos,'UniformOutput',false));
-            signalsByPosition{poi,1} = nanmean(plotIndex, 1);
+            a = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsThisPos,'UniformOutput',false));
+            signalsByPosition{poi,1} = nanmean(a, 1);
             
         end
         maxLength=max(cellfun(@(x)numel(x),signalsByPosition));
-        plotIndex = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsByPosition,'UniformOutput',false));
+        a = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsByPosition,'UniformOutput',false));
         
-        signalByV = nanmean(plotIndex, 1);
-        varByV = nanvar(plotIndex, 1);
+        signalByV = nanmean(a, 1);
+        varByV = nanvar(a, 1);
         varByV = varByV / max(varByV);
         
         signalsByVoltageByPosition{vi,1} = signalsByPosition;
         
+%         axes(ha((vi - 1) * 2 + 1))    
+        axes(ha(vi));
         t = (1:length(signalByV)) / ad.sampleRate - 1/ad.sampleRate;
-        plot(axisHandles(vi), t, signalByV ./ max(abs(signalByV)))
+        plot(t, signalByV ./ max(abs(signalByV)))
         hold on
-        plot(axisHandles(vi), t, varByV)
+        plot(t, varByV)
         title(sprintf('voltage: %d', v))
         legend('mean','variance');
         
@@ -276,6 +639,7 @@ elseif strcmp(mode, 'temporalComponents')
         % nice, arbitrary, need to be changed, overfitted magic numbers, right here for you
         % ah, now that's nice, you like magic numbers, so good, have some more, here they are
         [~, peakIndices] = findpeaks(smooth(varByV,30), 'MinPeakProminence',.05,'Annotate','extents','MinPeakDistance',0.08);
+%         peakIndices = [80, 380]; % in ms
         maxComponents = max([maxComponents, length(peakIndices)]);
         peakIndicesByVoltage{vi,1} = peakIndices;
         plot(t(peakIndices), varByV(peakIndices), 'ro')
@@ -293,15 +657,17 @@ elseif strcmp(mode, 'temporalComponents')
     
     
     figure(21);clf;
-    hb = sa_labs.util.tightSubplotWithParent(ax, length(voltages), maxComponents, .03, .03);
-
+    hb = tight_subplot(length(voltages), maxComponents, .03, .03);
+    disp('Temporal component fits');
     for vi = 1:length(voltages)
         
-        %% now, with the peak locations in hand, we can pull out the components
+        % now, with the peak locations in hand, we can pull out the components
         peakIndices = peakIndicesByVoltage{vi,1};
         num_components = length(peakIndices);
         valuesByComponent = nan * zeros(num_positions, num_components);
         signalsByPosition = signalsByVoltageByPosition{vi,1};
+        fitX = [];
+        fitY = [];
         for ci = 1:num_components
             basis = basisByVoltageComp{vi,ci};
             for poi = 1:num_positions
@@ -316,13 +682,23 @@ elseif strcmp(mode, 'temporalComponents')
             end
 
             p = maxComponents * (vi-1) + ci;
-            plotSpatial(hb(p), ad.positions, valuesByComponent(:,ci), sprintf('v %d component %d', v, ci), 1, 0);
+            axes(hb(p));
+            gfit = plotSpatial(positions, valuesByComponent(:,ci), sprintf('v %d component %d', voltages(vi), ci), 1, sign(voltages(vi)));
+            
+            if isa(gfit, 'containers.Map')
+                fitX(ci) = gfit('centerX');
+                fitY(ci) = gfit('centerY');
+            end
         end
+        
+        fprintf('Voltage %g, Off is ( %g, %g) from On\n', voltages(vi), diff(fitX), diff(fitY));
         
     end
     
     
 elseif strcmp(mode, 'responsesByPosition')
+    % display time traces of responses aligned for each location
+    % plots are in a grid roughly similar to the spot spacing
     
     obs = ad.observations;
     voltages = sort(unique(obs(:,4)));
@@ -347,7 +723,7 @@ elseif strcmp(mode, 'responsesByPosition')
     dim1 = floor(sqrt(num_positions));
     dim2 = ceil(num_positions / dim1);
 
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .006, .006, .006);
+    ha = tight_subplot(dim1, dim2, .004, .004, .004);
     
     max_value = -inf;
     min_value = inf;
@@ -387,7 +763,7 @@ elseif strcmp(mode, 'responsesByPosition')
                     obs_sel = obs_sel & obs(:,3) == intensities(inti) & obs(:,4) == v & obs(:,14) == adaptstates(ai);
                     indices = find(obs_sel);
 
-                    hold(axisHandles(poi), 'on');
+                    hold(ha(poi), 'on');
 
                     for ii = 1:length(indices)
                         entry = obs(indices(ii),:)';
@@ -395,12 +771,20 @@ elseif strcmp(mode, 'responsesByPosition')
 
                         signal = epoch.response(entry(10):entry(11)); % start and end indices into signal vector
 %                         signal = signal - mean(signal(1:10));
+
+                        if v < 0
+                            signal = signal * 4; % make excitation signals more visible
+                        end
+
                         signal = smooth(signal, 20);
                         t = (0:(length(signal)-1)) / ad.sampleRate;
-                        h = plot(axisHandles(poi), t, signal,'color',squeeze(colorsets(vi, ai, inti,1:3)));
+                        h = plot(ha(poi), t, signal,'color',squeeze(colorsets(vi, ai, inti,1:3)));
                         if ii > 1
                             set(get(get(h,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         end
+                        
+%                         responseValue = entry(6); % 6 for peak
+%                         line([min(t), max(t)], [responseValue, responseValue], 'Parent', ha(poi), 'Color',squeeze(colorsets(vi, ai, inti,1:3)));
 
                         max_value = max(max_value, max(signal));
                         min_value = min(min_value, min(signal));
@@ -411,76 +795,390 @@ elseif strcmp(mode, 'responsesByPosition')
         end
         
 %         set(gca,'XTickLabelMode','manual')
-        set(axisHandles(poi),'XTickLabels',[])
+        set(ha(poi),'XTickLabels',[])
         
-        grid(axisHandles(poi), 'on')
-        zline = line([0,max(t)],[0,0], 'Parent', axisHandles(poi), 'color', 'k');
+        startSampleTime = ad.sampleSet(1) / ad.sampleRate;
+        endSampleTime = ad.sampleSet(end) / ad.sampleRate;
+        y = [-10,100];
+        startLine = line([1,1]*startSampleTime, y, 'Parent', ha(poi), 'color', 'k');
+        endLine = line([1,1]*endSampleTime, y, 'Parent', ha(poi), 'color', 'k');
+        set(get(get(startLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off')
+        set(get(get(endLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        
+        grid(ha(poi), 'on')
+        zline = line([0,max(t)],[0,0], 'Parent', ha(poi), 'color', 'k');
         set(get(get(zline,'Annotation'),'LegendInformation'),'IconDisplayStyle','off'); % only display one legend per type
 
 %         title(ha(poi), sprintf('%d,%d', round(pos)));
         
     end
-    set(axisHandles(1),'YTickLabelMode','auto');
-    set(axisHandles(1),'XTickLabelMode','auto');
-    legend(axisHandles(1),legends,'location','best')
+    set(ha(1),'YTickLabelMode','auto');
+    set(ha(1),'XTickLabelMode','auto');
+    legend(ha(1),legends,'location','best')
 
-    linkaxes(axisHandles);
+    linkaxes(ha);
 %     for i = 1:length(ha)
 %         i
 %         min_value
-    ylim(axisHandles(1), [min_value, max_value]);
-    xlim(axisHandles(1), [0, max(t)])
+    ylim(ha(1), [min_value, max_value*1.3]);
+    xlim(ha(1), [0, max(t)])
 %     end
+
+elseif strcmp(mode, 'wholeCell_comparisons')
+    % compares by subtraction the spatial RF of On and Off, and Ex and In 
+
+    combinationMode = 'median';
+    mode_col = 5; % mean
+    modeLabel = 'mean';
+    excitatory_multiplier = 6;
     
+    voltages = sort(unique(obs(:,4)));
+    num_voltages = length(voltages);
+        
+    intensities = sort(unique(obs(:,3)));
+    num_intensities = length(intensities);
+    
+    dataByVoltageIntensity = cell(num_voltages, num_intensities, 2);
+    
+    largestDistanceOffset = max(abs(ad.positions(:)));
+    X = linspace(-1*largestDistanceOffset, largestDistanceOffset, 200);
+    [xq,yq] = meshgrid(X, X);
+    
+    num_rows = num_intensities;
+    if num_intensities > 1
+        num_rows = num_rows + 1;
+    end
+    num_columns = num_voltages;
+    if num_voltages > 1
+        num_columns = num_columns + 1;
+    end
+    ha = tight_subplot(num_rows, num_columns);
+    for vi = 1:num_voltages
+        for ii = 1:num_intensities
+            intensity = intensities(ii);
+            voltage = voltages(vi);
+            
+%             vals = zeros(length(ad.positions),1);
+            vals = [];
+            posIndex = 0;
+            goodPositions = [];
+            for poi = 1:length(ad.positions)
+                pos = ad.positions(poi,:);
+                obs_sel = ismember(obs(:,1:2), pos, 'rows');
+                obs_sel = obs_sel & obs(:,3) == intensity;
+                obs_sel = obs_sel & obs(:,4) == voltage;
+                if strcmp(combinationMode, 'mean')
+                    val = nanmean(obs(obs_sel, mode_col),1);
+                elseif strcmp(combinationMode, 'median')
+                    val = nanmedian(obs(obs_sel, mode_col),1);
+                elseif strcmp(combinationMode, 'min')
+                    val = nanmin(obs(obs_sel, mode_col));                    
+                elseif strcmp(combinationMode, 'first')
+                    val = obs(obs_sel, mode_col);
+                    try
+                        val = val(1);
+                    catch
+                    end
+                elseif strcmp(combinationMode, 'last')
+                    val = obs(obs_sel, mode_col);
+                    try
+                        val = val(end);
+                    catch
+                    end
+                end
+                if any(obs_sel) && ~isnan(val)
+                    posIndex = posIndex + 1;
+                    vals(posIndex,1) = val;
+                    goodPositions(posIndex,:) = pos;
+                end
+            end
+            
+            a = vi + (ii-1) * num_columns;
+            
+            axes(ha(a));
+            vals = vals * sign(voltage + 1);
+%             vals = vals ./ max(abs(vals));
+            
+            if posIndex >= 3
+               
+                c = griddata(goodPositions(:,1), goodPositions(:,2), vals, xq, yq);
+                s = surface(xq, yq, zeros(size(xq)), c);
+                                
+                line([-50, 50],largestDistanceOffset*[-1,-1]*.9, 'LineWidth', 1.5, 'Color', 'k');
+                colorbar
+                grid off
+                axis equal
+                shading interp
+                % set axis limits
+                axis(largestDistanceOffset * [-1 1 -1 1])
+                set(gca, 'Box', 'off')
+                set(gca, 'XTick', [], 'XColor', 'none')
+                set(gca, 'YTick', [], 'YColor', 'none')
+                set(gcf,'color','w');
+                title(sprintf('%d mV, %.1f', voltage, intensity))
+%                 caxis([-1,1]);
+                
+                dataByVoltageIntensity{vi, ii} = c;
+            end
+
+            
+        end
+    end
+    
+    % comparisons:
+    if num_intensities > 1
+        for vi = 1:num_voltages
+            a = vi + num_columns * (num_rows-1);
+            axes(ha(a));
+            d = dataByVoltageIntensity{vi, 2} - dataByVoltageIntensity{vi, 1};
+                s = surface(xq, yq, zeros(size(xq)), d);
+                                
+                line([-50, 50],largestDistanceOffset*[-1,-1]*.9, 'LineWidth', 1.5, 'Color', 'k');
+                colorbar
+                grid off
+                axis equal
+                shading interp
+                % set axis limits
+                axis(largestDistanceOffset * [-1 1 -1 1])
+                set(gca, 'Box', 'off')
+                set(gca, 'XTick', [], 'XColor', 'none')
+                set(gca, 'YTick', [], 'YColor', 'none')
+                set(gcf,'color','w');
+                title(sprintf('comparison %d mV', voltages(vi)))
+%                 caxis([-.7,.7]);
+                
+        end
+    end
+    
+    if num_voltages > 1
+        for ii = 1:num_intensities
+            a = (ii - 1) * num_columns + 1 + num_intensities;
+            axes(ha(a));
+            d = dataByVoltageIntensity{1, ii} * excitatory_multiplier - dataByVoltageIntensity{2, ii};
+                s = surface(xq, yq, zeros(size(xq)), d);
+                                
+                line([-50, 50],largestDistanceOffset*[-1,-1]*.9, 'LineWidth', 1.5, 'Color', 'k');
+                colorbar
+                grid off
+                axis equal
+                shading interp
+                % set axis limits
+                axis(largestDistanceOffset * [-1 1 -1 1])
+                set(gca, 'Box', 'off')
+                set(gca, 'XTick', [], 'XColor', 'none')
+                set(gca, 'YTick', [], 'YColor', 'none')
+                set(gcf,'color','w');
+                title(sprintf('comparison int %d', intensities(ii)))
+%                 caxis([-.7,.7]);
+        end
+    end
+    
+    if num_voltages > 1 && num_intensities > 1
+        a = num_columns * num_rows;
+        axes(ha(a));
+        d = - dataByVoltageIntensity{1, 1} * excitatory_multiplier + dataByVoltageIntensity{2, 1} ...
+            + dataByVoltageIntensity{1, 2} * excitatory_multiplier - dataByVoltageIntensity{2, 2};
+
+            s = surface(xq, yq, zeros(size(xq)), d);
+
+            line([-50, 50],largestDistanceOffset*[-1,-1]*.9, 'LineWidth', 1.5, 'Color', 'k');
+            colorbar
+            grid off
+            axis equal
+            shading interp
+            % set axis limits
+            axis(largestDistanceOffset * [-1 1 -1 1])
+            set(gca, 'Box', 'off')
+            set(gca, 'XTick', [], 'XColor', 'none')
+            set(gca, 'YTick', [], 'YColor', 'none')
+            set(gcf,'color','w');
+            title('comparison overall')
+%             caxis([-.7,.7]);
+    end
+   
+
 elseif strcmp(mode, 'wholeCell')
+    % compares Ex and In RF using gaussian fits
+    
     obs = ad.observations;
    
-    maxIntensity = max(obs(:,3));
-    v_in = max(obs(:,4));
-    v_ex = min(obs(:,4));
+    intensities = unique(obs(:,3));
+    voltages = unique(obs(:,4));
+    mapByVoltageIntensity = {};
+    ratios = {};
     
-    r_ex = [];
-    r_in = [];
+    ha = tight_subplot(length(intensities),3);
+
+    for ii = 1:length(intensities)
+        intensity = intensities(ii);
+        v_in = max(obs(:,4));
+        v_ex = min(obs(:,4));
+
+        r_ex = [];
+        r_in = [];
+
+        posIndex = 0;
+        goodPositions = [];
+        for poi = 1:length(ad.positions)
+            pos = ad.positions(poi,:);
+            obs_sel = ismember(obs(:,1:2), pos, 'rows');
+            obs_sel = obs_sel & obs(:,3) == intensity;
+            obs_sel_ex = obs_sel & obs(:,4) == v_ex;
+            obs_sel_in = obs_sel & obs(:,4) == v_in;
+
+            if any(obs_sel_ex) && any(obs_sel_in)
+                posIndex = posIndex + 1;
+                r_ex(posIndex,1) = mean(obs(obs_sel_ex,5),1);
+                r_in(posIndex,1) = mean(obs(obs_sel_in,5),1);
+                goodPositions(posIndex,:) = pos;
+            end
+        end
+        
+        
+%         v_reversal_ex = 0;
+%         v_reversal_in = -60;
+%         r_ex = -r_ex ./ abs(v_ex - v_reversal_ex);
+%         r_in = r_in ./ abs(v_in - v_reversal_in);
+%         r_exinrat = r_ex - r_in;
+        
+        r_ex = -r_ex;
+        r_ex = r_ex./max(abs(r_ex));
+        r_in = r_in./max(abs(r_in));
+        r_exinrat = r_ex - r_in;
+        r_exinrat = r_exinrat ./ max(abs(r_exinrat));
+    %     r_exinrat = sign(r_exinrat) .* log10(abs(r_exinrat));
+
+    %     max_ = max(vertcat(r_ex, r_in));
+    %     min_ = min(vertcat(r_ex, r_in));
+    
+    
+        mapByVoltageIntensity{1, ii} = r_ex;
+        mapByVoltageIntensity{2, ii} = r_in;
+
+        ratios{ii} = r_exinrat;
+        max(r_ex)
+        % EX
+        axes(ha(1+(ii-1)*3))
+        plotSpatial(goodPositions, r_ex, sprintf('Exc cond: %d mV, Int: %d', v_ex, intensity), 1, 0);
+    %     caxis([min_, max_]);
+
+        % IN
+        axes(ha(2+(ii-1)*3))
+        plotSpatial(goodPositions, r_in, sprintf('Inh cond: %d mV, Int: %d', v_in, intensity), 1, 0);
+    %     caxis([min_, max_]);
+
+        % Ratio    
+        axes(ha(3+(ii-1)*3))
+        plotSpatial(goodPositions, r_exinrat, 'Ex/In difference', 1, 0)
+    end
+    
+    % intensity difference maps:
+    axes(ha(2+(ii-1)*3))
+    plotSpatial(goodPositions, r_in, sprintf('Inh cond: %d mV, Int: %d', v_in, intensity), 1, 0);    
+    
+    
+    % combining differences at each intensity
+    figure(212);clf;
+    rr = ratios{2} - ratios{1};
+    plotSpatial(goodPositions, rr, '', 1, 0);
+    title('On diff - Off diff');
+
+elseif strcmp(mode, 'spatialOffset_onOff')
+    obs = ad.observations;
+   
+    voltage = max(obs(:,4));
+    i_high = max(obs(:,3));
+    i_low = min(obs(:,3));
+    
+    if i_high == i_low
+        disp('Only one intensity in data set');
+        return
+    end
+    
+    r_high = [];
+    r_low = [];
 
     posIndex = 0;
-    goodPositions = [];
+    goodPositions_high = [];
     for poi = 1:length(ad.positions)
         pos = ad.positions(poi,:);
         obs_sel = ismember(obs(:,1:2), pos, 'rows');
-        obs_sel = obs_sel & obs(:,3) == maxIntensity;
-        obs_sel_ex = obs_sel & obs(:,4) == v_ex;
-        obs_sel_in = obs_sel & obs(:,4) == v_in;
-        
-        if any(obs_sel_ex) && any(obs_sel_in)
+        obs_sel = obs_sel & obs(:,4) == voltage;
+        obs_sel_high = obs_sel & obs(:,3) == i_high;
+        if any(obs_sel_high)
             posIndex = posIndex + 1;
-            r_ex(posIndex,1) = mean(obs(obs_sel_ex,5),1);
-            r_in(posIndex,1) = mean(obs(obs_sel_in,5),1);
-            goodPositions(posIndex,:) = pos;
+%             r_high(posIndex,1) = min(obs(obs_sel_high,5));
+            r_high(posIndex,1) = mean(obs(obs_sel_high,5),1);
+            goodPositions_high(posIndex,:) = pos;
         end
     end
-    v_reversal_ex = 0;
-    v_reversal_in = -60;
-    r_ex = r_ex ./ abs(v_ex - v_reversal_ex);
-    r_in = r_in ./ abs(v_in - v_reversal_in);
-    r_exinrat = r_ex - r_in;
-%     r_exinrat = sign(r_exinrat) .* log10(abs(r_exinrat));
     
-%     max_ = max(vertcat(r_ex, r_in));
-%     min_ = min(vertcat(r_ex, r_in));
+    posIndex = 0;
+    goodPositions_low = [];
+    for poi = 1:length(ad.positions)
+        pos = ad.positions(poi,:);
+        obs_sel = ismember(obs(:,1:2), pos, 'rows');
+        obs_sel = obs_sel & obs(:,4) == voltage;
+        obs_sel_low = obs_sel & obs(:,3) == i_low;
+        if any(obs_sel_low)
+            posIndex = posIndex + 1;
+%             r_low(posIndex,1) = min(obs(obs_sel_low,5));
+            r_low(posIndex,1) = mean(obs(obs_sel_low,5),1);
+            goodPositions_low(posIndex,:) = pos;
+        end
+    end
 
-
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, 1, 3);
+    ha = tight_subplot(1,3, -.0);
 
     % EX
-    plotSpatial(axisHandles(1), goodPositions, r_ex, sprintf('Excitatory conductance: %d mV', v_ex), 1, 0);
+    axes(ha(1))
+    g_high = plotSpatial(goodPositions_high, r_high, '', 1, 1); % sprintf('Exc. current (pA)')
 %     caxis([min_, max_]);
     
     % IN
-    plotSpatial(axisHandles(2), goodPositions, r_in, sprintf('Inhibitory conductance: %d mV', v_in), 1, 0);
+    axes(ha(2))
+    g_low = plotSpatial(goodPositions_low, r_low, '', 1, 1); % sprintf('Inh. current (pA)')
 %     caxis([min_, max_]);
+        
+    offsetDist = sqrt((g_low('centerX') - g_high('centerX')).^2) + sqrt((g_low('centerY') - g_high('centerY')).^2);
+    avgSigma2 = mean([g_low('sigma2X'), g_low('sigma2Y'), g_high('sigma2X'), g_high('sigma2Y')]);
     
-    % Ratio    
-    plotSpatial(axisHandles(3), goodPositions, r_exinrat, 'Ex/In difference', 1, 0)
+    firstEpoch = ad.epochData{1};
+    fprintf('Spatial offset = %3.1f um, avg sigma2 = %3.1f, ratio = %2.2f, sessionId %s\n', offsetDist, avgSigma2, offsetDist/avgSigma2, firstEpoch.sessionId);
+
+    axes(ha(3))
+    hold on
+    color_high = [.9 .7 0];
+    e = ellipse(g_high('sigma2X'), g_high('sigma2Y'), -g_high('angle'), g_high('centerX'), g_high('centerY'), color_high);
+    set(e, 'LineWidth', 1.5);
+    line(g_high('centerX') + [-l, l]/2, g_high('centerY') * [1,1], 'LineWidth', 1.5, 'Color', color_high);
+    line(g_high('centerX') * [1,1], g_high('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', color_high);
+    
+    color_low = 'k';
+    e = ellipse(g_low('sigma2X'), g_low('sigma2Y'), -g_low('angle'), g_low('centerX'), g_low('centerY'), color_low);
+    set(e, 'LineWidth', 1.5);
+    line(g_low('centerX') + [-l, l]/2, g_low('centerY') * [1,1], 'LineWidth', 1.5, 'Color', color_low);
+    line(g_low('centerX') * [1,1], g_low('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', color_low);
+    
+    
+    line([-100, 0],[-130, -130], 'Color','k', 'LineWidth', 2) % 100 µm scale bar
+%     legend('Exc','Inh')
+
+    hold off
+    axis equal
+    largestDistanceOffset = max(abs(ad.positions(:)));
+    axis(largestDistanceOffset * [-1 1 -1 1])
+%     set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+%     set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+    set(gca, 'XTick', [], 'XColor', 'none')
+    set(gca, 'YTick', [], 'YColor', 'none')    
+%     title('Gaussian 2\sigma Fits Overlaid')
+    colorbar
+    linkaxes(ha)
+    
+    disp(g_high.keys)
+    disp(cell2mat(g_high.values))
+    disp(cell2mat(g_low.values))
     
 elseif strcmp(mode, 'spatialOffset')
     
@@ -489,6 +1187,11 @@ elseif strcmp(mode, 'spatialOffset')
     maxIntensity = max(obs(:,3));
     v_in = max(obs(:,4));
     v_ex = min(obs(:,4));
+    
+    if v_in == v_ex
+        disp('Only one voltage in data set');
+        return
+    end
     
     r_ex = [];
     r_in = [];
@@ -521,14 +1224,16 @@ elseif strcmp(mode, 'spatialOffset')
         end
     end
 
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, 1, 3, .03);
+    ha = tight_subplot(1,3, .03);
 
     % EX
-    g_ex = plotSpatial(axisHandles(1), goodPositions_ex, -r_ex, sprintf('Exc. current (pA)'), 1, 1);
+    axes(ha(1))
+    g_ex = plotSpatial(goodPositions_ex, -r_ex, '', 1, 1); % sprintf('Exc. current (pA)')
 %     caxis([min_, max_]);
     
     % IN
-    g_in = plotSpatial(axisHandles(2), goodPositions_in, r_in, sprintf('Inh. current (pA)'), 1, 1);
+    axes(ha(2))
+    g_in = plotSpatial(goodPositions_in, r_in, '', 1, 1); % sprintf('Inh. current (pA)')
 %     caxis([min_, max_]);
         
     offsetDist = sqrt((g_in('centerX') - g_ex('centerX')).^2) + sqrt((g_in('centerY') - g_ex('centerY')).^2);
@@ -537,28 +1242,37 @@ elseif strcmp(mode, 'spatialOffset')
     firstEpoch = ad.epochData{1};
     fprintf('Spatial offset = %3.1f um, avg sigma2 = %3.1f, ratio = %2.2f, sessionId %d\n', offsetDist, avgSigma2, offsetDist/avgSigma2, firstEpoch.sessionId);
     
-    axes(axisHandles(3))
-    hold(axisHandles(3),'on')
-    sa_labs.util.shape.ellipse(g_ex('sigma2X'), g_ex('sigma2Y'), -g_ex('angle'), g_ex('centerX'), g_ex('centerY'), 'magenta', [], axisHandles(3));
+    axes(ha(3))
+    hold on
+    e = ellipse(g_ex('sigma2X'), g_ex('sigma2Y'), -g_ex('angle'), g_ex('centerX'), g_ex('centerY'), 'blue');
+    set(e, 'LineWidth', 1.5);
+    line(g_ex('centerX') + [-l, l]/2, g_ex('centerY') * [1,1], 'LineWidth', 1.5, 'Color', 'blue');
+    line(g_ex('centerX') * [1,1], g_ex('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', 'blue');
     
-    sa_labs.util.shape.ellipse(g_in('sigma2X'), g_in('sigma2Y'), -g_in('angle'), g_in('centerX'), g_in('centerY'), 'cyan', [], axisHandles(3));
+    e = ellipse(g_in('sigma2X'), g_in('sigma2Y'), -g_in('angle'), g_in('centerX'), g_in('centerY'), 'red');
+    set(e, 'LineWidth', 1.5);
+    line(g_in('centerX') + [-l, l]/2, g_in('centerY') * [1,1], 'LineWidth', 1.5, 'Color', 'red');
+    line(g_in('centerX') * [1,1], g_in('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', 'red');
     
-    legend('Exc','Inh')
     
-    plot(axisHandles(3),g_ex('centerX'), g_ex('centerY'),'red','MarkerSize',20, 'Marker','+')
-    plot(axisHandles(3),g_in('centerX'), g_in('centerY'),'blue','MarkerSize',20, 'Marker','+')
-    
+    line([-100, 0],[-150, -150], 'Color','k', 'LineWidth', 2)
+%     legend('Exc','Inh')
+
     hold off
     axis equal
     largestDistanceOffset = max(abs(ad.positions(:)));
     axis(largestDistanceOffset * [-1 1 -1 1])
 %     set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
 %     set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
-        set(gca, 'XTick', [], 'XColor', 'none')
-        set(gca, 'YTick', [], 'YColor', 'none')    
-    title('Gaussian 2\sigma Fits Overlaid')
+    set(gca, 'XTick', [], 'XColor', 'none')
+    set(gca, 'YTick', [], 'YColor', 'none')    
+%     title('Gaussian 2\sigma Fits Overlaid')
     colorbar
-    linkaxes(axisHandles)
+    linkaxes(ha)
+    
+    disp(g_ex.keys)
+    disp(cell2mat(g_ex.values))
+    disp(cell2mat(g_in.values))
     
 elseif strcmp(mode, 'spatialDiagnostics')
     obs = ad.observations;
@@ -571,7 +1285,7 @@ elseif strcmp(mode, 'spatialDiagnostics')
     % variance by point value at max value
     maxIntensity = max(obs(:,3));
     
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, 1, num_voltages);
+    ha = tight_subplot(1, num_voltages);
     for vi = 1:num_voltages
         voltage = voltages(vi);
         vals = [];
@@ -582,7 +1296,8 @@ elseif strcmp(mode, 'spatialDiagnostics')
             obs_sel = obs_sel & obs(:,4) == voltage;
             vals(poi,1) = std(obs(obs_sel,5),1) / mean(obs(obs_sel,5),1);
         end    
-        plotSpatial(axisHandles(vi), ad.positions, vals, sprintf('STD/mean at V = %d mV', voltage), 1, 0)
+        axes(ha(vi));
+        plotSpatial(ad.positions, vals, sprintf('STD/mean at V = %d mV', voltage), 1, 0)
 %         caxis([0, max(vals)]);
     end
     
@@ -602,7 +1317,7 @@ elseif strcmp(mode, 'positionDifferenceAnalysis')
     end
     
     % general distance to value
-    subplot(ax,2,1,1)
+    subplot(2,1,1)
     plot(obs(:,8), obs(:,5), 'o')
     hold on
     sel = ~isnan(obs(:,8)) & ~isnan(obs(:,5));
@@ -611,10 +1326,11 @@ elseif strcmp(mode, 'positionDifferenceAnalysis')
     hold off
     
     % compare repeat values with different distances
-    subplot(ax,2,1,2)
+    subplot(2,1,2)
     
     
 elseif strcmp(mode, 'adaptationRegion')
+    % analyzes and displays experiment with flicker and flashed spots map, to find the spatial properties of adaptation
     obs = ad.observations;
     
 %     % get list of adaptation points
@@ -704,7 +1420,7 @@ elseif strcmp(mode, 'adaptationRegion')
     max_value = -inf;
     min_value = inf;
 
-    axisHandles = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .05, .05, .05);
+    ha = tight_subplot(dim1, dim2, .05, .05, .05);
     
     % nice way of displaying plots with an aligned-to-grid location using percentiles
     pos_sorted = flipud(sortrows(positions, 2));
@@ -717,7 +1433,7 @@ elseif strcmp(mode, 'adaptationRegion')
     for poi = 1:num_positions
         
         pos = pos_sorted(poi,:);
-        axes(axisHandles(poi))
+        axes(ha(poi))
         hold on
         for adaptstate = 0:1
             responses = [];
@@ -728,7 +1444,7 @@ elseif strcmp(mode, 'adaptationRegion')
                 responses(inti) = mean(obs(obs_sel,5));
                 adaptPos = mean(obs(obs_sel, [12,13]));
             end
-            plot(ax, intensities, responses, 'o-')
+            plot(intensities, responses, 'o-')
             max_value = max(max_value, max(responses));
             min_value = min(min_value, min(responses));
             
@@ -743,7 +1459,7 @@ elseif strcmp(mode, 'adaptationRegion')
         end
     end
     for poi = 1:num_positions
-        ylim(axisHandles(poi), [min_value, max_value])
+        ylim(ha(poi), [min_value, max_value])
     end
 
 
@@ -752,67 +1468,102 @@ else
     disp('incorrect plot type')
 end
 
-    function gfit = plotSpatial(ax, positions, values, titl, addcolorbar, gaussianfit)
-        t = get(ax,'type');
-        if strcmp(t, 'uipanel')
-            ax = axes(ax);
+    function gfit = plotSpatial(positions, values, titl, addColorBar, gaussianfit, thresholdParams)
+        
+        if nargin < 6
+            enableThresholding = false;
+        else
+            enableThresholding = true;
         end
-                
+        
 %         positions = bsxfun(@plus, positions, positionOffset);
         largestDistanceOffset = max(abs(positions(:)));
-        X = linspace(-1*largestDistanceOffset, largestDistanceOffset, 100);
-        [xq,yq] = meshgrid(X, X);        
+        X = linspace(-1*largestDistanceOffset, largestDistanceOffset, 200);
+        [xq,yq] = meshgrid(X, X);
         c = griddata(positions(:,1), positions(:,2), values, xq, yq);
-        surface(ax, xq, yq, zeros(size(xq)), c)
-%         hold(ax,'on')
+        
+        if enableThresholding
+            threshold = thresholdParams{1};
+            direction = thresholdParams{2};
+            
+            if direction > 0
+                sel = c > threshold;
+            else
+                sel = c < threshold;
+            end
+%             xq(~sel) = [];
+%             yq(~sel) = [];
+            c(~sel) = nan;
+        end
+        
+        s = surface(xq, yq, zeros(size(xq)), c);
+%         hold on
 % %         plot(positions(:,1), positions(:,2), '.r');
-%         hold(ax, 'off')
-        title(ax, titl)
-        grid(ax,'off')
+%         hold off
+        title(titl)
+        grid off
     %     axis square
-        axis(ax,'equal')
-        shading(ax,'interp')
-%         if addcolorbar % bug here for some reason in symphony 2
-%             colorbar(ax,'east')
-%         end
+        axis equal
+        shading interp
+        
+        if addColorBar == 1
+            colorbar
+            
+        elseif length(addColorBar) > 1
+            colormap(gca(), addColorBar);
+%             colorbar
+            alpha(s, .2)
+        end
+        
         if gaussianfit ~= 0
             if gaussianfit < 0
                 fitValues = values * -1; % seems to be the only place we need positive deflections is for fitting
             else
                 fitValues = values;
             end
-            hold(ax,'on')
+            hold on
             
 %             values = zeros(size(values));
 %             hi = 20;%round(length(values) / 2);
 %             positions(hi,:)
 %             values(hi) = 1;
-            fitValues(fitValues < 0) = 0;
-            gfit = sa_labs.util.shape.fit2DGaussian(positions, fitValues);
+            fitValues(fitValues < 0) = 0; % Interesting, maybe an improvement for fitting WC results
+            gfit = fit2DGaussian(positions, fitValues);
             fprintf('gaussian fit center: %d um, %d um\n', round(gfit('centerX')), round(gfit('centerY')))
             v = fitValues - min(fitValues);
 %             centerOfMass = mean(bsxfun(@times, positions, v ./ mean(v)), 1);
 %             plot(centerOfMass(1), centerOfMass(2),'green','MarkerSize',20, 'Marker','+')
-            plot(ax, gfit('centerX'), gfit('centerY'),'red','MarkerSize',20, 'Marker','+')
-            sa_labs.util.shape.ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), 'red', [], ax);
-            hold(ax,'off');
+%             plot(gfit('centerX'), gfit('centerY'),'black','MarkerSize', 10, 'Marker','+')
+            l = 20;
+            line(gfit('centerX') + [-l, l]/2, gfit('centerY') * [1,1], 'LineWidth', 1.5, 'Color', 'k');
+            line(gfit('centerX') * [1,1], gfit('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', 'k');
+
+            e = ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'));
+            set(e, 'Color', 'black')
+            e.LineWidth = 1.5;
+            hold off
         else
             gfit = nan;
         end
         
         % draw soma
 %         rectangle('Position',0.05 * largestDistanceOffset * [-.5, -.5, 1, 1],'Curvature',1,'FaceColor',[1 1 1]);
+
+        line([-50, 50],largestDistanceOffset*[-1,-1], 'LineWidth', 1.5, 'Color', 'k');
         
         % set axis limits
-        axis(ax, largestDistanceOffset * [-1 1 -1 1])
+        axis(largestDistanceOffset * [-1 1 -1 1])
         
-        set(ax, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-        set(ax, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+%         set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
+%         set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
         
-        % plot with no axis labels
-%         set(ax, 'XTick', [], 'XColor', 'none')
-%         set(ax, 'YTick', [], 'YColor', 'none')
-        set(ax,'LooseInset',get(ax,'TightInset'))
+%         % plot with no axis labels
+        set(gca, 'Box', 'off')
+        set(gca, 'XTick', [], 'XColor', 'none')
+        set(gca, 'YTick', [], 'YColor', 'none')
+        
+        set(gcf,'color','w');
+
     end
 
 end
