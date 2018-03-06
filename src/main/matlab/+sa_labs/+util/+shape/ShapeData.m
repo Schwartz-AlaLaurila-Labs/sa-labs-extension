@@ -21,7 +21,6 @@ classdef ShapeData < handle
         signalNormalizationParameters
         signalLightOn
         signalLightOff
-        channel % like 'Amplifier_Ch1'
 
         spotTotalTime
         spotOnTime
@@ -37,16 +36,8 @@ classdef ShapeData < handle
     end
     
     methods
-        function obj = ShapeData(epoch, runmode, channel)
-            
-            if nargin < 3
-                obj.channel = 'Amplifier_Ch1';
-            else
-                obj.channel = channel;
-            end
-            
-            fprintf('Starting ShapeData with channel %s\n', obj.channel)
-            
+        function obj = ShapeData(epoch, runmode)
+                        
             obj.sampleRate = 1000; %desired rate
             obj.preTime = .250; % fixed always anyway
             
@@ -56,7 +47,7 @@ classdef ShapeData < handle
                 obj.presentationId = epoch.get('presentationId');
                 sdc = epoch.get('shapeDataColumns');
                 sdm = epoch.get('shapeDataMatrix');
-                if ~(isa(sdm,'System.String') || isa(sdm,'char') || isa(sdm,'double'))
+                if ~(isa(sdm,'System.String') || isa(sdm,'char'))
                     sdm = epoch.get('shapeData');
                 end
                 em = epoch.get('epochMode');
@@ -74,28 +65,25 @@ classdef ShapeData < handle
                 obj.timeOffset = epoch.get('timeOffset');
                 obj.rigOffsetAngle = epoch.get('angleOffsetForRigAndStimulus');
                 
-            elseif strcmp(runmode, 'online')
-                obj.sessionId = epoch.getParameter('sessionId');
-                obj.presentationId = epoch.getParameter('presentationId');                
-                sdc = epoch.getParameter('shapeDataColumns');
-                sdm = epoch.getParameter('shapeDataMatrix');
-                if ~(isa(sdm,'System.String') || isa(sdm,'char'))
-                    sdm = epoch.getParameter('shapeData');
-                end
-                em = epoch.getParameter('epochMode');
-                obj.spotTotalTime = epoch.getParameter('spotTotalTime');
-                obj.spotOnTime = epoch.getParameter('spotOnTime');
-                obj.spotDiameter = epoch.getParameter('spotDiameter');
-                obj.searchDiameter = epoch.getParameter('searchDiameter');
-%                 obj.numSpots = epoch.getParameter('numSpots');
-                obj.ampMode = char(epoch.getParameter('ampMode'));
-                obj.ampVoltage = epoch.getParameter('ampHoldSignal');                
-                obj.numValues = epoch.getParameter('numValues');
-                obj.numValueRepeats = epoch.getParameter('numValueRepeats');
-                obj.stimTime = epoch.getParameter('stimTime');
-                obj.positionOffset = [epoch.getParameter('offsetX'),epoch.getParameter('offsetY')];
-                obj.timeOffset = nan;
-                obj.rigOffsetAngle = epoch.getParameter('angleOffsetForRigAndStimulus');
+            elseif strcmp(runmode, 'online2')
+                obj.sessionId = epoch.sessionId;
+                obj.presentationId = epoch.presentationId; 
+                sdc = epoch.shapeDataColumns;
+                sdm = epoch.shapeDataMatrix;
+                em = epoch.epochMode;
+                obj.spotTotalTime = epoch.spotTotalTime;
+                obj.spotOnTime = epoch.spotOnTime;
+                obj.spotDiameter = epoch.spotDiameter;
+                obj.searchDiameter = epoch.searchDiameter;
+                % obj.numSpots = epoch.numSpots;
+                obj.ampMode = char(epoch.chan1Mode);
+                obj.ampVoltage = epoch.chan1Hold; 
+                obj.numValues = epoch.numValues;
+                obj.numValueRepeats = epoch.numValueRepeats;
+                obj.stimTime = epoch.stimTime;
+                obj.positionOffset = [epoch.offsetX,epoch.offsetY];
+                obj.timeOffset = epoch.timeOffset;
+                obj.rigOffsetAngle = 0;% TODO: make work %epoch.angleOffsetForRigAndStimulus;
             end
                        
             % process shape data from epoch
@@ -136,16 +124,11 @@ classdef ShapeData < handle
                 end
             
                 num_cols = length(obj.shapeDataColumns);
-                
-                if isa(sdm,'double')
-                    sdmNumbers = sdm; % symphony 2 has numerical storage
-                else
-                    sdmNumbers = str2num(char(sdm));
-                end
-                obj.shapeDataMatrix = reshape(sdmNumbers, [], num_cols); %#ok<*ST2NM>
+%                 obj.shapeDataMatrix = reshape(str2num(char(sdm)), [], num_cols); %#ok<*ST2NM>
+                obj.shapeDataMatrix = reshape(sdm, [], num_cols);
+%                 disp(obj.shapeDataMatrix)
             end
             
-
             obj.totalNumSpots = size(obj.shapeDataMatrix,1);
             
             % add default values for columns that we don't have in the epoch
@@ -187,13 +170,13 @@ classdef ShapeData < handle
             
             % rotate positions using rig angle offset
             if isnan(obj.rigOffsetAngle)
-                obj.rigOffsetAngle = 180;
-                disp('AutoCenter epoch is missing angle offset, using default 180 for rig A');
+                obj.rigOffsetAngle = 0;
+                disp('AutoCenter epoch is missing angle offset');
             end
 
             theta = -1 * obj.rigOffsetAngle; % not sure if this should be positive or negative... test to confirm
             R = [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
-            for p = 1:size(positions, 1)
+            for p = 1:size(positions, 1);
                 positions(p,:) = (R * positions(p,:)')';
             end
             obj.shapeDataMatrix(:, [obj.shapeDataColumns('X'), obj.shapeDataColumns('Y')]) = positions;
@@ -201,12 +184,12 @@ classdef ShapeData < handle
             % process actual response or spikes from epoch
             if strcmp(runmode, 'offline')
                 if strcmp(obj.ampMode, 'Cell attached')
-                    obj.setSpikes(epoch.getSpikes(obj.channel));
+                    obj.setSpikes(epoch.getSpikes());
                 elseif strcmp(obj.ampMode, 'emulated')
                     obj.spikes = [];
                 else % whole cell
                     obj.spikes = [];
-                    obj.setResponse(epoch.getData(obj.channel)); %get whole cell response
+                    obj.setResponse(epoch.getData('Amplifier_Ch1')); %get whole cell response
                     obj.processWholeCell()
                 end
             else
@@ -245,6 +228,7 @@ classdef ShapeData < handle
                 obj.spikeRate = 0;
             end
             obj.setResponse(obj.spikeRate)
+            
         end
         
         function processWholeCell(obj)
