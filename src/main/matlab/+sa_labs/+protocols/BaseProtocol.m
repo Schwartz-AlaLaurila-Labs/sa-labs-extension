@@ -20,6 +20,9 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         
         spikeDetectorMode = 'advanced';
         spikeThreshold = -6 % pA or (pseudo-)std
+        
+        scanHeadTrigger = false; %scanhead trigger for function imaging, added by Greg 3/5/18
+
     end
     
     properties (Transient, Hidden)
@@ -161,6 +164,29 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
+            end
+            
+            %scanhead trigger for function imaging, added by Greg 3/5/18
+            if obj.scanHeadTrigger
+                disp('Making scanhead trigger stim');
+                p = symphonyui.builtin.stimuli.PulseTrainGenerator();
+                
+                p.preTime = 0; %trigger at start of pretime and end of stimtime
+                p.pulseTime = 1; %ms
+                p.intervalTime = obj.preTime + obj.stimTime;
+                p.tailTime = obj.tailTime - 2;
+                p.amplitude = 1;
+                p.mean = 0;
+                p.numPulses = 2;
+                p.sampleRate = obj.sampleRate;
+                p.units = Symphony.Core.Measurement.UNITLESS;
+                
+                triggers = obj.rig.getDevices('Scanhead Trigger');
+                if ~isempty(triggers)
+                    epoch.addStimulus(triggers{1},  p.generate());
+                else
+                    disp('no scanhead trigger device found')
+                end
             end
                                     
         end
