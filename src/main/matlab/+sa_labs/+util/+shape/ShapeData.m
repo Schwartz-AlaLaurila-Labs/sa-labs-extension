@@ -21,6 +21,7 @@ classdef ShapeData < handle
         signalNormalizationParameters
         signalLightOn
         signalLightOff
+        channel % like 'Amplifier_Ch1'
 
         spotTotalTime
         spotOnTime
@@ -36,7 +37,13 @@ classdef ShapeData < handle
     end
     
     methods
-        function obj = ShapeData(epoch, runmode)
+        function obj = ShapeData(epoch, runmode, channel)
+            
+            if nargin < 3
+                obj.channel = 'Amplifier_Ch1';
+            else
+                obj.channel = channel;
+            end
                         
             obj.sampleRate = 1000; %desired rate
             obj.preTime = .250; % fixed always anyway
@@ -124,9 +131,15 @@ classdef ShapeData < handle
                 end
             
                 num_cols = length(obj.shapeDataColumns);
-%                 obj.shapeDataMatrix = reshape(str2num(char(sdm)), [], num_cols); %#ok<*ST2NM>
-                obj.shapeDataMatrix = reshape(sdm, [], num_cols);
-%                 disp(obj.shapeDataMatrix)
+                
+                
+                if isa(sdm,'double')
+                    sdmNumbers = sdm; % symphony 2 has numerical storage
+                else
+                    sdmNumbers = str2num(char(sdm));
+                end
+                obj.shapeDataMatrix = reshape(sdmNumbers, [], num_cols); %#ok<*ST2NM>
+                
             end
             
             obj.totalNumSpots = size(obj.shapeDataMatrix,1);
@@ -170,13 +183,13 @@ classdef ShapeData < handle
             
             % rotate positions using rig angle offset
             if isnan(obj.rigOffsetAngle)
-                obj.rigOffsetAngle = 0;
-                disp('AutoCenter epoch is missing angle offset');
+                obj.rigOffsetAngle = 180;
+                disp('AutoCenter epoch is missing angle offset, using default 180 for rig A');
             end
 
             theta = -1 * obj.rigOffsetAngle; % not sure if this should be positive or negative... test to confirm
             R = [cosd(theta) -sind(theta); sind(theta) cosd(theta)];
-            for p = 1:size(positions, 1);
+            for p = 1:size(positions, 1)
                 positions(p,:) = (R * positions(p,:)')';
             end
             obj.shapeDataMatrix(:, [obj.shapeDataColumns('X'), obj.shapeDataColumns('Y')]) = positions;
