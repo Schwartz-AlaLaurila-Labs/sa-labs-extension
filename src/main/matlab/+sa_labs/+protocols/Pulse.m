@@ -12,8 +12,8 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        responsePlotMode = false;
-        responsePlotSplitParameter = '';
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = ''; %'pulseAmplitude';
     end
     
     properties (Hidden, Dependent)
