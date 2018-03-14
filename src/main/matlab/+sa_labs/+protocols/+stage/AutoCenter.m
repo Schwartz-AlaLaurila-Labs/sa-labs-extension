@@ -121,7 +121,10 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 analysisData = struct();
                 p = struct();
                 p.generatePositions = true;
-                obj.pointSetIndex = obj.pointSetIndex + 1;
+%                 obj.pointSetIndex = obj.pointSetIndex + 1;
+                if obj.epochNum > 1
+                    obj.pointSetIndex = obj.pointSetIndex + 1;
+                end
                 p.pointSetIndex = obj.pointSetIndex;
                 p.spotDiameter = obj.spotDiameter; %um
                 p.mapResolution = obj.mapResolution;
@@ -261,7 +264,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             if obj.alternateVoltage && obj.currentVoltageIndex ~= length(obj.voltages)
                 obj.autoContinueRun = true;
             else
-                obj.autoContinueRun = obj.runConfig.autoContinueRun || obj.pointSetIndex <= obj.numPointSets;
+                obj.autoContinueRun = obj.runConfig.autoContinueRun || obj.pointSetIndex < obj.numPointSets;
             end
             
             % set next epoch voltage to alternate
