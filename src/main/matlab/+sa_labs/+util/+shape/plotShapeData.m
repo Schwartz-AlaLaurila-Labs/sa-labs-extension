@@ -1,5 +1,7 @@
-function [] = plotShapeData(ad, mode, options)
+function [] = plotShapeData(ax, ad, mode, options)
 % display the shape data in ad (analysisData), using the string mode, with struct options
+
+axes(ax);
 
 if ~isfield(ad,'observations')
     disp('no observations');
@@ -38,28 +40,28 @@ elseif strncmp(mode, 'plotSpatial', 11)
     end
 
     combinationMode = 'mean';
-    if contains(mode, 'mean')
+    if strfind(mode, 'mean')
         mode_col = 5;
         modeLabel = 'mean';
-    elseif contains(mode, 'peak')
+    elseif strfind(mode, 'peak')
         mode_col = 6;
         modeLabel = 'peak';
-    elseif contains(mode, 'median')
+    elseif strfind(mode, 'median')
         mode_col = 5;
         modeLabel = 'median of means';
         combinationMode = 'median';
-    elseif contains(mode, 'first')
+    elseif strfind(mode, 'first')
         mode_col = 5;
         modeLabel = 'first';
         combinationMode = 'first';        
-    elseif contains(mode, 'last')
+    elseif strfind(mode, 'last')
         mode_col = 5;
         modeLabel = 'last';
         combinationMode = 'last';            
-    elseif contains(mode, 'tHalfMax')
+    elseif strfind(mode, 'tHalfMax')
         mode_col = 7;
         modeLabel = 't half max';
-    elseif contains(mode, 'saveMaps')
+    elseif strfind(mode, 'saveMaps')
         mode_col = 5;
         modeLabel = 'saveMaps';        
     end
@@ -74,7 +76,7 @@ elseif strncmp(mode, 'plotSpatial', 11)
     dataByVoltageIntensity = cell(num_voltages, num_intensities, 2);
     gfits = {};
     
-    ha = tight_subplot(num_intensities, num_voltages+1);
+    ha = sa_labs.util.tightSubplotWithParent(ax, num_intensities, num_voltages+1);
     for vi = 1:num_voltages
         for ii = 1:num_intensities
             intensity = intensities(ii);
@@ -133,45 +135,45 @@ elseif strncmp(mode, 'plotSpatial', 11)
             dataByVoltageIntensity(vi, ii, 1:2) = {goodPositions, vals};
         end
     end
-    
-    % plot all the pathway gaussian fits on one graph
-    axes(ha(num_voltages+1))
-    for a = 1:size(gfits,1)
-        gfit = gfits{a,1};
-        if isempty(gfit)
-            continue
-        end
-        
-        voltage = gfits{a,2};
-        intensity = gfits{a,3};
-        if voltage < 0
-            % excitation
-            if intensity > 0.5
-                % ON (blue)
-                num_columns = [0,0,1];
-            else
-                % OFF (green)
-                num_columns = [0,1,0];
-            end
-        else
-            % inhibition
-            if intensity > 0.5
-                % ON (red)
-                num_columns = [1 0 0];
-            else
-                % OFF (yellow)
-                num_columns = [.6 .6 0];
-            end
-        end
-        
-        e = ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), num_columns);
-        set(e, 'LineWidth', 2);
-        line(gfit('centerX') + [-l, l]/2, gfit('centerY') * [1,1], 'LineWidth', 1.5, 'Color', num_columns);
-        line(gfit('centerX') * [1,1], gfit('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', num_columns);
-        
-    end
-%     axis square
-    axis equal
+%     
+%     % plot all the pathway gaussian fits on one graph
+%     axes(ha(num_voltages+1))
+%     for a = 1:size(gfits,1)
+%         gfit = gfits{a,1};
+%         if isempty(gfit)
+%             continue
+%         end
+%         
+%         voltage = gfits{a,2};
+%         intensity = gfits{a,3};
+%         if voltage < 0
+%             % excitation
+%             if intensity > 0.5
+%                 % ON (blue)
+%                 num_columns = [0,0,1];
+%             else
+%                 % OFF (green)
+%                 num_columns = [0,1,0];
+%             end
+%         else
+%             % inhibition
+%             if intensity > 0.5
+%                 % ON (red)
+%                 num_columns = [1 0 0];
+%             else
+%                 % OFF (yellow)
+%                 num_columns = [.6 .6 0];
+%             end
+%         end
+%         
+%         e = sa_labs.util.shape.ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'), num_columns);
+%         set(e, 'LineWidth', 2);
+%         line(gfit('centerX') + [-l, l]/2, gfit('centerY') * [1,1], 'LineWidth', 1.5, 'Color', num_columns);
+%         line(gfit('centerX') * [1,1], gfit('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', num_columns);
+%         
+%     end
+% %     axis square
+%     axis equal
     
     if strcmp(modeLabel, 'saveMaps')
         save('savedMaps.mat', 'data','voltages','intensities');
@@ -208,8 +210,8 @@ elseif strcmp(mode, 'overlap')
     for pp = 1:length(paramsByPlot)
         for vi = 1:num_voltages
             for ii = 1:num_intensities
-                a = vi + (ii-1) * num_voltages;
-                ax = hh{a};
+                axisHandles = vi + (ii-1) * num_voltages;
+                ax = hh{axisHandles};
                 axes(ax(pp))
                 axis(ax(pp), 'off');
                 
@@ -514,12 +516,12 @@ elseif strcmp(mode, 'temporalResponses')
     % displays spot intensity using the same signal used for cross correlation
     
     num_plots = length(ad.epochData);
-    ha = tight_subplot(num_plots, 1, .03);
+    axisHandles = sa_labs.util.tightSubplotWithParent(ax, num_plots, 1, .03);
     
     for ei = 1:num_plots
         t = ad.epochData{ei}.t;
         resp = ad.epochData{ei}.response;
-        
+
         % play with exponential fitting:
 %         if max(t) > 5
 %             resp = resp - mean(resp((end-100):end)); % set end to 0
@@ -533,18 +535,18 @@ elseif strcmp(mode, 'temporalResponses')
 %         end
         
         % display original and shifted light On signal
-        plot(ha(ei), t, resp,'b');
-        hold(ha(ei), 'on');
+        plot(axisHandles(ei), t, resp,'b');
+        hold(axisHandles(ei), 'on');
         light = ad.epochData{ei}.signalLightOn;
         if abs(min(resp)) > abs(max(resp))
             light = light * -1;
         end
         light = light * max(abs(resp)) * 0.5;
-        plot(ha(ei), ad.epochData{ei}.timeOffset + t, light,'r')
+        plot(axisHandles(ei), ad.epochData{ei}.timeOffset + t, light,'r')
         
 %         resp = smooth(resp, 20);
 %         plot(ha(ei), t, resp,'g');
-        hold(ha(ei), 'off');
+        hold(axisHandles(ei), 'off');
         
         
 %         hold(ha(ei), 'on');
@@ -552,7 +554,7 @@ elseif strcmp(mode, 'temporalResponses')
 %         plot(ha(ei), t, resp - expFit);
 %         hold(ha(ei), 'off');
         
-        title(ha(ei), sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
+        title(axisHandles(ei), sprintf('Epoch %d at %d mV, time offset %d msec', ei, ad.epochData{ei}.ampVoltage, round(1000 * ad.epochData{ei}.timeOffset)))
 %         disp('Normalization parameters:');
 %         disp(ad.epochData{ei}.signalNormalizationParameters)
     end
@@ -568,7 +570,7 @@ elseif strcmp(mode, 'temporalComponents')
     paramColumn = 4; % intensity 3, voltage 4
     voltages = sort(unique(obs(:,paramColumn)));
 
-    ha = tight_subplot(length(voltages), 1, .03, .03);
+    ha = sa_labs.util.tightSubplotWithParent(ax, length(voltages), 1, .03, .03);
 
     positions = [];
     i = 1;
@@ -611,15 +613,15 @@ elseif strcmp(mode, 'temporalComponents')
             
 %             kk = cellfun(@(x)size(x,1),signalsThisPos,'UniformOutput',false)
             
-            a = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsThisPos,'UniformOutput',false));
-            signalsByPosition{poi,1} = nanmean(a, 1);
+            axisHandles = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsThisPos,'UniformOutput',false));
+            signalsByPosition{poi,1} = nanmean(axisHandles, 1);
             
         end
         maxLength=max(cellfun(@(x)numel(x),signalsByPosition));
-        a = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsByPosition,'UniformOutput',false));
+        axisHandles = cell2mat(cellfun(@(x)cat(2,x,nan*zeros(1,maxLength-length(x))),signalsByPosition,'UniformOutput',false));
         
-        signalByV = nanmean(a, 1);
-        varByV = nanvar(a, 1);
+        signalByV = nanmean(axisHandles, 1);
+        varByV = nanvar(axisHandles, 1);
         varByV = varByV / max(varByV);
         
         signalsByVoltageByPosition{vi,1} = signalsByPosition;
@@ -723,7 +725,7 @@ elseif strcmp(mode, 'responsesByPosition')
     dim1 = floor(sqrt(num_positions));
     dim2 = ceil(num_positions / dim1);
 
-    ha = tight_subplot(dim1, dim2, .004, .004, .004);
+    ha = sa_labs.util.tightSubplotWithParent(ax, dim1, dim2, .004, .004, .004);
     
     max_value = -inf;
     min_value = inf;
@@ -893,9 +895,9 @@ elseif strcmp(mode, 'wholeCell_comparisons')
                 end
             end
             
-            a = vi + (ii-1) * num_columns;
+            axisHandles = vi + (ii-1) * num_columns;
             
-            axes(ha(a));
+            axes(ha(axisHandles));
             vals = vals * sign(voltage + 1);
 %             vals = vals ./ max(abs(vals));
             
@@ -928,8 +930,8 @@ elseif strcmp(mode, 'wholeCell_comparisons')
     % comparisons:
     if num_intensities > 1
         for vi = 1:num_voltages
-            a = vi + num_columns * (num_rows-1);
-            axes(ha(a));
+            axisHandles = vi + num_columns * (num_rows-1);
+            axes(ha(axisHandles));
             d = dataByVoltageIntensity{vi, 2} - dataByVoltageIntensity{vi, 1};
                 s = surface(xq, yq, zeros(size(xq)), d);
                                 
@@ -952,8 +954,8 @@ elseif strcmp(mode, 'wholeCell_comparisons')
     
     if num_voltages > 1
         for ii = 1:num_intensities
-            a = (ii - 1) * num_columns + 1 + num_intensities;
-            axes(ha(a));
+            axisHandles = (ii - 1) * num_columns + 1 + num_intensities;
+            axes(ha(axisHandles));
             d = dataByVoltageIntensity{1, ii} * excitatory_multiplier - dataByVoltageIntensity{2, ii};
                 s = surface(xq, yq, zeros(size(xq)), d);
                                 
@@ -974,8 +976,8 @@ elseif strcmp(mode, 'wholeCell_comparisons')
     end
     
     if num_voltages > 1 && num_intensities > 1
-        a = num_columns * num_rows;
-        axes(ha(a));
+        axisHandles = num_columns * num_rows;
+        axes(ha(axisHandles));
         d = - dataByVoltageIntensity{1, 1} * excitatory_multiplier + dataByVoltageIntensity{2, 1} ...
             + dataByVoltageIntensity{1, 2} * excitatory_multiplier - dataByVoltageIntensity{2, 2};
 
@@ -1528,7 +1530,7 @@ end
 %             positions(hi,:)
 %             values(hi) = 1;
             fitValues(fitValues < 0) = 0; % Interesting, maybe an improvement for fitting WC results
-            gfit = fit2DGaussian(positions, fitValues);
+            gfit = sa_labs.util.shape.fit2DGaussian(positions, fitValues);
             fprintf('gaussian fit center: %d um, %d um\n', round(gfit('centerX')), round(gfit('centerY')))
             v = fitValues - min(fitValues);
 %             centerOfMass = mean(bsxfun(@times, positions, v ./ mean(v)), 1);
@@ -1538,7 +1540,7 @@ end
             line(gfit('centerX') + [-l, l]/2, gfit('centerY') * [1,1], 'LineWidth', 1.5, 'Color', 'k');
             line(gfit('centerX') * [1,1], gfit('centerY') + [-l, l]/2, 'LineWidth', 1.5, 'Color', 'k');
 
-            e = ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'));
+            e = sa_labs.util.shape.ellipse(gfit('sigma2X'), gfit('sigma2Y'), -gfit('angle'), gfit('centerX'), gfit('centerY'));
             set(e, 'Color', 'black')
             e.LineWidth = 1.5;
             hold off

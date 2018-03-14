@@ -24,10 +24,12 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
         end
         
         function position = getPosition(obj)
+            fclose(obj.serialPortObject);
             fopen(obj.serialPortObject);
             fprintf(obj.serialPortObject, 'pos?\n');
             pause(0.2);
             
+            data = '';
             while (get(obj.serialPortObject, 'BytesAvailable') ~=0)
                 txt = fscanf(obj.serialPortObject, '%s');
                 if txt == '>'
@@ -35,6 +37,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
                 end
                 data = txt;
             end
+            
             position = str2double(data);
             fclose(obj.serialPortObject);
         end
