@@ -28,7 +28,11 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
                 daq.getStream('doport1').setBitPosition(oscopeTrigger, 0);
                 obj.addDevice(oscopeTrigger);
-            end
+                
+                scanTrigger = UnitConvertingDevice('Scanhead Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                daq.getStream('doport1').setBitPosition(scanTrigger, 2);
+                obj.addDevice(scanTrigger);
+            end            
             
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
             neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);

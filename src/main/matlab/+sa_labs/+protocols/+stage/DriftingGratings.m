@@ -60,7 +60,7 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             epoch.addParameter('anglesLikeMovingBar',1);
             
             % Call the base method.
-            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);            
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
         function p = createPresentation(obj)

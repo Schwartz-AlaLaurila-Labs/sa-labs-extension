@@ -1,5 +1,5 @@
 classdef LightStep < sa_labs.protocols.StageProtocol
-
+    
     properties
         %times in ms
         preTime = 500	% Spot leading duration (ms)
@@ -43,15 +43,15 @@ classdef LightStep < sa_labs.protocols.StageProtocol
                 end
             end
             epoch.addParameter('currentSpotPattern', obj.currentSpotPattern);
-            
+           
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-                        
-        end        
-      
+            
+        end
+        
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
-
+            
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
             spot.radiusY = spot.radiusX;
@@ -65,14 +65,14 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             
             % shared code for multi-pattern objects
             obj.setColorController(p, spot);
-
+            
         end
         
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochs;
         end
-
+        
     end
     
 end
