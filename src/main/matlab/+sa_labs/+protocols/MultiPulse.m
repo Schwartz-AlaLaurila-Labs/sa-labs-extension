@@ -6,14 +6,14 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     properties
         outputAmpSelection = 1          % Output amplifier (1 or 2)
         preTime = 500                    % Pulse leading duration (ms)
-        stepByStim = 'neither'          % Which pulse are you leading by (1 or 2)
-        numberOfSteps = 1               % How many steps do you want
+        stepByStim = 'Stim 2'%'neither'          % Which pulse are you stepping through (1 or 2)
+        numberOfSteps = 5%1               % How many steps do you want
         stim1Time = 500                  % Pulse 1 duration (ms)
-        stim2Time = 0                   % Pulse 2 duration (ms)
+        stim2Time = 300%0                   % Pulse 2 duration (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
-        pulse1Amplitude = 100            % Pulse 1 amplitude (mV or pA depending on amp mode)
+        pulse1Amplitude = 200%100            % Pulse 1 amplitude (mV or pA depending on amp mode)
         pulse2Amplitude = 0              % Pulse 2 amplitude (mV or pA depending on amp mode)
-        minAmplitude = 100              % when you step the stimulus, what is the min
+        minAmplitude = 0              % when you step the stimulus, what is the min
         maxAmplitude = 100              % when you step the stimulus, what is the max
         
         numberOfCycles = 10
@@ -38,7 +38,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     
     methods   
         function prepareRun(obj)
-            prepareRun@sa_labs.protocols.BaseProtocol(obj);
+            prepareRun@sa_labs.protocols.BaseProtocol(obj, true);
             
             %set amplitude pulse vector
             if ~obj.logScaling
@@ -52,6 +52,19 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         function stim = createAmpStimulus(obj, ampName)
             stimCell = {};
             
+            % create background pulse
+            genB = symphonyui.builtin.stimuli.PulseGenerator();
+            
+            genB.preTime = 0;
+            genB.stimTime = obj.preTime+obj.stimTime+obj.tailTime;
+            genB.tailTime = 0;
+            genB.amplitude = obj.rig.getDevice(ampName).background.quantity;
+            genB.mean = 0;
+            genB.sampleRate = obj.sampleRate;
+            genB.units = obj.rig.getDevice(ampName).background.displayUnits;
+            
+            stimCell{1} = genB.generate();
+            
             % create stim 1 pulse
             gen1 = symphonyui.builtin.stimuli.PulseGenerator();
             
@@ -63,7 +76,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             gen1.sampleRate = obj.sampleRate;
             gen1.units = obj.rig.getDevice(ampName).background.displayUnits;
             
-            stimCell{1} = gen1.generate();
+            stimCell{2} = gen1.generate();
             
             % create stim 2 pulse
             gen2 = symphonyui.builtin.stimuli.PulseGenerator();
@@ -76,7 +89,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             gen2.sampleRate = obj.sampleRate;
             gen2.units = obj.rig.getDevice(ampName).background.displayUnits;
             
-            stimCell{2} = gen2.generate();
+            stimCell{3} = gen2.generate();
             
             % add together all three stimuli
             genSum = symphonyui.builtin.stimuli.SumGenerator();
@@ -108,10 +121,12 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             epoch.addParameter('pulse1Curr', obj.pulse1Curr);
             epoch.addParameter('pulse2Curr', obj.pulse2Curr);
 
+            prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
+            
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
             
-            prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
+            
         end
         
         % set dependent variables
