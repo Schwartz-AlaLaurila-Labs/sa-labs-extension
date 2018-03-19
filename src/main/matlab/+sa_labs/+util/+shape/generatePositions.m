@@ -110,9 +110,9 @@ elseif strcmp(mode, 'triangular')
     end
     
     % reorder to avoid adjacent successive spots 
-    order = (1:2:length(positions))';
+    order = (1:2:size(positions, 1))';
     order = vertcat(order, order + 1);
-    order = order(1:length(positions));
+    order = order(1:size(positions, 1));
     positions = positions(order, :);
     
     % rotate by a random angle to enable generation of a new set of positions from the same parameters
