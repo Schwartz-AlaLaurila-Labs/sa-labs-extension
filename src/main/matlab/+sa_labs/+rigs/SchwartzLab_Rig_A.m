@@ -11,8 +11,8 @@ classdef SchwartzLab_Rig_A < sa_labs.rigs.SchwartzLab_Rig_Base
         frameTrackerPosition = [1800,0];
         frameTrackerSize = [550,550];
         filterWheelComPort = 'COM8';
-        orientation = [false, false];
-        angleOffset = 180;
+        orientation = [false, true];
+        angleOffset = 0;
         
         fitBlue = [1.97967e-11,	-4.35548e-09,	8.49409e-07,	1.07816e-05];
         fitGreen =[1.9510e-12, -1.4200e-09, 5.1430e-07, 9.6550e-06];
