@@ -8,7 +8,7 @@ classdef SchwartzLab_Rig_A < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelDefaultValue = 5;
         filterWheelAttenuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
         micronsPerPixel = 1.38;
-        frameTrackerPosition = [1800,0];
+        frameTrackerPosition = [0,0];
         frameTrackerSize = [550,550];
         filterWheelComPort = 'COM8';
         orientation = [false, true];
