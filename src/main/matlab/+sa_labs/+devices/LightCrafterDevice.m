@@ -155,9 +155,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));            
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
-
-            orientation = obj.getConfigurationSetting('imageOrientation')
-            
+            orientation = obj.getConfigurationSetting('imageOrientation');
             obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
             
             % BACKGROUND
