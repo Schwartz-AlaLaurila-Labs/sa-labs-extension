@@ -50,6 +50,11 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         ampList
         
         spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'advanced', 'Simple Threshold', 'Filtered Threshold', 'none'});
+        
+        wholeCellRecordingMode_Ch1
+        wholeCellRecordingMode_Ch2
+        wholeCellRecordingMode_Ch3
+        wholeCellRecordingMode_Ch4
     end
     
     methods
@@ -164,20 +169,29 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
+                if strcmp(ampMode, 'Whole cell')
+                    if strcmp(obj.rig.getDevice(ampName).background.displayUnits, 'mV')
+                        epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Vclamp');
+                    else
+                        epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Iclamp');
+                    end
+                end
             end
             
             %scanhead trigger for function imaging, added by Greg 3/5/18
             if obj.scanHeadTrigger
                 disp('Making scanhead trigger stim');
-                p = symphonyui.builtin.stimuli.PulseTrainGenerator();
+                %p = symphonyui.builtin.stimuli.PulseTrainGenerator();
+                p = symphonyui.builtin.stimuli.PulseGenerator();
                 
                 p.preTime = 0; %trigger at start of pretime and end of stimtime
-                p.pulseTime = 1; %ms
-                p.intervalTime = obj.preTime + obj.stimTime;
-                p.tailTime = obj.tailTime - 2;
+                p.stimTime = 1;
+               % p.pulseTime = 1; %ms
+               % p.intervalTime = obj.preTime + obj.stimTime;
+                p.tailTime = obj.preTime + obj.stimTime + obj.tailTime - 1;
                 p.amplitude = 1;
                 p.mean = 0;
-                p.numPulses = 2;
+                %p.numPulses = 2;
                 p.sampleRate = obj.sampleRate;
                 p.units = Symphony.Core.Measurement.UNITLESS;
                 
