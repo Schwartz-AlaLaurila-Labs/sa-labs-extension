@@ -210,8 +210,15 @@ for p = 1:num_epochs
     end
     %     sampleSet = (sampleCount_on:(sampleCount_total-1))'; % (3) just during post-spot
     
-    if skipResponses == 1
+    if skipResponses == 1 
         continue
+    end
+    
+    if isfield(processOptions, 'skipAnalysis')
+        if processOptions.skipAnalysis
+            disp('skipping analysis to save time, good thinking');
+            continue
+        end
     end
     
     if max(e.response) == 0

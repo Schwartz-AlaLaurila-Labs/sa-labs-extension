@@ -15,6 +15,8 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         
         numPointSets = 1;
         
+        skipAnalysis = false;
+        
         voltages = [-60,20];
         alternateVoltage = false; % WC only
         interactiveMode = false;
@@ -101,7 +103,8 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 'shapePlotMode','plotSpatial_mean',...
                 'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
                 'spikeThreshold', obj.spikeThreshold, ...
-                'spikeDetectorMode', obj.spikeDetectorMode);
+                'spikeDetectorMode', obj.spikeDetectorMode, ...
+                'skipAnalysis', obj.skipAnalysis);
             
             prepareRun@sa_labs.protocols.StageProtocol(obj);
         end

@@ -13,6 +13,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
         analysisData
         epochData
         shapePlotMode
+        skipAnalysis
         
         displayBox
         temporalOffsetBox
@@ -28,6 +29,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             ip.addParameter('spikeThreshold', -50, @(x)isnumeric(x));
             ip.addParameter('spikeDetectorMode', '', @(x)ischar(x));
             ip.addParameter('shapePlotMode', 'plotSpatial_mean', @(x)ischar(x));
+            ip.addParameter('skipAnalysis', 0);            
             
             ip.parse(varargin{:});
             
@@ -37,6 +39,7 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             obj.spikeThreshold = ip.Results.spikeThreshold;
             obj.spikeDetectorMode = ip.Results.spikeDetectorMode;
             obj.shapePlotMode = ip.Results.shapePlotMode;
+            obj.skipAnalysis = ip.Results.skipAnalysis;
             
             obj.spikeDetector = sa_labs.util.SpikeDetector(obj.spikeDetectorMode, obj.spikeThreshold);
 %             obj.spikeDetector.sampleInterval = 1E-4;            
@@ -168,7 +171,9 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             end
             fprintf('set timeoffset to %d\n',obj.epochData{1}.timeOffset)
             
-            obj.analysisData = sa_labs.util.shape.processShapeData(obj.epochData);
+            processOptions = struct();
+            processOptions.skipAnalysis = obj.skipAnalysis;
+            obj.analysisData = sa_labs.util.shape.processShapeData(obj.epochData, processOptions);
             
             obj.temporalOffsetBox.String = num2str(1000 * obj.analysisData.timeOffset);
             
