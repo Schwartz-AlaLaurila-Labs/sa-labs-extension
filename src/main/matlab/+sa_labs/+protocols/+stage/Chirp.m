@@ -12,6 +12,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         %
         %meanLevel = 0.35; % mean light level        
         spotSize = 200; % um
+        intensity = 0; % this doesn't do anything
         
         % chirp params
         freqTotalTime = 10; % 10 sec of frequency modulation
@@ -25,7 +26,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 4;
-        
+        contrastPattern = [];
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = '';
     end
