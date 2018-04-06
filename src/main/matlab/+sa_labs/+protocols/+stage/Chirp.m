@@ -26,7 +26,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 4;
-        contrastPattern = [];
+        chirpPattern = [];
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = '';
     end
@@ -54,7 +54,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             
             freqT = 0:dt:obj.freqTotalTime;
             freqChange = linspace(obj.freqMin, obj.freqMax, length(freqT));
-            freqPhase = cumsum(freqChange/obj.FS);
+            freqPhase = cumsum(freqChange*dt);
             freqPattern = obj.meanLevel*-sin(2*pi*freqPhase + pi) + obj.meanLevel;
             
             contrastT = 0:dt:obj.contrastTotalTime;
@@ -87,24 +87,30 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             obj.setOnDuringStimController(p, spot);
-            
+            sprintf('here')
             % shared code for multi-pattern objects
             obj.setColorController(p, spot);
             
             spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
                 @(state)getSpotIntensity(obj, state.frame));
             p.addController(spotIntensity);
-            
+            sprintf('created presentation')
         end
         
         function i = getIntensityFromPattern(obj, state)
-            if state.frame<0 %pre frames. frame 0 starts stimPts
+            frame=state.frame;
+            if frame<0 %pre frames. frame 0 starts stimPts
                 frame = 1;
             else
                 frame = state.frame;
             end
-
-            i = obj.chirpPattern(frame);
+            i=0;
+            if isempty(obj.chirpPattern)
+                i = obj.meanLevel;
+            else
+                i = obj.chirpPattern(frame);
+            end
+            sprintf(num2str(i))
         end
         
         function stimTime = get.stimTime(obj)
