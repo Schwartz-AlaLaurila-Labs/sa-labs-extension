@@ -28,7 +28,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         version = 4;
         chirpPattern = [];
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = '';
+        responsePlotSplitParameter = 'spotSize';
     end
     
     properties (Dependent) 
@@ -42,6 +42,8 @@ classdef Chirp < sa_labs.protocols.StageProtocol
     methods
         
         function prepareRun(obj)
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
+            
             if obj.meanLevel == 0
                 warning('Mean Level must be greater than 0 for this to work');
             end
@@ -63,15 +65,11 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             
             obj.chirpPattern = [interPattern, posStepPattern, interPattern, negStepPattern, interPattern...
                 freqPattern, interPattern, contrastPattern, interPattern];
-            
-            prepareRun@sa_labs.protocols.StageProtocol(obj);
         end
         
         function prepareEpoch(obj, epoch)
-           
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-            
         end
         
         function p = createPresentation(obj)
@@ -86,32 +84,23 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-            obj.setOnDuringStimController(p, spot);
-            sprintf('here')
-            % shared code for multi-pattern objects
-            obj.setColorController(p, spot);
-            
-            spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
-                @(state)getSpotIntensity(obj, state.frame));
-            p.addController(spotIntensity);
-            sprintf('created presentation')
-        end
-        
-        function i = getIntensityFromPattern(obj, state)
-            frame=state.frame;
-            if frame<0 %pre frames. frame 0 starts stimPts
-                frame = 1;
-            else
-                frame = state.frame;
-            end
-            i=0;
-            if isempty(obj.chirpPattern)
-                i = obj.meanLevel;
-            else
+           
+            function i = getIntensityFromPattern(obj, state)
+                frame=state.frame;
+                if frame<=0 %pre frames. frame 0 starts stimPts
+                    frame = 1;
+                else
+                    frame = state.frame;
+                end
+                
                 i = obj.chirpPattern(frame);
             end
-            sprintf(num2str(i))
+            
+            spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
+                @(state)getIntensityFromPattern(obj, state));
+            p.addController(spotIntensity);
         end
+        
         
         function stimTime = get.stimTime(obj)
             stimTime = obj.interTime*5 + obj.stepTime*2 + obj.freqTotalTime + obj.contrastTotalTime;
