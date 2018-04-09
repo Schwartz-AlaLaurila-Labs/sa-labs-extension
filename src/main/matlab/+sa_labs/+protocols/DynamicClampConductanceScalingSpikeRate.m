@@ -3,6 +3,7 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
     %https://github.com/Rieke-Lab/baudin-package/blob/master/%2Bedu/%2Bwashington/%2Briekelab/%2Bbaudin/%2Bprotocols/DynamicClampConductanceScalingSpikeRate.m
 
     properties
+        totalNumEpochs = 10;
         preTime = 25; % samples, prior to conductance trace
         tailTime = 25; % samples, after conductance trace
         gExcMultiplier = 1;
@@ -20,7 +21,7 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         
         amp
         numberOfAverages = uint16(5)
-        interpulseInterval = 0.2
+        %interpulseInterval = 0.2
     end
     
     properties (Hidden)
@@ -47,10 +48,6 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
             % load the conductances
             obj.loadConductanceData();
             obj.stimTime = getStimTime(obj);
-            
-            DynamicTrigger = UnitConvertingDevice('Dynamic Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-            daq.getStream('doport1').setBitPosition(DynamicTrigger, 3);
-            obj.addDevice(DynamicTrigger);
             
         end
         
@@ -131,12 +128,12 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
             volts = nS / obj.nSPerVolt;
         end
         
-        function prepareInterval(obj, interval)
-            prepareInterval@edu.washington.riekelab.protocols.RiekeLabProtocol(obj, interval);
-            
-            device = obj.rig.getDevice(obj.amp);
-            interval.addDirectCurrentStimulus(device, device.background, obj.interpulseInterval, obj.sampleRate);
-        end
+%         function prepareInterval(obj, interval)
+%             prepareInterval@edu.washington.riekelab.protocols.RiekeLabProtocol(obj, interval);
+%             
+%             device = obj.rig.getDevice(obj.amp);
+%             interval.addDirectCurrentStimulus(device, device.background, obj.interpulseInterval, obj.sampleRate);
+%         end
         
         function tf = shouldContinuePreparingEpochs(obj)
             tf = obj.numEpochsPrepared < obj.numberOfAverages;
