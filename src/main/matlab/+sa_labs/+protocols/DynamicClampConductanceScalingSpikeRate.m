@@ -3,25 +3,23 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
     %https://github.com/Rieke-Lab/baudin-package/blob/master/%2Bedu/%2Bwashington/%2Briekelab/%2Bbaudin/%2Bprotocols/DynamicClampConductanceScalingSpikeRate.m
 
     properties
-        totalNumEpochs = 10;
-        preTime = 25; % samples, prior to conductance trace
-        tailTime = 25; % samples, after conductance trace
+        numberOfAverages = uint16(5); % how many times to run each pair of traces
+        
+        preTime = 25; % samples, prior to loaded conductance trace
+        tailTime = 25; % samples, after loaded conductance trace
+        
         gExcMultiplier = 1;
         gInhMultiplier = 1;
         
-        ExcConductancesFile = 'testRig';
-        InhConductancesFile = 'testRig';
+        ExcConductancesFile = 'testRig0';
+        InhConductancesFile = 'testRig0';
         
         ExcReversal = 10;
         InhReversal = -70;
         
-        nSPerVolt = 20;
+        nSPerVolt = 30;
         
-        epochToUse = 1;
-        
-        amp
-        numberOfAverages = uint16(5)
-        %interpulseInterval = 0.2
+        amp = 1;
     end
     
     properties (Hidden)
@@ -29,6 +27,10 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         excConductanceData
         inhConductanceData
         stimTime
+        
+        totalNumEpochs
+        numberOfTraces % number of traces (rows) in the conductance matrices
+        epochOrdering % random ordering of the conductance traces
         
         ampType
         responsePlotMode = 'cartesian';
@@ -38,8 +40,17 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
     
     methods
         function loadConductanceData(obj)
+            % load in data and check that they are the same size
             obj.excConductanceData = load([obj.conductancesFolderName obj.ExcConductancesFile '.mat']);
             obj.inhConductanceData = load([obj.conductancesFolderName obj.InhConductancesFile '.mat']);
+            
+            if size(obj.excConductanceData.conductances) ~= size(obj.inhConductanceData.conductances)
+                warning('Conductance matrices are not the same size')
+            else
+                % number of traces = number of rows
+                obj.numberOfTraces = size(obj.excConductanceData.conductances, 1);
+                obj.totalNumEpochs = obj.numberOfAverages*obj.numberOfTraces;
+            end
         end
         
         function prepareRun(obj)
@@ -48,20 +59,27 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
             % load the conductances
             obj.loadConductanceData();
             obj.stimTime = getStimTime(obj);
-            
+            obj.epochOrdering = randperm(obj.numberOfTraces);
         end
         
         
-        function stim = createConductanceStimulus(obj, conductance)
+        function stim = createConductanceStimulus(obj, conductance, type)
             % conductanceType is string: 'exc' or 'inh'
             gen = symphonyui.builtin.stimuli.WaveformGenerator();
             gen.sampleRate = obj.sampleRate;
             gen.units = 'V';
             
-
-            newExcConductanceTrace = obj.gExcMultiplier .* conductance; %nS
-            newInhConductanceTrace = obj.gInhMultiplier .* conductance; %nS
+            preTimeTrace = zeros(1, obj.preTime*10);
+            tailTimeTrace = zeros(1, obj.tailTime*10);
             
+            if strcmp(type, 'exc')
+                newConductanceTrace = obj.gExcMultiplier .* conductance; %nS
+            elseif strcmp(type, 'inh')
+                newConductanceTrace = obj.gInhMultiplier .* conductance; %nS
+            else
+                warning('Type is non-existant to createConductanceStimulus')
+            end
+            newConductanceTrace = [preTimeTrace, newConductanceTrace, tailTimeTrace];
             
             %map conductance (nS) to DAC output (V) to match expectation of
             %Arduino...
@@ -80,10 +98,19 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
-            %%% make ttl pulse
+            'preparing run'
+            
+            % run through different sets of epochs
+            index = mod(obj.numEpochsPrepared, obj.numberOfTraces);
+            if index == 0
+                obj.epochOrdering = randperm(obj.numberOfTraces);
+            end
+            traceInd = obj.epochOrdering(index + 1);
+            
+            %%% make ttl pulse length of conductance stimulus
             p = symphonyui.builtin.stimuli.PulseGenerator();
             p.preTime = obj.preTime;
-            p.stimTime = obj.stimTime;
+            p.stimTime = obj.stimTime; 
             p.tailTime = obj.tailTime;
             p.amplitude = 1;
             p.mean = 0;
@@ -96,16 +123,16 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
                 disp('No dynamic clamp trigger device found.')
             end
             
-%             excConductance = obj.determineConductance();
-%             
-%             epoch.addStimulus(obj.rig.getDevice('Excitatory conductance'), ...
-%                 obj.createConductanceStimulus('exc', excConductance));
-%             epoch.addStimulus(obj.rig.getDevice('Inhibitory conductance'), ...
-%                 obj.createConductanceStimulus('inh', zeros(size(excConductance))));
-%             epoch.addResponse(obj.rig.getDevice(obj.amp));
-%             epoch.addResponse(obj.rig.getDevice('Injected current'));
-%             
-%             epoch.addParameter('excitatoryConductance', excConductance);
+            excConductance = obj.excConductanceData.conductances(traceInd, :);
+            inhConductance = obj.inhConductanceData.conductances(traceInd, :);
+                   
+            epoch.addStimulus(obj.rig.getDevice('Excitatory conductance'), ...
+                obj.createConductanceStimulus(excConductance, 'exc'));
+            epoch.addStimulus(obj.rig.getDevice('Inhibitory conductance'), ...
+                obj.createConductanceStimulus(inhConductance, 'inh'));
+            
+            epoch.addParameter('excitatoryConductance', excConductance);
+            epoch.addParameter('inhibitoryConductance', inhConductance);
         end
         
         
@@ -116,31 +143,13 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
             if excStimTime ~= inhStimTime
                 warning('Excitatory and Inhibitory conductances are not the same length')
             else 
-                stimTime = excStimTime;
+                stimTime = excStimTime; 
             end
-        end
-        
-        function conductance = determineConductance(obj)
-            conductance = obj.conductanceData.conductances(obj.epochToUse, :);
         end
         
         function volts = nSToVolts(obj, nS)
             volts = nS / obj.nSPerVolt;
         end
         
-%         function prepareInterval(obj, interval)
-%             prepareInterval@edu.washington.riekelab.protocols.RiekeLabProtocol(obj, interval);
-%             
-%             device = obj.rig.getDevice(obj.amp);
-%             interval.addDirectCurrentStimulus(device, device.background, obj.interpulseInterval, obj.sampleRate);
-%         end
-        
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfAverages;
-        end
     end
 end
