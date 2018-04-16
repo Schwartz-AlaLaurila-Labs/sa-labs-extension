@@ -20,6 +20,7 @@ classdef WhiteNoiseFlicker < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden, Dependent)
+        version = 2 % Corrected preFrames when framePerStep > 1 
         totalNumEpochs
     end
     
@@ -71,10 +72,10 @@ classdef WhiteNoiseFlicker < sa_labs.protocols.StageProtocol
                 patternRate = obj.rig.getDevice('LightCrafter').getPatternRate();
             end
             
-            preFrames = ceil((obj.preTime/1000) * (patternRate / obj.framesPerStep));
+            preFrames = ceil((obj.preTime/1e3) * patternRate);
             
             function c = noiseStim(state, preTime, stimTime, preFrames, waveVec, frameStep, meanLevel)
-                if state.time > preTime*1e-3 && state.time <= (preTime+stimTime) *1e-3
+                if state.frame > preFrames && state.time <= (preTime+stimTime) *1e-3
                     index = ceil((state.frame - preFrames) / frameStep);
                     c = waveVec(index);
                 else
