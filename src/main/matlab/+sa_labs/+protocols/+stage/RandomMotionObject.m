@@ -5,15 +5,14 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         %times in ms
         preTime = 0;
         tailTime = 0;
-        stimTime = 20000;
+        stimTime = 30000;
         
         intensity = 0.5;
-        spotSize = 150;
+        spotSize = 80;
         
-        seed = 1;
-        
-        motionSeed = 1;
-        motionStandardDeviation = 400; % µm
+        motionSeedStart = 1;
+        motionSeedChangeMode = 'repeat only';
+        motionStandardDeviation = 500; % µm
         motionLowpassFilterPassband = 3; % Hz
         
         numberOfCycles = 3;
@@ -23,9 +22,14 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 1
         motionPath
+        motionSeed
+        
+        motionSeedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
 
+        motionFilter
+        
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'seed';
+        responsePlotSplitParameter = 'motionSeed';
     end
     
     properties (Dependent)
@@ -53,24 +57,42 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
             % Call the base method.
             prepareRun@sa_labs.protocols.StageProtocol(obj);
 
-            
-            % create the motion path
             frameRate = 60;
-            motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassband,'StopbandFrequency',obj.motionLowpassFilterStopband,'SampleRate',frameRate);
-            stream = RandStream('mt19937ar', 'Seed', obj.motionSeed);
-            
-            for dim = 1:2
-                motionPath = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * frameRate + 100, 1);
-                obj.motionPath(:,dim) = filtfilt(motionFilter, motionPath);
-            end
+            obj.motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassband,'StopbandFrequency',obj.motionLowpassFilterStopband,'SampleRate',frameRate);
+
             
         end
         
         function prepareEpoch(obj, epoch)
-            epoch.addParameter('seed', obj.seed);
-            
             % Call the base method
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+            
+            
+            if strcmp(obj.motionSeedChangeMode, 'repeat only')
+                seed = obj.motionSeedStart;
+            elseif strcmp(obj.motionSeedChangeMode, 'increment only')
+                seed = obj.numEpochsCompleted + obj.motionSeedStart;
+            else
+                seedIndex = mod(obj.numEpochsCompleted,2);
+                if seedIndex == 0
+                    seed = obj.motionSeedStart;
+                elseif seedIndex == 1
+                    seed = obj.motionSeedStart + (obj.numEpochsCompleted + 1) / 2;
+                end
+            end
+            obj.motionSeed = seed;
+            
+            epoch.addParameter('motionSeed', obj.motionSeed);
+            
+            fprintf('Using seed %g\n', obj.motionSeed);
+            
+            % create the motion path
+            stream = RandStream('mt19937ar', 'Seed', obj.motionSeed);
+            
+            for dim = 1:2
+                mp = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * frameRate + 100, 1);
+                obj.motionPath(:,dim) = filtfilt(obj.motionFilter, mp);
+            end            
             
         end
         
