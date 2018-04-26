@@ -15,7 +15,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         motionStandardDeviation = 500; % µm
         motionLowpassFilterPassband = 3; % Hz
         
-        numberOfCycles = 3;
+        numberOfEpochs = 300;
         
     end
     
@@ -90,7 +90,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
             stream = RandStream('mt19937ar', 'Seed', obj.motionSeed);
             
             for dim = 1:2
-                mp = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * frameRate + 100, 1);
+                mp = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * obj.frameRate + 100, 1);
                 obj.motionPath(:,dim) = filtfilt(obj.motionFilter, mp);
             end            
             
@@ -129,7 +129,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             
-            totalNumEpochs = obj.numberOfCycles;
+            totalNumEpochs = obj.numberOfEpochs;
 
         end
         
