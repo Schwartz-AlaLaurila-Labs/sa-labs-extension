@@ -13,6 +13,7 @@ classdef WhiteNoiseFlicker < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
+        version = 2; % Corrected preFrames when framePerStep > 1 
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'randSeed';
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
@@ -20,7 +21,6 @@ classdef WhiteNoiseFlicker < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden, Dependent)
-        version = 2 % Corrected preFrames when framePerStep > 1 
         totalNumEpochs
     end
     
