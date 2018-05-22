@@ -28,7 +28,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 5 % Corrected spot sizes, Symphony 2
+        version = 6 % Transission from state.time to state.frame
         displayName = 'Auto Center'
         
         shapeDataMatrix
@@ -293,12 +293,17 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             col_endTime = not(cellfun('isempty', strfind(obj.shapeDataColumns, 'endTime')));
             col_flickerFrequency = not(cellfun('isempty', strfind(obj.shapeDataColumns, 'flickerFrequency')));
             
+            % Transission from time to frames for better temporal accuracy
+            frameRate = obj.frameRate;
+            preFrames = round(obj.preTime/1e3*frameRate);
+            startFrames = round(obj.shapeDataMatrix(:,col_startTime)*frameRate);
+            endFrames = round(obj.shapeDataMatrix(:,col_endTime)*frameRate);
             
             % GENERIC controller
-            function c = shapeController(state, preTime, baseLevel, startTime, endTime, shapeData_someColumns, controllerIndex)
+            function c = shapeController(state, preFrames, baseLevel, startFrames, endFrames, shapeData_someColumns, controllerIndex)
                 % controllerIndex is to have multiple shapes simultaneously
-                t = state.time - preTime * 1e-3;
-                activeNow = (t > startTime & t < endTime);
+                frame = state.frame - preFrames;
+                activeNow = (frame > startFrames & frame <= endFrames);
                 if any(activeNow)
                     actives = find(activeNow);
                     if controllerIndex <= length(actives)
@@ -313,23 +318,24 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             
             % Custom controllers
             % flicker
-            function c = shapeFlickerController(state, preTime, baseLevel, startTime, endTime, shapeData_someColumns, controllerIndex)
+            function c = shapeFlickerController(state, preFrames, baseLevel, startFrames, endFrames, shapeData_someColumns, controllerIndex)
                 % controllerIndex is to have multiple shapes simultaneously
-                t = state.time - preTime * 1e-3;
-                activeNow = (t > startTime & t < endTime);
+                frame = state.frame - preFrames;
+                activeNow = (frame > startFrames & frame <= endFrames);
                 if any(activeNow)
                     actives = find(activeNow);
                     if controllerIndex <= length(actives)
                         myActive = actives(controllerIndex);
                         vals = shapeData_someColumns(myActive,:);
                         % [intensity, frequency, start]
+                        t = state.time;
                         c = vals(1) * (cos(2 * pi * (t - vals(3)) * vals(2)) > 0);
                     else
                         c = baseLevel;
                     end
                 else
                     c = baseLevel;
-                end
+                end 
             end
             
             function c = patternSelect(state, activePatternNumber)
@@ -375,29 +381,28 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                     not(cellfun('isempty', strfind(obj.shapeDataColumns, 'Y')));
                 positions = obj.shapeDataMatrix(:,poscols);
                 positions_transformed = [obj.um2pix(positions(:,1)) + canvasSize(1)/2, obj.um2pix(positions(:,2)) + canvasSize(2)/2];
-                controllerPosition = stage.builtin.controllers.PropertyController(circ, 'position', @(s)shapeController(s, obj.preTime, [nan, nan], ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
+                controllerPosition = stage.builtin.controllers.PropertyController(circ, 'position', @(s)shapeController(s, preFrames, [nan, nan], ...
+                    startFrames, ...
+                    endFrames, ...
                     positions_transformed, ci));
                 p.addController(controllerPosition);
                 
                 % flicker
                 sdm_intflicstart = obj.shapeDataMatrix(:,[find(col_intensity), find(col_flickerFrequency), find(col_startTime)]);
-                controllerFlicker = stage.builtin.controllers.PropertyController(circ, 'color', @(s)shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
+                sdm_intflicstart(:, 3) = sdm_intflicstart(:, 3) + obj.preTime*1e-3;
+                controllerFlicker = stage.builtin.controllers.PropertyController(circ, 'color', @(s)shapeFlickerController(s, preFrames, obj.meanLevel, ...
+                    startFrames, ...
+                    endFrames, ...
                     sdm_intflicstart, ci));
-                
-
                 
                 if obj.numberOfPatterns > 1 % run it in contrast mode
                     intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
                     intensity2 = obj.meanLevel2 * (1 + obj.contrast2);           
                     
                     controllerFlickerWithPattern = stage.builtin.controllers.PropertyController(circ, 'color', @(s) ...
-                        ((intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)) * shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
-                        obj.shapeDataMatrix(:,col_startTime), ...
-                        obj.shapeDataMatrix(:,col_endTime), ...
+                        ((intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)) * shapeFlickerController(s, preFrames, obj.meanLevel, ...
+                        startFrames, ...
+                        endFrames, ...
                         sdm_intflicstart, ci)));
                     p.addController(controllerFlickerWithPattern);
                 else
