@@ -4,10 +4,10 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
     
     properties
         outputAmpSelection = 1          % Output amplifier (1 or 2)
-        preTime = 50                    % Pulse leading duration (ms)
+        preTime = 500                    % Pulse leading duration (ms)
         stimTime = 500                  % Pulse duration (ms)
-        tailTime = 1000                   % Pulse trailing duration (ms)
-        pulseAmplitude = 100            % Pulse amplitude (mV or pA depending on amp mode)
+        tailTime = 500                   % Pulse trailing duration (ms)
+        pulseAmplitude = 50            % Pulse amplitude (mV or pA depending on amp mode)
         numberOfEpochs = 50;
     end
     
