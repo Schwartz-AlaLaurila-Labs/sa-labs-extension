@@ -7,11 +7,11 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         tailTime = 0;
         stimTime = 30000;
         
-        intensity = 0.5;
+        intensity = 1;
         spotSize = 80;
         
         motionSeedStart = 1;
-        motionSeedChangeMode = 'repeat only';
+        motionSeedChangeMode = 'increment only';
         motionStandardDeviation = 500; % µm
         motionLowpassFilterPassband = 3; % Hz
         
@@ -20,7 +20,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 1
+        version = 2 % add microns to pixels
         motionPath
         motionSeed
         
@@ -115,8 +115,8 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
                 else
                     frame = state.frame;
                 end
-                y = motionPath(frame, 2);
-                x = motionPath(frame, 1);
+                y = obj.um2pix(motionPath(frame, 2));
+                x = obj.um2pix(motionPath(frame, 1));
                 pos = [x,y] + center;
                     
             end
