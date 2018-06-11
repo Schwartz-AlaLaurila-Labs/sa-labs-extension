@@ -10,7 +10,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         intensity = 1;
         spotSize = 80;
         
-        motionSeedStart = 1;
+        motionSeedStart = 10;
         motionSeedChangeMode = 'increment only';
         motionStandardDeviation = 500; % µm
         motionLowpassFilterPassband = 3; % Hz
@@ -108,21 +108,21 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
             p.addStimulus(ob);
             
             % random motion controller
-            function pos = movementController(state, center, motionPath)
+            function pos = movementController(state, center, motionPathPixels)
                 
                 if state.frame < 1
                     frame = 1;
                 else
                     frame = state.frame;
                 end
-                y = obj.um2pix(motionPath(frame, 2));
-                x = obj.um2pix(motionPath(frame, 1));
+                y = motionPathPixels(frame, 2);
+                x = motionPathPixels(frame, 1);
                 pos = [x,y] + center;
                     
             end
-            
+            motionPathPixels = obj.um2pix(obj.motionPath);
             controller = stage.builtin.controllers.PropertyController(ob, ...
-                'position', @(s)movementController(s, canvasSize/2, obj.motionPath));
+                'position', @(s)movementController(s, canvasSize/2, motionPathPixels));
             p.addController(controller);
             
         end
