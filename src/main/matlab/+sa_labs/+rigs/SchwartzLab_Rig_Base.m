@@ -34,11 +34,15 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 obj.addDevice(scanTrigger);
                 
                 % Dynamic clamp
+                DynamicTrigger = UnitConvertingDevice('Dynamic Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                daq.getStream('doport1').setBitPosition(DynamicTrigger, 2);
+                obj.addDevice(DynamicTrigger);
+
                 gExc = UnitConvertingDevice('Excitatory conductance', 'V').bindStream(daq.getStream('ao2'));
                 obj.addDevice(gExc);
                 gInh = UnitConvertingDevice('Inhibitory conductance', 'V').bindStream(daq.getStream('ao3'));
                 obj.addDevice(gInh);
-                  
+                
             end            
             
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);

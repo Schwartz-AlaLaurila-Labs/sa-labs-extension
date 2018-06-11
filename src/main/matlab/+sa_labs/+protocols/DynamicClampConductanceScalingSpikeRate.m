@@ -2,19 +2,22 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
 % copied from:
     %https://github.com/Rieke-Lab/baudin-package/blob/master/%2Bedu/%2Bwashington/%2Briekelab/%2Bbaudin/%2Bprotocols/DynamicClampConductanceScalingSpikeRate.m
 
-    % put in interpolation for higher sample rates 
     properties
         numberOfAverages = uint16(5); % how many times to run each pair of traces
         
         preTime = 25; % samples, prior to loaded conductance trace
         tailTime = 25; % samples, after loaded conductance trace
-        stimTime = 20000;
         
         gExcMultiplier = 1;
         gInhMultiplier = 1;
         
-        ExcConductancesFile = 'testRigMultiple';
-        InhConductancesFile = 'testRigMultiple';
+        ExcConductancesFile = 'testRig0';
+        InhConductancesFile = 'testRig0';
+        
+        ExcReversal = 10;
+        InhReversal = -70;
+        
+        nSPerVolt = 30;
         
         amp = 1;
     end
@@ -23,21 +26,17 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         conductancesFolderName = 'C:\Users\Greg\Documents\DynamicClampConductances\';
         excConductanceData
         inhConductanceData
-        
-        ExcReversal = 10;
-        InhReversal = -70;
-        
-        nSPerVolt = 30;
+        stimTime
         
         totalNumEpochs
         numberOfTraces % number of traces (rows) in the conductance matrices
         epochOrdering % random ordering of the conductance traces
-        traceInd
         
         ampType
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'conductanceMatrixRowIndex';
+        responsePlotSplitParameter = '';
     end
+    
     
     methods
         function loadConductanceData(obj)
@@ -55,19 +54,19 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         end
         
         function prepareRun(obj)
+            prepareRun@sa_labs.protocols.BaseProtocol(obj, true);
+            
             % load the conductances
             obj.loadConductanceData();
-            obj.setStimTime();
+            obj.stimTime = getStimTime(obj);
             obj.epochOrdering = randperm(obj.numberOfTraces);
-
-            prepareRun@sa_labs.protocols.BaseProtocol(obj, true);
         end
         
         
         function stim = createConductanceStimulus(obj, conductance, type)
             % conductanceType is string: 'exc' or 'inh'
             gen = symphonyui.builtin.stimuli.WaveformGenerator();
-            gen.sampleRate = obj.sampleRate; 
+            gen.sampleRate = obj.sampleRate;
             gen.units = 'V';
             
             preTimeTrace = zeros(1, obj.preTime*10);
@@ -87,14 +86,6 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
             % oftem, 200 nS = 10 V, 1 nS = 0.05 V
             mappedConductanceTrace = obj.nSToVolts(newConductanceTrace);
             
-            if max(mappedConductanceTrace) > 3.3
-                error('Your conductances are too large')
-            end
-            
-            if min(mappedConductanceTrace) < 0
-                mappedConductanceTrace(mappedConductanceTrace < 0) = 0;
-            end
-            
             if any(mappedConductanceTrace > 10)
                 mappedConductanceTrace = zeros(1,length(mappedConductanceTrace)); %#ok<PREALL>
                 error(['G_',conductance, ': voltage command out of range!'])
@@ -107,29 +98,45 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
+            'preparing run'
+            
             % run through different sets of epochs
             index = mod(obj.numEpochsPrepared, obj.numberOfTraces);
             if index == 0
                 obj.epochOrdering = randperm(obj.numberOfTraces);
             end
-            obj.traceInd = obj.epochOrdering(index + 1);
+            traceInd = obj.epochOrdering(index + 1);
             
+            %%% make ttl pulse length of conductance stimulus
+            p = symphonyui.builtin.stimuli.PulseGenerator();
+            p.preTime = obj.preTime;
+            p.stimTime = obj.stimTime; 
+            p.tailTime = obj.tailTime;
+            p.amplitude = 1;
+            p.mean = 0;
+            p.sampleRate = obj.sampleRate;
+            p.units = Symphony.Core.Measurement.UNITLESS;
+            triggers = obj.rig.getDevices('Dynamic Trigger');
+            if ~isempty(triggers)
+                epoch.addStimulus(triggers{1},  p.generate());
+            else
+                disp('No dynamic clamp trigger device found.')
+            end
             
-            excConductance = obj.excConductanceData.conductances(obj.traceInd, :);
-            inhConductance = obj.inhConductanceData.conductances(obj.traceInd, :);
+            excConductance = obj.excConductanceData.conductances(traceInd, :);
+            inhConductance = obj.inhConductanceData.conductances(traceInd, :);
                    
             epoch.addStimulus(obj.rig.getDevice('Excitatory conductance'), ...
                 obj.createConductanceStimulus(excConductance, 'exc'));
             epoch.addStimulus(obj.rig.getDevice('Inhibitory conductance'), ...
                 obj.createConductanceStimulus(inhConductance, 'inh'));
             
-            epoch.addParameter('conductanceMatrixRowIndex', obj.traceInd);
-            str = ['exc ' obj.excConductanceData.labels{obj.traceInd} ' inh ' obj.inhConductanceData.labels{obj.traceInd}];
-            epoch.addParameter('trialLabel', str);
+            epoch.addParameter('excitatoryConductance', excConductance);
+            epoch.addParameter('inhibitoryConductance', inhConductance);
         end
         
         
-        function stimTime = setStimTime(obj)
+        function stimTime = getStimTime(obj)
             stimTime = 0;
             excStimTime = obj.excConductanceData.preCondTime + obj.excConductanceData.stimCondTime + obj.excConductanceData.tailCondTime;
             inhStimTime = obj.inhConductanceData.preCondTime + obj.inhConductanceData.stimCondTime + obj.inhConductanceData.tailCondTime;

@@ -6,12 +6,12 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     properties
         outputAmpSelection = 1          % Output amplifier (1 or 2)
         preTime = 500                    % Pulse leading duration (ms)
-        stepByStim = 'neither'          % Which pulse are you stepping through (1 or 2)
-        numberOfSteps = 1               % How many steps do you want
+        stepByStim = 'Stim 2'%'neither'          % Which pulse are you stepping through (1 or 2)
+        numberOfSteps = 5%1               % How many steps do you want
         stim1Time = 500                  % Pulse 1 duration (ms)
-        stim2Time = 0                   % Pulse 2 duration (ms)
+        stim2Time = 300%0                   % Pulse 2 duration (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
-        pulse1Amplitude = 100            % Pulse 1 amplitude (mV or pA depending on amp mode)
+        pulse1Amplitude = 200%100            % Pulse 1 amplitude (mV or pA depending on amp mode)
         pulse2Amplitude = 0              % Pulse 2 amplitude (mV or pA depending on amp mode)
         minAmplitude = 0              % when you step the stimulus, what is the min
         maxAmplitude = 100              % when you step the stimulus, what is the max
