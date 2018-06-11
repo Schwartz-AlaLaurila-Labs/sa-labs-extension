@@ -16,6 +16,9 @@ classdef Mouse < symphonyui.core.persistent.descriptions.SourceDescription
                 'type',PropertyType('char', 'row', {'ventral down','ventral up'}),...
                 'description', 'eye placement orientation');
             
+            obj.addProperty('recordingBy', 'Greg', ...
+                'description', 'name of person recording');            
+            
             obj.addAllowableParentType([]);
         end
         

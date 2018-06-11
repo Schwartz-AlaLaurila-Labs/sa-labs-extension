@@ -7,20 +7,20 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         tailTime = 0;
         stimTime = 30000;
         
-        intensity = 0.5;
+        intensity = 1;
         spotSize = 80;
         
         motionSeedStart = 1;
-        motionSeedChangeMode = 'repeat only';
+        motionSeedChangeMode = 'increment only';
         motionStandardDeviation = 500; % µm
         motionLowpassFilterPassband = 3; % Hz
         
-        numberOfCycles = 3;
+        numberOfEpochs = 300;
         
     end
     
     properties (Hidden)
-        version = 1
+        version = 2 % add microns to pixels
         motionPath
         motionSeed
         
@@ -90,7 +90,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
             stream = RandStream('mt19937ar', 'Seed', obj.motionSeed);
             
             for dim = 1:2
-                mp = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * frameRate + 100, 1);
+                mp = obj.motionStandardDeviation .* stream.randn((obj.stimTime + obj.preTime)/1000 * obj.frameRate + 100, 1);
                 obj.motionPath(:,dim) = filtfilt(obj.motionFilter, mp);
             end            
             
@@ -115,8 +115,8 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
                 else
                     frame = state.frame;
                 end
-                y = motionPath(frame, 2);
-                x = motionPath(frame, 1);
+                y = obj.um2pix(motionPath(frame, 2));
+                x = obj.um2pix(motionPath(frame, 1));
                 pos = [x,y] + center;
                     
             end
@@ -129,7 +129,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             
-            totalNumEpochs = obj.numberOfCycles;
+            totalNumEpochs = obj.numberOfEpochs;
 
         end
         
