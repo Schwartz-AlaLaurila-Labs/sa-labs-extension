@@ -23,6 +23,8 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
         excConductanceData
         inhConductanceData
         
+        traceInd
+        
         ExcReversal = 10;
         InhReversal = -70;
         nSPerVolt = 30;
@@ -121,7 +123,7 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
             epoch.addStimulus(obj.rig.getDevice('Inhibitory conductance'), ...
                 obj.createConductanceStimulus(inhConductance, 'inh'));
             
-            poch.addParameter('conductanceMatrixRowIndex', obj.traceInd);
+            epoch.addParameter('conductanceMatrixRowIndex', obj.traceInd);
             str = ['exc ' obj.excConductanceData.labels{obj.traceInd} ' inh ' obj.inhConductanceData.labels{obj.traceInd}];
             epoch.addParameter('trialLabel', str);
         end
