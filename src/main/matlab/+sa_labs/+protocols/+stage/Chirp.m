@@ -9,25 +9,25 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         interTime = 1000; % ms, time before, between, or after stimuli in sec
         stepTime = 500; % ms, time of the step stimulus
         
-        %meanLevel = 0.35; % mean light level        
+        %        
         spotSize = 200; % um
         intensity = 0; % this doesn't do anything
         
         % chirp params
-        freqTotalTime = 10000; % 10 sec of frequency modulation
+        freqTotalTime = 10000; % msec of frequency modulation
         freqMin = 0.5; % minimum frequency
         freqMax = 20; % maximum frequency
-        contrastTotalTime = 10000; % 10 sec of contrast modulation
+        contrastTotalTime = 10000; % msec of contrast modulation
         contrastFreq = 2;
         contrastMin = 0.02; % minimum contrast
         contrastMax = 1; % maximum contrast
     end
     
     properties (Hidden)
-        version = 4;
         chirpPattern = [];
+        
         responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'spotSize';
+        responsePlotSplitParameter = '';
     end
     
     properties (Dependent) 
@@ -65,7 +65,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             contrastChange = linspace(obj.contrastMin, obj.contrastMax, length(contrastT));
             contrastPattern = contrastChange.*obj.meanLevel.*-sin(2*pi*obj.contrastFreq.*contrastT + pi) + obj.meanLevel;
             
-            obj.chirpPattern = [prePattern, posStepPattern, interPattern, negStepPattern, interPattern,...
+            obj.chirpPattern = [prePattern, posStepPattern, interPattern, negStepPattern, interPattern...
                 freqPattern, interPattern, contrastPattern, tailPattern];
         end
         
@@ -83,7 +83,6 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             spot.radiusY = spot.radiusX;
             spot.color = obj.meanLevel;
             spot.opacity = 1;
-            canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             spot.position = canvasSize/2;
             p.addStimulus(spot);
             
@@ -95,7 +94,6 @@ classdef Chirp < sa_labs.protocols.StageProtocol
                 else
                     frame = state.frame;
                 end
-                
                 i = obj.chirpPattern(frame);
             end
             
