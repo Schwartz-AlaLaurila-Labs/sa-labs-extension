@@ -11,7 +11,8 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         %         numSpots = 100;
         mapResolution = 40; % um
         spotTotalTime = 0.35;
-        spotOnTime = 0.15;
+%         spotOnTime = 0.15;
+        spotOnTime = 0.0166*2.^(0:4);
         
         numPointSets = 1;
         
@@ -28,7 +29,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 6 % Transission from state.time to state.frame
+        version = 7 % state.frame size fix and multiple spotOnTimes
         displayName = 'Auto Center'
         
         shapeDataMatrix
@@ -363,16 +364,16 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 
                 % diameter X
                 diameter_transformed = obj.um2pix(obj.shapeDataMatrix(:,col_diameter));
-                controllerDiameterX = stage.builtin.controllers.PropertyController(circ, 'radiusX', @(s)shapeController(s, obj.preTime, 100, ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
+                controllerDiameterX = stage.builtin.controllers.PropertyController(circ, 'radiusX', @(s)shapeController(s, preFrames, 100, ...
+                    startFrames, ...
+                    endFrames, ...
                     diameter_transformed / 2, ci));
                 p.addController(controllerDiameterX);
                 
                 % diameter Y
-                controllerDiameterY = stage.builtin.controllers.PropertyController(circ, 'radiusY', @(s)shapeController(s, obj.preTime, 100, ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
+                controllerDiameterY = stage.builtin.controllers.PropertyController(circ, 'radiusY', @(s)shapeController(s, preFrames, 100, ...
+                    startFrames, ...
+                    endFrames, ...
                     diameter_transformed / 2, ci));
                 p.addController(controllerDiameterY);
                 
