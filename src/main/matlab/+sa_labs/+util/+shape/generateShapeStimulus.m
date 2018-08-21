@@ -350,32 +350,55 @@ function runConfig = makeFlashedSpotsMatrix(parameters, runConfig, positions)
     end
     positionList = [];
     intensityList = [];
+    diameterList = [];
     startList = [];
     endList = [];
     stream = RandStream('mt19937ar');
 
     for repeat = 1:parameters.numValueRepeats
-        [posIdx, intensity, onTime] = meshgrid(1:parameters.numPositions, values, parameters.spotOnTime);
-        posIdx = posIdx(:);
-        intensity = intensity(:);
-        onTime = onTime(:);
-        nSpots = numel(onTime);
+        if parameters.numPositions == 1
+            nSpots = max([numel(values), numel(parameters.spotOnTime), numel(parameters.spotDiameter)]);
+            posIdx = ones(nSpots, 1);
+            if numel(values) == 1
+                intensity = values*ones(nSpots, 1);
+            else
+                intensity = values';
+            end
+            if numel(parameters.spotOnTime) == 1
+                onTime = parameters.spotOnTime*ones(nSpots, 1);
+            else
+                onTime = parameters.spotOnTime';
+            end
+            if numel(parameters.spotDiameter) == 1
+                diameter = parameters.spotDiameter*ones(nSpots, 1);
+            else
+                diameter = parameters.spotDiameter';
+            end
+            
+        else
+            [posIdx, intensity, onTime, diameter] = ndgrid(1:parameters.numPositions, values, parameters.spotOnTime, parameters.spotDiameter);
+            posIdx = posIdx(:);
+            intensity = intensity(:);
+            onTime = onTime(:);
+            diameter = diameter(:);
+            nSpots = numel(onTime);
+        end
         
         order = randperm(stream, nSpots);
         starts = (0:(nSpots-1))'*parameters.spotTotalTime;
         starts = starts + (repeat-1)*nSpots*parameters.spotTotalTime;
         ends = starts + onTime(order);
-
+        diameterList = vertcat(diameterList, diameter(order));
         positionList = vertcat(positionList, positions(posIdx(order), :));
         intensityList = vertcat(intensityList, intensity(order));
+        
         startList = vertcat(startList, starts);
         endList = vertcat(endList, ends);
 
     end
-    diamList = parameters.spotDiameter * ones(size(startList));
     frequencyList = zeros(size(startList));
 
-    runConfig.shapeDataMatrix = horzcat(positionList, intensityList, startList, endList, diamList, frequencyList);
+    runConfig.shapeDataMatrix = horzcat(positionList, intensityList, startList, endList, diameterList, frequencyList);
     runConfig.shapeDataColumns = {'X','Y','intensity','startTime','endTime','diameter','flickerFrequency'};
     runConfig.stimTime = round(1e3 * (1 + ends(end)));
 end

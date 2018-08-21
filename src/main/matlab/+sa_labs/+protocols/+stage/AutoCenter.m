@@ -4,15 +4,15 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         preTime = 250
         tailTime = 250
         
-        spotDiameter = 40; %um
-        searchDiameter = 360; %um
+        spotDiameter = linspace(600, 200, 5); %um
+        searchDiameter = 120; %um
         alignSpotDiam = 150;
         alignSpotIntensity = 1.0;
         %         numSpots = 100;
-        mapResolution = 40; % um
-        spotTotalTime = 0.35;
+        mapResolution = 100; % um
+        spotTotalTime = 0.75;
 %         spotOnTime = 0.15;
-        spotOnTime = 0.0166*2.^(0:4);
+        spotOnTime = 0.0166*2.^(4:-1:0);
         
         numPointSets = 1;
         
@@ -21,15 +21,15 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         interactiveMode = false;
         epochTimeLimit = 200; %s
         
-        valueMin = 0.1;
-        valueMax = 1.0;
-        numValues = 1;
+        valueMin = 0.065;
+        valueMax = 1;
+        numValues = 5;
         numValueRepeats = 1;
         responsePlotMode = 'false';
     end
     
     properties (Hidden)
-        version = 7 % state.frame size fix and multiple spotOnTimes
+        version = 8 % add multiple spot sizes
         displayName = 'Auto Center'
         
         shapeDataMatrix
@@ -419,7 +419,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         end
         
         function values = get.values(obj)
-            values = linspace(obj.valueMin, obj.valueMax, obj.numValues);
+            values = logspace(log10(obj.valueMin), log10(obj.valueMax), obj.numValues);
             values = mat2str(values, 2);
         end
         
