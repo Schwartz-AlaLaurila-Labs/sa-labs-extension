@@ -10,8 +10,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         contrast2 = 1           % Weber contrast from mean for object, color 2
         offsetX = 0             % um
         offsetY = 0             % um
-        NDF = 5                 % Filter NDF value
-        blueLED = 20            % 0-255
+        NDF = 6                 % Filter NDF value
+        blueLED = 100            % 0-255
         greenLED = 0            % 0-255
         redLED = 0              % 0-255
         uvLED = 0               % 0-255
@@ -124,7 +124,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.uvLED = 50;
                 obj.colorPattern1 = 'green';
             elseif strcmp(obj.colorMode, 'standard')
-                obj.blueLED = 20;
+                obj.blueLED = 100;
                 obj.greenLED = 0;
                 obj.redLED = 0;
                 obj.uvLED = 0;
