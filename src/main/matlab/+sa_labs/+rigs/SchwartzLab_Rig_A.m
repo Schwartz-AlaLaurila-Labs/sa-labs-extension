@@ -26,8 +26,14 @@ classdef SchwartzLab_Rig_A < sa_labs.rigs.SchwartzLab_Rig_Base
     
     methods
         
-        function obj = SchwartzLab_Rig_A()
-            obj.initializeRig();
+        function obj = SchwartzLab_Rig_A(delayInit)
+            if nargin < 1
+                delayInit = false;
+            end
+            
+            if ~delayInit
+                obj.initializeRig();
+            end
         end
         
     end
