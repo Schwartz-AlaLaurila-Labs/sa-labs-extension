@@ -33,11 +33,13 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 daq.getStream('doport1').setBitPosition(scanTrigger, 2);
                 obj.addDevice(scanTrigger);
                 
-                % Dynamic clamp
-                gExc = UnitConvertingDevice('Excitatory conductance', 'V').bindStream(daq.getStream('ao2'));
-                obj.addDevice(gExc);
-                gInh = UnitConvertingDevice('Inhibitory conductance', 'V').bindStream(daq.getStream('ao3'));
-                obj.addDevice(gInh);
+                if obj.enableDynamicClamp
+                   % Dynamic clamp
+                   gExc = UnitConvertingDevice('Excitatory conductance', 'V').bindStream(daq.getStream('ao2'));
+                   obj.addDevice(gExc);
+                   gInh = UnitConvertingDevice('Inhibitory conductance', 'V').bindStream(daq.getStream('ao3'));
+                   obj.addDevice(gInh);
+                end
                 
             end            
             
