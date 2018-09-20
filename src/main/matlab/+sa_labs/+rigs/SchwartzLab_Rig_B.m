@@ -23,6 +23,8 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         
         projectorColorMode = 'standard';
         numberOfAmplifiers = 2;
+        
+        enableDynamicClamp = false;
     end
     
     methods
