@@ -80,6 +80,8 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
             epoch.addParameters('offsetSide', obj.currentParameters(2));
             epoch.addParameter('offset', obj.currentParameters(3));
             
+            fprintf('Next epoch: angle %g, offsetSide %g, offset %g\n', obj.currentParameters(1), obj.currentParameters(2), obj.currentParameters(3))
+            
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end        
         
@@ -97,7 +99,7 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
             
             [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
             [~, pixelDistance] = obj.um2pix(obj.distance);
-            [~, pixelOffset] = obj.um2pix(obj.offset + obj.barWidth);
+            [~, pixelOffset] = obj.um2pix(obj.offset + obj.barWidth / 2);
             
             xStep = pixelSpeed * cosd(obj.barAngle);
             yStep = pixelSpeed * sind(obj.barAngle);
