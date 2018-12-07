@@ -2,19 +2,26 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     % Presents a set of rectangular pulse stimuli to a specified amplifier and records from the same amplifier.
     % from the rieke lab with our thanks
     % Presents one or two rectangular pulses 
+    % Sophia updated 12/7/18 to add in potential time intervals between steps
     
     properties
         outputAmpSelection = 1          % Output amplifier (1 or 2)
         preTime = 500                    % Pulse leading duration (ms)
         stepByStim = 'neither'          % Which pulse are you stepping through (1 or 2)
-        numberOfSteps = 1               % How many steps do you want
+        interTimeOptions = 'none'       % Do you want no time, a contant amount, or a changing amount of time between stim1 and stim2
+        numberOfHoldSteps = 1               % How many steps do you want
+        numberOfTimeSteps = 1              % How many time steps do you want
         stim1Time = 500                  % Pulse 1 duration (ms)
         stim2Time = 0                   % Pulse 2 duration (ms)
+        interTime = 0                   % Time between stim1 and stim2 (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
         pulse1Amplitude = 100            % Pulse 1 amplitude (mV or pA depending on amp mode)
         pulse2Amplitude = 0              % Pulse 2 amplitude (mV or pA depending on amp mode)
+        interTimeAmplitude = 0          % Inter time amplitude from baseline
         minAmplitude = 0              % when you step the stimulus, what is the min
         maxAmplitude = 100              % when you step the stimulus, what is the max
+        minInterTime = 0                % min time between stim1 and stim2, if interTimeOptions = 'variable'
+        maxInterTime = 0                % max time between stim1 and stim2, if interTimeOptions = 'variable'
         
         numberOfCycles = 10
         logScaling = false % scale spot size logarithmically (more precision in smaller sizes)
@@ -25,9 +32,12 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         responsePlotMode = 'cartesian';
         
         stepByStimType = symphonyui.core.PropertyType('char', 'row', {'neither', 'Stim 1', 'Stim 2'})
+        interTimeOptions = symphonyui.core.PropertyType('char', 'row', {'none', 'constant', 'variable'})
         pulseVector
+        interTimeVector
         pulse1Curr
         pulse2Curr
+        currInterTime
     end
     
     properties (Hidden, Dependent)
@@ -42,9 +52,14 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             %set amplitude pulse vector
             if ~obj.logScaling
-                obj.pulseVector = linspace(obj.minAmplitude, obj.maxAmplitude, obj.numberOfSteps);
+                obj.pulseVector = linspace(obj.minAmplitude, obj.maxAmplitude, obj.numberOfHoldSteps);
             else
-                obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
+                obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfHoldSteps);
+            end
+            if ~obj.logScaling
+                obj.interTimeVector = linspace(obj.minInterTime, obj.maxInterTime, obj.numberOfTimeSteps);
+            else
+                obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfTimeSteps);
             end
 
         end
@@ -56,7 +71,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             genB = symphonyui.builtin.stimuli.PulseGenerator();
             
             genB.preTime = 0;
-            genB.stimTime = obj.preTime+obj.stimTime+obj.tailTime;
+            genB.stimTime = obj.preTime+obj.stimTime+obj.currInterTime+obj.tailTime;
             genB.tailTime = 0;
             genB.amplitude = obj.rig.getDevice(ampName).background.quantity;
             genB.mean = 0;
@@ -78,10 +93,24 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             stimCell{2} = gen1.generate();
             
+            % create inter time pulse
+            genI = symphonyui.builtin.stimuli.PulseGenerator();
+            
+            genI.preTime = obj.preTime+obj.stim1Time;
+            genI.stimTime = obj.currInterTime;
+            genI.tailTime = obj.stim2Time+obj.tailTime;
+            genI.amplitude = obj.pulse1Curr;
+            genI.mean = 0;
+            genI.sampleRate = obj.sampleRate;
+            genI.units = obj.rig.getDevice(ampName).background.displayUnits;
+            
+            stimCell{3} = genI.generate();
+            
+            
             % create stim 2 pulse
             gen2 = symphonyui.builtin.stimuli.PulseGenerator();
             
-            gen2.preTime = obj.preTime+obj.stim1Time;
+            gen2.preTime = obj.preTime+obj.stim1Time+obj.currInterTime;
             gen2.stimTime = obj.stim2Time;
             gen2.tailTime = obj.tailTime;
             gen2.amplitude = obj.pulse2Curr;
@@ -89,7 +118,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             gen2.sampleRate = obj.sampleRate;
             gen2.units = obj.rig.getDevice(ampName).background.displayUnits;
             
-            stimCell{3} = gen2.generate();
+            stimCell{4} = gen2.generate();
             
             % add together all three stimuli
             genSum = symphonyui.builtin.stimuli.SumGenerator();
@@ -114,12 +143,23 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             elseif strcmp(obj.stepByStim, 'Stim 1')
                 obj.pulse1Curr = obj.pulseVector(index+1);
                 obj.pulse2Curr = obj.pulse2Amplitude;
+                epoch.addParameter('pulseVector', obj.pulseVector);
             elseif strcmp(obj.stepByStim, 'Stim 2')
                 obj.pulse1Curr = obj.pulse1Amplitude;
                 obj.pulse2Curr = obj.pulseVector(index+1);
+                epoch.addParameter('pulseVector', obj.pulseVector);
+            end
+            if strcmp(obj.interTimeOptions, 'none')
+                obj.currInterTime = 0;
+            elseif strcmp(obj.interTimeOptions, 'constant')
+                obj.currInterTime = obj.interTime;
+            elseif strcmp(obj.interTimeOptions, 'variable')
+                obj.currInterTime = obj.interTimeVector(index+1);
+                epcoh.addParameter('interTimeVector', obj.interTimeVector);
             end
             epoch.addParameter('pulse1Curr', obj.pulse1Curr);
             epoch.addParameter('pulse2Curr', obj.pulse2Curr);
+            epoch.addParameter('currInterTime', obj.currInterTime);
 
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
