@@ -71,13 +71,14 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
                         end
                     end
                 end
+                obj.parameters = params(randperm(size(params, 1)), :);
+
             end
-            obj.parameters = params;
             
             obj.currentParameters = obj.parameters(index + 1, :);
             
             epoch.addParameter('barAngle', obj.currentParameters(1));
-            epoch.addParameters('offsetSide', obj.currentParameters(2));
+            epoch.addParameter('offsetSide', obj.currentParameters(2));
             epoch.addParameter('offset', obj.currentParameters(3));
             
             fprintf('Next epoch: angle %g, offsetSide %g, offset %g\n', obj.currentParameters(1), obj.currentParameters(2), obj.currentParameters(3))
@@ -86,6 +87,9 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
         end        
         
         function p = createPresentation(obj)
+            barAngle = obj.currentParameters(1);
+            offset = obj.currentParameters(3);
+            
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
@@ -93,16 +97,16 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
             bar = stage.builtin.stimuli.Rectangle();
             bar.color = obj.intensity;
             bar.opacity = 1;
-            bar.orientation = obj.barAngle;
+            bar.orientation = barAngle;
             bar.size = [obj.um2pix(obj.barLength), obj.um2pix(obj.barWidth)];
             p.addStimulus(bar);
             
             [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
             [~, pixelDistance] = obj.um2pix(obj.distance);
-            [~, pixelOffset] = obj.um2pix(obj.offset + obj.barWidth / 2);
+            [~, pixelOffset] = obj.um2pix(offset + obj.barWidth / 2);
             
-            xStep = pixelSpeed * cosd(obj.barAngle);
-            yStep = pixelSpeed * sind(obj.barAngle);
+            xStep = pixelSpeed * cosd(barAngle);
+            yStep = pixelSpeed * sind(barAngle);
 
             if obj.singleEdgeMode
                 stepBack = obj.um2pix(obj.barLength / 2); % move bar back half a length to time-center leading edge
@@ -115,8 +119,8 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
             else
                 sideMultiplier = -1;
             end
-            xStartPos = canvasSize(1)/2 - (pixelDistance / 2 + stepBack) * cosd(obj.barAngle) + pixelOffset * sideMultiplier * cosd(obj.barAngle - 90);
-            yStartPos = canvasSize(2)/2 - (pixelDistance / 2 + stepBack) * sind(obj.barAngle) + pixelOffset * sideMultiplier * sind(obj.barAngle - 90);
+            xStartPos = canvasSize(1)/2 - (pixelDistance / 2 + stepBack) * cosd(barAngle) + pixelOffset * sideMultiplier * cosd(barAngle - 90);
+            yStartPos = canvasSize(2)/2 - (pixelDistance / 2 + stepBack) * sind(barAngle) + pixelOffset * sideMultiplier * sind(barAngle - 90);
             
             function pos = movementController(state)
                 pos = [NaN, NaN];
