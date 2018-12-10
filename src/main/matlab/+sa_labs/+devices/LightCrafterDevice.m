@@ -225,16 +225,20 @@ classdef LightCrafterDevice < symphonyui.core.Device
         function setLedEnables(obj, auto, red, green, blue, uv)
             if strcmp(obj.getColorMode(), 'standard')
                 obj.lightCrafter.setLedEnables(auto, red, green, blue);
-            else
+            elseif strcmp(obj.getColorMode(), 'uv')
                 obj.lightCrafter.setLedEnables(auto, green, uv, blue);
+            elseif strcmp(obj.getColorMode(), 'uv2')
+                obj.lightCrafter.setLedEnables(auto, blue, uv, green);
             end
         end
         
         function setLedCurrents(obj, red, green, blue, uv)
             if strcmp(obj.getColorMode(), 'standard')
                 obj.lightCrafter.setLedCurrents(red, green, blue);
-            else
+            elseif strcmp(obj.getColorMode(), 'uv')
                 obj.lightCrafter.setLedCurrents(green, uv, blue);
+            elseif strcmp(obj.getColorMode(), 'uv2')
+                obj.lightCrafter.setLedCurrents(blue, uv, green);
             end
         end        
         

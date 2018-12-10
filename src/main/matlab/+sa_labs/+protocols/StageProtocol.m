@@ -77,7 +77,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                                         
                 case 'redLED'
                     d.category = '7 Projector';
-                    if strcmp(obj.colorMode, 'uv')
+                    if strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2')
                         d.isHidden = true;
                     end
                     
