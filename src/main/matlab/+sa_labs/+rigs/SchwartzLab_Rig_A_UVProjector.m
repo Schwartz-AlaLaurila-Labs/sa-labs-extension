@@ -6,7 +6,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         testMode = false;
         filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
         filterWheelDefaultValue = 5;
-        filterWheelAttenuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        filterWheelAttenuationValues = [1, .01, .001, .0001, 0, 0];
         micronsPerPixel = 1.38;
         frameTrackerPosition = [0,0];
         frameTrackerSize = [550,550];
@@ -14,9 +14,9 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         orientation = [false, true];
         angleOffset = 0;
         
-        fitBlue = [1.97967e-11,	-4.35548e-09,	8.49409e-07,	1.07816e-05];
-        fitGreen =[1.9510e-12, -1.4200e-09, 5.1430e-07, 9.6550e-06];
-        fitUV = [];
+        fitBlue = [3.46902552495379e-14,-1.37685313164116e-11,3.15370683929025e-09,-1.44962712464649e-08];
+        fitGreen =[2.58038688962281e-14,-1.29545015871977e-11,3.60389025129295e-09,-2.16775315211613e-08];
+        fitUV = [2.96965590127296e-16,-1.32952775434061e-13,4.14642042203279e-11,2.82460395102315e-09];
         
         projectorColorMode = 'uv2'; % Rig A has MkII projector
         numberOfAmplifiers = 2;
