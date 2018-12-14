@@ -414,7 +414,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 return
             end
             
-            NDF_attenuation = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues == parameters.NDF);
+            NDF_attenuation_Green = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues_Green == parameters.NDF);
+            NDF_attenuation_Blue = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues_Blue == parameters.NDF);
+            NDF_attenuation_UV = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues_UV == parameters.NDF);
+            
             
             if strcmp('standard', obj.colorMode)
                 [R, M, S] = sa_labs.util.photoIsom2(parameters.blueLED, parameters.greenLED, ...
@@ -422,12 +425,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(parameters.blueLED, parameters.greenLED, parameters.uvLED, ...
-                    color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV);
+                    color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV, ...
+                    NDF_attenuation_Blue, NDF_attenuation_Green, NDF_attenuation_UV);
             end
             
-            rstar = round(R * intensity * NDF_attenuation / parameters.numberOfPatterns, 1);
-            mstar = round(M * intensity * NDF_attenuation / parameters.numberOfPatterns, 1);
-            sstar = round(S * intensity * NDF_attenuation / parameters.numberOfPatterns, 1);
+            rstar = round(R * intensity / parameters.numberOfPatterns, 1);
+            mstar = round(M * intensity / parameters.numberOfPatterns, 1);
+            sstar = round(S * intensity / parameters.numberOfPatterns, 1);
         end
              
         

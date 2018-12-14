@@ -6,7 +6,9 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         testMode = false;
         filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
         filterWheelDefaultValue = 5;
-        filterWheelAttenuationValues = [1, .01, .001, .0001, 0, 0];
+        filterWheelAttenuationValues_Green = [1, .01, .001, .0001, 0, 0];
+        filterWheelAttenuationValues_Blue = [1, .0073, .00072, .0001, .00001, .000001];
+        filterWheelAttenuationValues_UV = [1, .0049, .0027, 0, 0, 0];
         micronsPerPixel = 1.38;
         frameTrackerPosition = [0,0];
         frameTrackerSize = [550,550];

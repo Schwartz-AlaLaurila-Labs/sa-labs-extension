@@ -1,4 +1,4 @@
-function [Rstar, Mstar, Sstar ] = photoIsom2_triColor( bluIntenVal, grnIntenVal, uvIntenVal, color, fitBlue, fitGreen, fitUV)
+function [Rstar, Mstar, Sstar ] = photoIsom2_triColor( bluIntenVal, grnIntenVal, uvIntenVal, color, fitBlue, fitGreen, fitUV, NDF_attenuation_Blue, NDF_attenuation_Green, NDF_attenuation_UV)
 %R*, M*, S* for given intensity parameters
 
 
@@ -31,21 +31,19 @@ uW_to_Watt = 10^(-6);
 pr_area = 0.37;
 pr_area_rod = 0.5;
 
-
-
 %INTENSITY IN WATTS PER ROD or CONE:
 x = bluIntenVal;
-y = polyval(fitBlue,x);    %any degree
+y = polyval(fitBlue,x) * NDF_attenuation_Blue;
 blueInten_rod = y.*uW_to_Watt.*pr_area_rod;
 blueInten_cone = y.*uW_to_Watt.*pr_area;
 
 x = grnIntenVal;
-y = polyval(fitGreen,x);
+y = polyval(fitGreen,x) * NDF_attenuation_Green;
 greenInten_rod = y.*uW_to_Watt.*pr_area_rod;
 greenInten_cone = y.*uW_to_Watt.*pr_area;
 
 x = uvIntenVal;
-y = polyval(fitUV,x);    %any degree
+y = polyval(fitUV,x) * NDF_attenuation_UV;
 uvInten_rod = y.*uW_to_Watt.*pr_area_rod;
 uvInten_cone = y.*uW_to_Watt.*pr_area;
 
