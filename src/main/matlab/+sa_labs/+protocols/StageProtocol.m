@@ -51,7 +51,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
         colorMode = '';
         filterWheelNdfValues
-        filterWheelAttenuationValues
+        filterWheelAttenuationValues_Blue
+        filterWheelAttenuationValues_Green
+        filterWheelAttenuationValues_UV
         lightCrafterParams
     end
        
@@ -160,7 +162,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             else
                 filterWheel = obj.rig.getDevice('neutralDensityFilterWheel');
                 obj.filterWheelNdfValues = filterWheel.getConfigurationSetting('filterWheelNdfValues');
-                obj.filterWheelAttenuationValues = filterWheel.getResource('filterWheelAttenuationValues');
+                obj.filterWheelAttenuationValues_Blue = filterWheel.getResource('filterWheelAttenuationValues_Blue');
+                obj.filterWheelAttenuationValues_Green = filterWheel.getResource('filterWheelAttenuationValues_Green');
+                obj.filterWheelAttenuationValues_UV = filterWheel.getResource('filterWheelAttenuationValues_UV');
                 obj.NDF = filterWheel.getResource('defaultNdfValue');
             end
         end        
@@ -414,9 +418,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 return
             end
             
-            NDF_attenuation_Green = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues_Green == parameters.NDF);
-            NDF_attenuation_Blue = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues_Blue == parameters.NDF);
-            NDF_attenuation_UV = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues_UV == parameters.NDF);
+            NDF_attenuation_Green = obj.filterWheelAttenuationValues_Green(obj.filterWheelNdfValues == parameters.NDF);
+            NDF_attenuation_Blue = obj.filterWheelAttenuationValues_Blue(obj.filterWheelNdfValues == parameters.NDF);
+            NDF_attenuation_UV = obj.filterWheelAttenuationValues_UV(obj.filterWheelNdfValues == parameters.NDF);
             
             
             if strcmp('standard', obj.colorMode)
