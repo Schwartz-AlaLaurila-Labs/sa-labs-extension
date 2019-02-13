@@ -7,8 +7,8 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
         barLength = 600                 % Bar length size (um)
         barSpeed = 1000                 % Bar speed (um / s)
         distance = 3000                 % Bar distance (um)
-        offsetRange = [-100, 100]       % Bar edge offset
-        numberOfOffsets = 5         % Number of offset steps
+        offsetRange = [15, 200]       % Bar edge offset (smallest, largest), 0 always included automatically
+        numberOfOffsets = 11         % Number of offset steps
         offsetSide = 'both'             % which side to move bar
         angleOffset = 0                 % Angle set offset (deg)
         numberOfAngles = 8              % Number of angles to stimulate
@@ -17,7 +17,8 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 1                     % v1: initial version
+        version = 2                     % v1: initial version
+                                        % v2: added log spacing of offsets
         angles                          % angles for epochs, range between [0 - 360]
         offsets
         sides
@@ -44,8 +45,12 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
             obj.angles = mod(round(0:360/obj.numberOfAngles:(360-.01)) + obj.angleOffset, 360);
-            obj.offsets = linspace(obj.offsetRange(1), obj.offsetRange(2), obj.numberOfOffsets);
+%             obj.offsets = linspace(obj.offsetRange(1), obj.offsetRange(2), obj.numberOfOffsets);
+            offs = logspace(log10(obj.offsetRange(1)), log10(obj.offsetRange(2)), floor(obj.numberOfOffsets / 2));
             
+            obj.offsets = round([-1 * fliplr(offs), 0, offs]);
+            disp(obj.offsets)
+             
             if strcmp(obj.offsetSide, 'both')
                 obj.sides = [0,1];
             elseif strcmp(obj.offsetSide, 'right')
