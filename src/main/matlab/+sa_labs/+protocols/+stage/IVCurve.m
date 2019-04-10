@@ -7,15 +7,15 @@ classdef IVCurve < sa_labs.protocols.StageProtocol
         tailTime = 1000	% Spot trailing duration (ms)
         
         %mean (bg) and amplitude of pulse
-        intensity = 0.5; %make it contrast instead?
+        intensity = 1; 
         
-        spotSize = 200; %microns
+        spotSize = 160; %microns
         
-        holdSignalMin = -90 %mV
+        holdSignalMin = -80 %mV
         holdSignalMax = 40; %mV
         numberOfHoldSignalSteps = 8;
         
-        numberOfCycles = 2;
+        numberOfCycles = 3;
         
         numberOfAmpsToUse = 1;
     end

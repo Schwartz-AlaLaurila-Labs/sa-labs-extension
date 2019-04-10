@@ -6,12 +6,13 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
         intensity = 1.0                 % Bar light intensity (0-1)
         barLength = 600                 % Bar length size (um)
         barSpeed = 1000                 % Bar speed (um / s)
-        distance = 3000                 % Bar distance (um)
-        offsetRange = [15, 200]       % Bar edge offset (smallest, largest), 0 always included automatically
-        numberOfOffsets = 11         % Number of offset steps
+        distance = 2500                 % Bar distance (um)
+        offsetRange = [15, 220]       % Bar edge offset (smallest, largest), 0 always included automatically
+        numberOfOffsets = 10         % Number of offset steps
         offsetSide = 'both'             % which side to move bar
-        angleOffset = 0                 % Angle set offset (deg)
-        numberOfAngles = 8              % Number of angles to stimulate
+        angles = [0 90 225]
+%         angleOffset = 0                 % Angle set offset (deg)
+%         numberOfAngles = 8              % Number of angles to stimulate
         numberOfCycles = 3              % Number of times through the set
         singleEdgeMode = false          % Only display leading edge of bar, set length > 2 * distance
     end
@@ -19,16 +20,15 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 2                     % v1: initial version
                                         % v2: added log spacing of offsets
-        angles                          % angles for epochs, range between [0 - 360]
         offsets
-        sides
+        sides = [0,1]
         barWidth = 3000       
         parameters                      % matrix of all epoch params, [angle, offset, side]
         currentParameters
         contrastDirectionType = symphonyui.core.PropertyType('char', 'row', {'both', 'left', 'right'})
        
-        responsePlotMode = 'polar';
-        responsePlotSplitParameter = 'barAngle';
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = 'offset';
     end
     
     properties (Dependent)
@@ -42,13 +42,13 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
     methods
                
         function prepareRun(obj)
-            prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            obj.angles = mod(round(0:360/obj.numberOfAngles:(360-.01)) + obj.angleOffset, 360);
+            
+%             obj.angles = mod(round(0:360/obj.numberOfAngles:(360-.01)) + obj.angleOffset, 360);
 %             obj.offsets = linspace(obj.offsetRange(1), obj.offsetRange(2), obj.numberOfOffsets);
-            offs = logspace(log10(obj.offsetRange(1)), log10(obj.offsetRange(2)), floor(obj.numberOfOffsets / 2));
+            offs = logspace(log10(obj.offsetRange(1)), log10(obj.offsetRange(2)), floor((obj.numberOfOffsets - 2) / 2));
             
-            obj.offsets = round([-1 * fliplr(offs), 0, offs]);
+            obj.offsets = round([-1000, -1 * fliplr(offs), 0, offs]);
             disp(obj.offsets)
              
             if strcmp(obj.offsetSide, 'both')
@@ -58,14 +58,18 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
             else
                 obj.sides = [0];
             end
+            
+            obj.numberOfOffsets = length(obj.offsets);
+            
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
         end
         
         function prepareEpoch(obj, epoch)
             
-            index = mod(obj.numEpochsPrepared, obj.numberOfAngles);
+            index = mod(obj.numEpochsPrepared, length(obj.angles));
             if index == 0
-                obj.angles = obj.angles(randperm(obj.numberOfAngles));
-                obj.offsets = obj.offsets(randperm(obj.numberOfOffsets));
+                obj.angles = obj.angles(randperm(length(obj.angles)));
+                obj.offsets = obj.offsets(randperm(length(obj.offsets)));
                 
                 params = [];
                 
@@ -146,7 +150,7 @@ classdef OffsetMovingBar < sa_labs.protocols.StageProtocol
                 
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfCycles * (obj.numberOfAngles * length(obj.sides) * obj.numberOfOffsets);
+            totalNumEpochs = obj.numberOfCycles * (length(obj.angles) * length(obj.sides) * length(obj.offsets));
         end        
 
         function stimTime = get.stimTime(obj)
