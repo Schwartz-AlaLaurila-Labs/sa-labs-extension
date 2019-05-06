@@ -4,15 +4,14 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         preTime = 250
         tailTime = 250
         
-        spotDiameter = linspace(600, 200, 5); %um
-        searchDiameter = 120; %um
+        spotDiameter = 170; %um
+        searchDiameter = 500; %um
         alignSpotDiam = 150;
         alignSpotIntensity = 1.0;
         %         numSpots = 100;
-        mapResolution = 100; % um
-        spotTotalTime = 0.75;
-%         spotOnTime = 0.15;
-        spotOnTime = 0.0166*2.^(4:-1:0);
+        mapResolution = 80; % um
+        spotTotalTime = 0.3;
+        spotOnTime = 0.05;
         
         numPointSets = 1;
         
@@ -21,10 +20,10 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         interactiveMode = false;
         epochTimeLimit = 200; %s
         
-        valueMin = 0.065;
+        valueMin = 0.0;
         valueMax = 1;
-        numValues = 5;
-        numValueRepeats = 1;
+        numValues = 1;
+        numValueRepeats = 2;
         responsePlotMode = 'false';
     end
     
@@ -60,7 +59,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
-            obj.NDF = 4;
+            obj.NDF = 6;
         end
         
         function prepareRun(obj)
