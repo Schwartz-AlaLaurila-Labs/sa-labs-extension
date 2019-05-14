@@ -11,7 +11,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetY = 0         % um
         
         NDF = 5             % Filter NDF value
-        blueLED = 20        % 0-255
+        blueLED = 53        % 0-255
         greenLED = 0   % 0-255
         redLED = 0   % 0-255 
         uvLED = 0

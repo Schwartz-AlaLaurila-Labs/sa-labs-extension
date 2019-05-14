@@ -1,10 +1,10 @@
-classdef Standard < symphonyui.core.persistent.descriptions.EpochGroupDescription
+classdef Wash < symphonyui.core.persistent.descriptions.EpochGroupDescription
     
     methods
         
-        function obj = Standard()
+        function obj = Wash()
             import symphonyui.core.*;
-
+            
             obj.addAllowableParentType([]);
         end
         

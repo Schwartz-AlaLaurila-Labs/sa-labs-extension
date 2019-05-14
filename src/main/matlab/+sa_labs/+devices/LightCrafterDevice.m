@@ -39,6 +39,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
+            fprintf('init proj color %s\n', ip.Results.colorMode)
+            
             obj.lightCrafter = LightCrafter4500(monitorRefreshRate, ip.Results.colorMode);
             obj.lightCrafter.connect();
             obj.lightCrafter.setMode('pattern');
@@ -197,7 +199,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             trackerDuration = obj.getFrameTrackerDuration();
             frameRate = obj.getFrameRate();
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                @(s)mod(s.frame, 2) && s.time < trackerDuration && s.time < (presentation.duration - (1/frameRate)));
+                @(s) s.time < trackerDuration && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
             presentation.addController(trackerColor);
             
             % RENDER

@@ -265,6 +265,11 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                         end
                     end % user choice loop
                 end
+                                
+                % correct for um to pix here
+                col_diameter = not(cellfun('isempty', strfind(runConfig.shapeDataColumns, 'diameter')));
+                runConfig.shapeDataMatrix(:,col_diameter) = obj.um2pix(runConfig.shapeDataMatrix(:,col_diameter));
+
                 
                 obj.runConfig = runConfig;
                 obj.shapeDataColumns = runConfig.shapeDataColumns;
@@ -290,7 +295,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             epoch.addParameter('shapeDataMatrix', obj.runConfig.shapeDataMatrix(:));
             epoch.addParameter('shapeDataColumns', strjoin(obj.runConfig.shapeDataColumns,','));
             %             epoch.addParameter('angleOffsetForRigAndStimulus', obj.rigConfig.projectorAngleOffset);
-            
+                        
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
@@ -372,14 +377,14 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 controllerDiameterX = stage.builtin.controllers.PropertyController(circ, 'radiusX', @(s)shapeController(s, obj.preTime, 100, ...
                     obj.shapeDataMatrix(:,col_startTime), ...
                     obj.shapeDataMatrix(:,col_endTime), ...
-                    obj.um2pix(obj.shapeDataMatrix(:,col_diameter) / 2, ci)));
+                    obj.shapeDataMatrix(:,col_diameter) / 2, ci));
                 p.addController(controllerDiameterX);
                 
                 % diameter Y
                 controllerDiameterY = stage.builtin.controllers.PropertyController(circ, 'radiusY', @(s)shapeController(s, obj.preTime, 100, ...
                     obj.shapeDataMatrix(:,col_startTime), ...
                     obj.shapeDataMatrix(:,col_endTime), ...
-                    obj.um2pix(obj.shapeDataMatrix(:,col_diameter) / 2, ci)));
+                    obj.shapeDataMatrix(:,col_diameter) / 2, ci));
                 p.addController(controllerDiameterY);
                 
                 % position
