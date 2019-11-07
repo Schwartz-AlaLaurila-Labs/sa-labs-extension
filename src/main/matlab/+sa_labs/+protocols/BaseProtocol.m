@@ -181,18 +181,18 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             %scanhead trigger for function imaging, added by Greg 3/5/18
             if obj.scanHeadTrigger
                 disp('Making scanhead trigger stim');
-                p = symphonyui.builtin.stimuli.PulseTrainGenerator();
-                %p = symphonyui.builtin.stimuli.PulseGenerator();
+                %p = symphonyui.builtin.stimuli.PulseTrainGenerator();
+                p = symphonyui.builtin.stimuli.PulseGenerator();
                 
                 p.preTime = 0; %trigger at start of pretime and end of stimtime
-                %p.stimTime = 1;
-                p.pulseTime = 1; %ms
-                p.intervalTime = obj.preTime;
-                %p.tailTime = obj.preTime + obj.stimTime + obj.tailTime - 1;
-                p.tailTime = obj.tailTime + obj.stimTime - 2;
+                p.stimTime = 1;
+                %p.pulseTime = 1; %ms
+                %p.intervalTime = obj.preTime;
+                p.tailTime = obj.preTime + obj.stimTime + obj.tailTime - 1;
+                %p.tailTime = obj.tailTime + obj.stimTime - 2;
                 p.amplitude = 1;
                 p.mean = 0;
-                p.numPulses = 2;
+                %p.numPulses = 1;
                 p.sampleRate = obj.sampleRate;
                 p.units = Symphony.Core.Measurement.UNITLESS;
                 

@@ -33,6 +33,10 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 daq.getStream('doport1').setBitPosition(scanTrigger, 2);
                 obj.addDevice(scanTrigger);
                 
+                optoTrigger = UnitConvertingDevice('Optogenetics Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                daq.getStream('doport1').setBitPosition(optoTrigger, 3);
+                obj.addDevice(optoTrigger);
+                
                 if obj.enableDynamicClamp
                    % Dynamic clamp
                    gExc = UnitConvertingDevice('Excitatory conductance', 'V').bindStream(daq.getStream('ao2'));
