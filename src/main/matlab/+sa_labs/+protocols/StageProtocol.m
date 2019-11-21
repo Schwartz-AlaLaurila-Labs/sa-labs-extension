@@ -133,6 +133,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.lightCrafterParams.fitBlue = lightCrafter.getResource('fitBlue');
                 obj.lightCrafterParams.fitGreen = lightCrafter.getResource('fitGreen');
                 obj.lightCrafterParams.fitUV = lightCrafter.getResource('fitUV');
+                
+                obj.lightCrafterParams.spectralOverlap_Blue = lightCrafter.getResource('spectralOverlap_Blue');
+                obj.lightCrafterParams.spectralOverlap_Green = lightCrafter.getResource('spectralOverlap_Green');
+                obj.lightCrafterParams.spectralOverlap_UV = lightCrafter.getResource('spectralOverlap_UV');
+                
                 obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
                 obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
                 obj.colorMode = lightCrafter.getColorMode();
@@ -421,16 +426,22 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             NDF_attenuation_Green = obj.filterWheelAttenuationValues_Green(obj.filterWheelNdfValues == parameters.NDF);
             NDF_attenuation_Blue = obj.filterWheelAttenuationValues_Blue(obj.filterWheelNdfValues == parameters.NDF);
             NDF_attenuation_UV = obj.filterWheelAttenuationValues_UV(obj.filterWheelNdfValues == parameters.NDF);
+                
+            spectralOverlap_Blue = obj.lightCrafterParams.spectralOverlap_Blue;
+            spectralOverlap_Green = obj.lightCrafterParams.spectralOverlap_Green;
+            spectralOverlap_UV = obj.lightCrafterParams.spectralOverlap_UV;
             
             
             if strcmp('standard', obj.colorMode)
-                [R, M, S] = sa_labs.util.photoIsom2(parameters.blueLED, parameters.greenLED, ...
-                    color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen);
+                [R, M, S] = sa_labs.util.photoIsom2_triColor(parameters.blueLED, parameters.greenLED, 0, ...
+                    color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV, ...
+                    NDF_attenuation_Blue, NDF_attenuation_Green, 0, spectralOverlap_Blue, spectralOverlap_Green, [0,0,0]);
             else
                 % UV mode
                 [R, M, S] = sa_labs.util.photoIsom2_triColor(parameters.blueLED, parameters.greenLED, parameters.uvLED, ...
                     color, obj.lightCrafterParams.fitBlue, obj.lightCrafterParams.fitGreen, obj.lightCrafterParams.fitUV, ...
-                    NDF_attenuation_Blue, NDF_attenuation_Green, NDF_attenuation_UV);
+                    NDF_attenuation_Blue, NDF_attenuation_Green, NDF_attenuation_UV, spectralOverlap_Blue,...
+                    spectralOverlap_Green, spectralOverlap_UV);
             end
             
             rstar = round(R * intensity / parameters.numberOfPatterns, 1);

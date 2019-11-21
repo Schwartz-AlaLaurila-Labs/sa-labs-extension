@@ -5,10 +5,9 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         rigName = 'Schwartz Lab Rig B';
         testMode = true;
         filterWheelNdfValues = [0, 2, 3, 4, 5, 6];
-        %filterWheelAttenuationValues = [1, 0.006623377, 0.000527273, 6.49351E-05, 1.36883E-05, 9.87013E-06];
         filterWheelAttenuationValues_Blue = [1, 0.006623377, 0.000527273, 6.49351E-05, 1.36883E-05, 9.87013E-06];
         filterWheelAttenuationValues_Green = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
-        filterWheelAttenuationValues_UV = [1.0, 0.0076, 6.23E-4, 6.93E-5, 8.32E-6, 1.0E-6];
+        filterWheelAttenuationValues_UV = [1, 1, 1, 1, 1, 1];
         filterWheelDefaultValue = 5;
              
         %micronsPerPixel = 2.3;
@@ -22,7 +21,12 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
 
         fitBlue = [2.11680702221393e-11,-1.68958902094615e-08,6.04551140124767e-06,-6.49883631979073e-05]; %updated 11/21/2019 -David
         fitGreen =[4.432E-12, -3.514E-9, 1.315E-6, 1.345E-5];
-        fitUV = [-0.0004    0.0320   -0.3053    0.2924];
+        fitUV = 0;
+        
+        %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
+        spectralOverlap_Blue = [4.6671e+18, 5.1711e+15, 3.7352e+18];
+        spectralOverlap_Green = [0, 0, 0]
+        spectralOverlap_UV = [0, 0, 0]
 
         
         projectorColorMode = 'standard';

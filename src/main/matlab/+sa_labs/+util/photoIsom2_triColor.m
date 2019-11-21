@@ -1,4 +1,4 @@
-function [Rstar, Mstar, Sstar ] = photoIsom2_triColor( bluIntenVal, grnIntenVal, uvIntenVal, color, fitBlue, fitGreen, fitUV, NDF_attenuation_Blue, NDF_attenuation_Green, NDF_attenuation_UV)
+function [Rstar, Mstar, Sstar ] = photoIsom2_triColor( bluIntenVal, grnIntenVal, uvIntenVal, color, fitBlue, fitGreen, fitUV, NDF_attenuation_Blue, NDF_attenuation_Green, NDF_attenuation_UV, spectralOverlap_Blue, spectralOverlap_Green, spectralOverlap_UV)
 %R*, M*, S* for given intensity parameters
 
 
@@ -52,17 +52,19 @@ uvInten_cone = y.*uW_to_Watt.*pr_area;
 
 
 % Values from Rig A UV projector, Sam 12/2018
-blue_Scone = 5.1711e+15;
-blue_Mcone = 3.7352e+18;
-blue_Rod = 4.6671e+18;
 
-uv_Scone = 1.6347e+18;
-uv_Mcone = 1.1163e+18;
-uv_Rod = 9.0849e+17;
 
-green_Scone = 1.5964e+14;
-green_Mcone = 3.3599e+18;
-green_Rod = 2.2422e+18;
+blue_Rod = spectralOverlap_Blue(1);
+blue_Scone = spectralOverlap_Blue(1);
+blue_Mcone = spectralOverlap_Blue(1);
+
+green_Rod = spectralOverlap_Green(1);
+green_Scone = spectralOverlap_Green(2);
+green_Mcone = spectralOverlap_Green(3);
+
+uv_Rod = spectralOverlap_UV(1);
+uv_Scone = spectralOverlap_UV(2);
+uv_Mcone = spectralOverlap_UV(3);
 
 
 

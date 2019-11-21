@@ -60,9 +60,15 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             lightCrafter.setConfigurationSetting('angleOffset', obj.angleOffset);
             lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition);
             lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize);
+            
             lightCrafter.addResource('fitBlue', obj.fitBlue);
             lightCrafter.addResource('fitGreen', obj.fitGreen);
             lightCrafter.addResource('fitUV', obj.fitUV);
+            
+            lightCrafter.addResource('spectralOverlap_Blue', obj.spectralOverlap_Blue);
+            lightCrafter.addResource('spectralOverlap_Green', obj.spectralOverlap_Green);
+            lightCrafter.addResource('spectralOverlap_UV', obj.spectralOverlap_UV);
+            
             obj.addDevice(lightCrafter);
             
         end
