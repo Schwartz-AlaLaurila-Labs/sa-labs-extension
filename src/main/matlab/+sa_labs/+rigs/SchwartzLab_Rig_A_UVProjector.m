@@ -23,9 +23,9 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         angleOffset = 0;
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
-        spectralOverlap_Blue = [4.49937844347436e+18,4.24282748934854e+15,3.54491702447797e+18];%updated 11/21/2019 -David
+        spectralOverlap_Blue = [4.73506311955843e+18,4.35096443208340e+15,3.77614022065689e+18];%updated 11/21/2019 -David
         spectralOverlap_Green = [3.23202384601926e+18,470157632364029,4.54479333609599e+18];%Green projector broken
-        spectralOverlap_UV = [0, 0, 0];
+        spectralOverlap_UV = [9.35392735238728e+17,1.45353301827043e+18,1.11745334749763e+18];%updated 11/21/2019 -David
         
         projectorColorMode = 'uv2'; % Rig A has MkII projector
         numberOfAmplifiers = 2;
