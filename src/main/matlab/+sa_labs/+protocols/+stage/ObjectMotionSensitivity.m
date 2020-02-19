@@ -17,7 +17,9 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         patternDimension = 40; % µm, spatial scale
         gratingProfile = 'square'; %sine, square, or sawtooth
         
-        motionMode = 'filteredNoise';
+        figureBackgroundMode = 'aperture'; % use standard aperture or an actual moving object
+        
+        motionMode = 'random walk';
         
         motionSeedChangeModeCenter = 'increment only';
         motionStandardDeviationCenter = 400; % µm std or random walk step
@@ -35,7 +37,9 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 1
         
-        motionModeType = symphonyui.core.PropertyType('char','row',{'filteredNoise','randomWalk'});
+        motionModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk'});
+        
+        figureBackgroundModeType = symphonyui.core.PropertyType('char','row',{'aperture','object'});
         
         motionPathCenter
         motionSeedCenter
@@ -173,30 +177,57 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
-            patternSurround = stage.builtin.stimuli.Grating(obj.gratingProfile, 1024);
-            patternSurround.position = [0,0];
-            patternSurround.orientation = obj.motionAngle;
-            patternSurround.contrast = obj.contrast;
-            patternSurround.size = obj.um2pix(obj.patternSize);
-            [~, pixelsPerMicron] = obj.um2pix(1);
-            patternSurround.spatialFreq = 1/(pixelsPerMicron*(obj.patternDimension)); % in cycles per pixel
-            patternSurround.phase = 0;
-            p.addStimulus(patternSurround);
+            if strcmp(obj.patternModeType, 'grating')
+                % add surround
+                patternSurround = stage.builtin.stimuli.Grating(obj.gratingProfile, 1024);
+                patternSurround.position = [0,0];
+                patternSurround.orientation = obj.motionAngle;
+                patternSurround.contrast = obj.contrast;
+                patternSurround.size = obj.um2pix(obj.patternSize);
+                [~, pixelsPerMicron] = obj.um2pix(1);
+                patternSurround.spatialFreq = 1/(pixelsPerMicron*(obj.patternDimension)); % in cycles per pixel
+                patternSurround.phase = 0;
+                p.addStimulus(patternSurround);
+                
+%                 % cover center of surround to have a hole
+%                 maskSpot = stage.builtin.stimuli.Ellipse();
+%                 maskSpot.radiusX = annulusInnerDiameterPix/2;
+%                 maskSpot.radiusY = annulusInnerDiameterPix/2;
+%                 maskSpot.position = canvasSize/2;
+%                 maskSpot.color = obj.meanLevel;
+%                 p.addStimulus(maskSpot);
+
+                % add center
+                patternCenter = stage.builtin.stimuli.Grating(obj.gratingProfile, 1024);
+                patternCenter.position = [0,0];
+                patternCenter.orientation = obj.motionAngle;
+                patternCenter.contrast = obj.contrast;
+                patternCenter.size = obj.um2pix(obj.patternSize);
+                [~, pixelsPerMicron] = obj.um2pix(1);
+                patternCenter.spatialFreq = 1/(pixelsPerMicron*(obj.patternDimension)); % in cycles per pixel
+                patternCenter.phase = 0;
+                p.addStimulus(patternCenter);
+                
+
+            else
+                
+                % define texture patterns here
+%                 patternCenter = stage.builtin.stimuli.Image(obj.imageMatrix);
+%                 patternCenter.orientation = obj.motionAngle + 90;
+%                 patternCenter.size = fliplr(size(obj.imageMatrix)) * obj.resScaleFactor;
+%                 p.addStimulus(patternCenter);          
+%                 
+%                 patternSurround = stage.builtin.stimuli.Image(obj.imageMatrix);
+%                 patternSurround.orientation = obj.motionAngle + 90;
+%                 patternSurround.size = fliplr(size(obj.imageMatrix)) * obj.resScaleFactor;
+%                 p.addStimulus(patternSurround);                      
+%                 
+            end
             
-            patternCenter = stage.builtin.stimuli.Grating(obj.gratingProfile, 1024);
-            patternCenter.position = [0,0];
-            patternCenter.orientation = obj.motionAngle;
-            patternCenter.contrast = obj.contrast;
-            patternCenter.size = obj.um2pix(obj.patternSize);
-            [~, pixelsPerMicron] = obj.um2pix(1);
-            patternCenter.spatialFreq = 1/(pixelsPerMicron*(obj.patternDimension)); % in cycles per pixel
-            patternCenter.phase = 0;
-            p.addStimulus(patternCenter);
-            
-            
+            % mask center pattern to a circle
             apertureDiameterRel = obj.centerDiameter / max(obj.patternSize);
-            mask = stage.core.Mask.createAnnulus(-1, apertureDiameterRel, 2048);
-            grat.setMask(mask);
+            centerMask = stage.core.Mask.createAnnulus(-1, apertureDiameterRel, 2048);
+            patternCenter.setMask(centerMask);
             
             % random motion controller
             function pos = movementController(state, angle, center, motionPath)
@@ -206,21 +237,45 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                 else
                     frame = state.frame;
                 end
-                if size(motionPath,2) == 1
-                    y = sind(angle) * motionPath(frame);
-                    x = cosd(angle) * motionPath(frame);
-                end
+                
+                y = sind(angle) * motionPath(frame);
+                x = cosd(angle) * motionPath(frame);
                 pos = [x,y] + center;
                 
             end
             
-            controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                'position', @(s)movementController(s, obj.motionAngle, canvasSize/2, obj.motionPathCenter));
-            p.addController(controllerCenter);
+            % random phase shift controller
+            function phase = phaseController(state, motionPath)
+
+                if state.frame < 1
+                    frame = 1;
+                else
+                    frame = state.frame;
+                end
+                phase = motionPath(frame);
+            end
             
-            controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
-                'position', @(s)movementController(s, obj.motionAngle, canvasSize/2, obj.motionPathSurround));
-            p.addController(controllerSurround);
+            
+            % Motion controllers
+            if(strcmp(obj.figureBackgroundModeType, 'object'))
+                % use motion on textures
+                controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
+                    'position', @(s)movementController(s, obj.motionAngle, canvasSize/2, obj.motionPathCenter));
+                p.addController(controllerCenter);
+
+                controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
+                    'position', @(s)movementController(s, obj.motionAngle, canvasSize/2, obj.motionPathSurround));
+                p.addController(controllerSurround);
+            else
+
+                % TODO: correct distance into phase using spatial scale
+                controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, 'phase', @(state)phaseController(state, obj.motionPathCenter));
+                p.addController(controllerCenter);
+                
+                controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, 'phase', @(state)phaseController(state, obj.motionPathSurround));
+                p.addController(controllerSurround);
+            end
+            
             
             obj.setOnDuringStimController(p, patternCenter);
             obj.setOnDuringStimController(p, patternSurround);
