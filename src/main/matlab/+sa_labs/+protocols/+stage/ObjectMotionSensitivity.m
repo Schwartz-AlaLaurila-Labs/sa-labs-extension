@@ -22,7 +22,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         motionMode = 'random walk';
         
         motionSeedChangeModeCenter = 'increment only';
-        motionStandardDeviationCenter = 400; % µm std or random walk step
+        motionStandardDeviationCenter = 400; % µm std or random walk or single step
         motionLowpassFilterPassbandCenter = 5; % Hz
         
         motionSeedModeSurround = 'same';
@@ -38,7 +38,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
     properties (Hidden)
         version = 1
         
-        motionModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk'});
+        motionModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','single step'});
         
         figureBackgroundModeType = symphonyui.core.PropertyType('char','row',{'aperture','object'});
         
@@ -100,7 +100,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
             
-            % Select a pair of seeds
+            % Select a center motion seeds
             if strcmp(obj.motionSeedChangeModeCenter, 'repeat only')
                 seed = obj.motionSeedStart;
             elseif strcmp(obj.motionSeedChangeModeCenter, 'increment only')
@@ -115,6 +115,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             end
             obj.motionSeedCenter = seed;
             
+            % make a surround motion seed
             switch obj.motionSeedModeSurround
                 case 'same'
                     obj.motionSeedSurround = seed;
@@ -133,7 +134,33 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             frameRate = 60;
             pathLength = round((obj.stimTime + obj.preTime)/1000 * frameRate + 100);
             switch obj.motionMode
-                case 'filteredNoise'
+                case 'single step'
+                    % use mod to alternate which region makes step
+                    if mod(obj.motionSeedCenter, 2) == 0
+                        mpathc = zeros(pathLength,1);
+                    else
+                        mpathc = zeros(pathLength,1);
+                        % shift motionStandardDeviationCenter after half
+                        % stim length
+                        changeFrame = round(obj.stimTime / 2 / 1000 * 60);
+                        mpathc(changeFrame:end) = obj.motionStandardDeviationCenter;
+                    end
+                        
+                    obj.motionPathCenter = mpathc;
+                    
+                    if mod(obj.motionSeedSurround, 2) == 0
+                        mpaths = zeros(pathLength,1);
+                    else
+                        mpaths = zeros(pathLength,1);
+                        % shift motionStandardDeviationSurround after half
+                        % stim length
+                        changeFrame = round(obj.stimTime / 2 / 1000 * 60);
+                        mpaths(changeFrame:end) = obj.motionStandardDeviationSurround;
+                    end
+                        
+                    obj.motionPathSurround = mpaths;                    
+                        
+                case 'filtered noise'
                     stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
                     mpathc = obj.motionStandardDeviationCenter .* stream.randn(pathLength, 1);
                     obj.motionPathCenter = filtfilt(obj.motionFilterCenter, mpathc);
@@ -142,7 +169,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                     mpaths = obj.motionStandardDeviationSurround .* stream.randn(pathLength, 1);
                     obj.motionPathSurround = filtfilt(obj.motionFilterSurround, mpaths);
                     
-                case 'randomWalk'
+                case 'random walk'
                     stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
                     mpathc = zeros(pathLength,1);
                     for i = 2:pathLength
@@ -182,12 +209,17 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             
             % Create image matrices
-            for ssi = 1:2
+            for csi = 1:2 % center surround index
                 if strcmp(obj.patternModeType, 'grating')
 
                     x = linspace(0, 1, obj.patternSize);
-                    y = cos(x ./ obj.patternDimension);
+                    y = cos(x ./ obj.patternDimension) * 0.5 * obj.contrast + obj.meanLevel; % to fix
                     M = repmat(y, [obj.patternSize, 1]);
+                    
+                    switch obj.gratingProfile
+                        case 'square'
+                            M = (M > 0) * 0.5 * obj.contrast + obj.meanLevel; % to fix
+                    end
 
                 else
                     % generate texture
@@ -226,7 +258,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                     end
                 end
             
-                if ssi == 1
+                if csi == 1
                     obj.imageMatrixCenter = uint8(255 * M);
                 else
                     obj.imageMatrixSurround = uint8(255 * M);
