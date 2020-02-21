@@ -3,9 +3,10 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
     
     properties
         %times in ms
-        preTime = 1000;
-        tailTime = 0;
-        stimTime = 20000;
+        preTime = 500;
+        tailTime = 500;
+        stimTime = 4000;
+        startMotionTime = 1000;
         
         intensity = 0.5;
         contrast = 1; % percentage around the mean
@@ -14,53 +15,50 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         centerDiameter = 200;
         patternMode = 'grating'; % grating only for now
-        patternDimension = 40; % µm, spatial scale
-        gratingProfile = 'square'; %sine, square, or sawtooth
+        patternSpatialScale = 100; % µm, spatial scale
+        gratingProfile = 'sine'; %sine, square, or sawtooth
         
         figureBackgroundMode = 'aperture'; % use standard aperture or an actual moving object
         
         motionMode = 'random walk';
+        motionSeedStart = 1;
         
         motionSeedChangeModeCenter = 'increment only';
-        motionStandardDeviationCenter = 400; % µm std or random walk step
-        motionLowpassFilterPassbandCenter = 5; % Hz
-        
-        motionSeedModeSurround = 'same';
-        motionStandardDeviationSurround = 400; % µm std or random walk step
-        motionLowpassFilterPassbandSurround = 5; % Hz
+        motionStandardDeviation = 1; % µm std or random walk or single step
+        motionLowpassFilterPassband = 5;
+
+        motionSeedModeSurround = 'offset';
         
         numberOfCycles = 3;
         numberOfEpochs = 20;
-        
-        resScaleFactor = 2; % factor to decrease computational load generating images
     end
     
     properties (Hidden)
         version = 1
         
-        motionModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk'});
+        motionModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','single step'});
         
         figureBackgroundModeType = symphonyui.core.PropertyType('char','row',{'aperture','object'});
         
         motionPathCenter
         motionSeedCenter
-        motionFilterCenter
+        motionFilter
         motionSeedChangeModeCenterType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
         
         motionPathSurround
         motionSeedSurround
-        motionFilterSurround
         motionSeedModeSurroundType = symphonyui.core.PropertyType('char', 'row', {'same','offset','random'})
         
         patternModeType = symphonyui.core.PropertyType('char', 'row', {'grating','texture'});
-        gratingProfileType = symphonyui.core.PropertyType('char', 'row', {'sine', 'square', 'sawtooth'});
+        gratingProfileType = symphonyui.core.PropertyType('char', 'row', {'sine', 'square'});
         uniformDistribution = 1;
         
-        
-        responsePlotMode = 'cartesian';
+        responsePlotMode = false;
         responsePlotSplitParameter = 'motionSeedCenter';
         
-        patternSize = 1000;
+        patternSizeMicrons = [2000,2000];
+        
+        imageMatrixDimensions = [500,500];
         imageMatrixCenter
         imageMatrixSurround
     end
@@ -90,17 +88,15 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             % create the motion filters
             frameRate = 60;
-            obj.motionFilterCenter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassbandCenter,...
-                'StopbandFrequency',obj.motionLowpassFilterPassbandCenter*1.2,'SampleRate',frameRate);
-            
-            obj.motionFilterSurround = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassbandSurround,...
-                'StopbandFrequency',obj.motionLowpassFilterPassbandSurround*1.2,'SampleRate',frameRate);
+            obj.motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassband,...
+                'StopbandFrequency',obj.motionLowpassFilterPassband*1.2,...
+                'FilterOrder', 20, 'SampleRate',frameRate);
             
         end
         
         function prepareEpoch(obj, epoch)
             
-            % Select a pair of seeds
+            % Select a center motion seeds
             if strcmp(obj.motionSeedChangeModeCenter, 'repeat only')
                 seed = obj.motionSeedStart;
             elseif strcmp(obj.motionSeedChangeModeCenter, 'increment only')
@@ -115,6 +111,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             end
             obj.motionSeedCenter = seed;
             
+            % make a surround motion seed
             switch obj.motionSeedModeSurround
                 case 'same'
                     obj.motionSeedSurround = seed;
@@ -127,22 +124,48 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             epoch.addParameter('motionSeedCenter', obj.motionSeedCenter);
             epoch.addParameter('motionSeedSurround', obj.motionSeedSurround);
             
-            fprintf('Using seeds %g, %g\n', obj.motionSeedCenter, obj.motionSeedSurround);
+            fprintf('Using motion path seeds %g, %g\n', obj.motionSeedCenter, obj.motionSeedSurround);
             
             
             frameRate = 60;
             pathLength = round((obj.stimTime + obj.preTime)/1000 * frameRate + 100);
             switch obj.motionMode
-                case 'filteredNoise'
+                case 'single step'
+                    % use mod to alternate which region makes step
+                    if mod(obj.motionSeedCenter, 2) == 0
+                        mpathc = zeros(pathLength,1);
+                    else
+                        mpathc = zeros(pathLength,1);
+                        % shift motionStandardDeviation after half
+                        % stim length
+                        changeFrame = round(obj.stimTime / 2 / 1000 * 60);
+                        mpathc(changeFrame:end) = obj.motionStandardDeviation;
+                    end
+                        
+                    obj.motionPathCenter = mpathc;
+                    
+                    if mod(obj.motionSeedSurround, 2) == 0
+                        mpaths = zeros(pathLength,1);
+                    else
+                        mpaths = zeros(pathLength,1);
+                        % shift motionStandardDeviation after half
+                        % stim length
+                        changeFrame = round(obj.stimTime / 2 / 1000 * 60);
+                        mpaths(changeFrame:end) = obj.motionStandardDeviation;
+                    end
+                        
+                    obj.motionPathSurround = mpaths;
+                        
+                case 'filtered noise'
                     stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
-                    mpathc = obj.motionStandardDeviationCenter .* stream.randn(pathLength, 1);
-                    obj.motionPathCenter = filtfilt(obj.motionFilterCenter, mpathc);
+                    mpathc = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
+                    obj.motionPathCenter = filtfilt(obj.motionFilter, mpathc);
                     
                     stream = RandStream('mt19937ar', 'Seed', obj.motionSeedSurround);
-                    mpaths = obj.motionStandardDeviationSurround .* stream.randn(pathLength, 1);
-                    obj.motionPathSurround = filtfilt(obj.motionFilterSurround, mpaths);
+                    mpaths = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
+                    obj.motionPathSurround = filtfilt(obj.motionFilter, mpaths);
                     
-                case 'randomWalk'
+                case 'random walk'
                     stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
                     mpathc = zeros(pathLength,1);
                     for i = 2:pathLength
@@ -151,7 +174,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                         else
                             step = -1;
                         end
-                        mpathc(i) = mpathc(i-1) + step * obj.motionStandardDeviationCenter;
+                        mpathc(i) = mpathc(i-1) + step * obj.motionStandardDeviation;
                     end
                     obj.motionPathCenter = mpathc;
                     
@@ -163,14 +186,18 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                         else
                             step = -1;
                         end
-                        mpaths(i) = mpaths(i-1) + step * obj.motionStandardDeviationSurround;
+                        mpaths(i) = mpaths(i-1) + step * obj.motionStandardDeviation;
                     end
                     obj.motionPathSurround = mpaths;
                     
-                    
             end
             
-            
+            startCenter = mean([obj.motionPathCenter(1), obj.motionPathSurround(1)]);
+            obj.motionPathCenter(1) = startCenter;
+            obj.motionPathSurround(1) = startCenter;
+            obj.motionPathCenter = obj.um2pix(obj.motionPathCenter);
+            obj.motionPathSurround = obj.um2pix(obj.motionPathSurround);
+                        
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
@@ -182,23 +209,28 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             
             % Create image matrices
-            for ssi = 1:2
-                if strcmp(obj.patternModeType, 'grating')
+            for csi = 1:2 % center surround index
+                if strcmp(obj.patternMode, 'grating')
 
-                    x = linspace(0, 1, obj.patternSize);
-                    y = cos(x ./ obj.patternDimension);
-                    M = repmat(y, [obj.patternSize, 1]);
+                    x = linspace(0, obj.patternSizeMicrons(1), obj.imageMatrixDimensions(1)); %in µm
+                    y = ((cos(x * 2 * 3.141 / obj.patternSpatialScale)) * obj.contrast + 1) * obj.meanLevel; % to fix
+                    M = repmat(y, [obj.imageMatrixDimensions(2),1]);
+                    
+                    switch obj.gratingProfile
+                        case 'square'
+                            M(M>obj.meanLevel) = obj.meanLevel * (1+obj.contrast);
+                            M(M<=obj.meanLevel) = obj.meanLevel * (1-obj.contrast);
+                    end
 
                 else
                     % generate texture
-                    sigma = obj.um2pix(0.5 * obj.patternDimension / obj.resScaleFactor);
-                    res = round(obj.patternSize / obj.resScaleFactor);
+                    sigma = obj.patternSpatialScale / obj.patternSizeMicrons(1) * obj.imageMatrixDimensions(1);
 
-                    fprintf('making texture (%d x %d) with blur sigma %d pixels\n', res(1), res(2), sigma);
+                    fprintf('making texture (%d x %d) with blur sigma %d pixels\n', obj.imageMatrixDimensions(1), obj.imageMatrixDimensions(2), sigma);
 
-                    patternStream = RandStream('mt19937ar','Seed',obj.randomSeed);
+                    patternStream = RandStream('mt19937ar','Seed',obj.motionSeedCenter);
 
-                    M = randn(patternStream, res);
+                    M = randn(patternStream, obj.imageMatrixDimensions);
                     defaultSize = 2*ceil(2*sigma)+1;
                     M = imgaussfilt(M, sigma, 'FilterDomain','frequency','FilterSize',defaultSize*2+1);
 
@@ -220,13 +252,13 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                         M = M - mean(M(:)) + 0.5; %set mean to 0.5;
                     else % normal distribution
                         M = zscore(M(:)) * 0.3 + 0.5;
-                        M = reshape(M, res);
+                        M = reshape(M, obj.imageMatrixDimensions);
                         M(M < 0) = 0;
                         M(M > 1) = 1;
                     end
                 end
             
-                if ssi == 1
+                if csi == 1
                     obj.imageMatrixCenter = uint8(255 * M);
                 else
                     obj.imageMatrixSurround = uint8(255 * M);
@@ -237,47 +269,67 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             % create objects to hold images
             patternSurround = stage.builtin.stimuli.Image(obj.imageMatrixSurround);
-            patternSurround.orientation = obj.motionAngle + 90;
-            patternSurround.size = fliplr(size(obj.imageMatrixSurround)) * obj.resScaleFactor;
+            patternSurround.position = canvasSize / 2;
+            patternSurround.orientation = obj.motionAngle;
+            patternSurround.size = obj.um2pix(obj.patternSizeMicrons);
             p.addStimulus(patternSurround);
             
             patternCenter = stage.builtin.stimuli.Image(obj.imageMatrixCenter);
-            patternCenter.orientation = obj.motionAngle + 90;
-            patternCenter.size = fliplr(size(obj.imageMatrixCenter)) * obj.resScaleFactor;
+            patternCenter.position = canvasSize / 2;
+            patternCenter.orientation = obj.motionAngle;
+            patternCenter.size = obj.um2pix(obj.patternSizeMicrons);
             p.addStimulus(patternCenter);
             
             % mask center pattern to a circle
-            apertureDiameterRel = obj.centerDiameter / max(obj.patternSize);
-            centerMask = stage.core.Mask.createAnnulus(-1, apertureDiameterRel, 2048);
+            apertureDiameterRel = obj.centerDiameter / max(obj.patternSizeMicrons);
+            centerMask = stage.core.Mask.createAnnulus(-1, apertureDiameterRel, 1024);
             patternCenter.setMask(centerMask);
-                        
-            function im = imageMovementController(state, imageMatrix, scale, motionPath)
-                if state.frame < 1
+            
+            
+            function im = imageMovementController(state, startMotionTime, imageMatrix, scale, motionPath)
+                if state.time < startMotionTime / 1000
                     frame = 1;
                 else
-                    frame = state.frame;
+                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
+                end
+
+                im = circshift(imageMatrix, round(motionPath(frame) * scale), 2); % second dim?
+            end
+
+            function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels)
+
+                if state.time < startMotionTime / 1000
+                    frame = 1;
+                else
+                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
                 end
                 
-                pos = motionPath(frame);
-                
-                im = circshift(imageMatrix, pos * scale, 2); % second dim?
+                y = sind(angle) * motionPathPixels(frame);
+                x = cosd(angle) * motionPathPixels(frame);
+                pos = [x,y] + center;
+                    
             end
-            
-            
+
             % Motion controllers
-            motionScale = 10;
-            controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                'imageMatrix', @(s)imageMovementController(s, obj.imageMatrixCenter, motionScale, obj.motionPathCenter));
+            motionScale = obj.imageMatrixDimensions(1) / obj.patternSizeMicrons(1); % convert image pixel shift to world um shift
+            switch obj.figureBackgroundMode
+                case 'aperture'
+                    controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
+                        'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixCenter, motionScale, obj.motionPathCenter));
+                case 'object'
+                    motionPathPixels = obj.um2pix(obj.motionPathCenter);
+                    controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
+                        'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
+            end
             p.addController(controllerCenter);
             
-            controllerSurround = stage.builtin.controllers.PropertyController(patternCenter, ...
-                'imageMatrix', @(s)imageMovementController(s, obj.imageMatrixSurround, motionScale, obj.motionPathSurround));
+            controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
+                'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround));
             p.addController(controllerSurround);
-            
-            
             
             obj.setOnDuringStimController(p, patternCenter);
             obj.setOnDuringStimController(p, patternSurround);
+
             
         end
         
