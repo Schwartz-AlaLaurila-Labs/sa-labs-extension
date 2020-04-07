@@ -9,34 +9,41 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         startMotionTime = 1000;
         
         intensity = 0.5;
-        contrast = 1; % percentage around the mean
+        contrast = 1; % change around the mean
         
         motionAngle = 0;
+        
+        motionIncludeCenter = true; % 1
+        motionIncludeSurround = true; % 2
+        motionIncludeGlobal = true; % 3
+        motionIncludeDifferential = true; % 4
+        motionIncludeStatic = true; % 5
+        
+        figureBackgroundMode = 'aperture'; % use standard aperture or an actual moving object
+        
+        motionPathMode = 'random walk';
+        motionSeedStart = 1;
+        
+        motionSeedChangeModeCenter = 'increment only';
+        motionStandardDeviation = 1; % µm noise std, or random walk step, or contrast reverse step
+        motionLowpassFilterPassband = 5;
         
         centerDiameter = 200;
         patternMode = 'grating'; % grating only for now
         patternSpatialScale = 100; % µm, spatial scale
         gratingProfile = 'sine'; %sine, square, or sawtooth
         
-        figureBackgroundMode = 'aperture'; % use standard aperture or an actual moving object
-        
-        motionMode = 'random walk';
-        motionSeedStart = 1;
-        
-        motionSeedChangeModeCenter = 'increment only';
-        motionStandardDeviation = 1; % µm std or random walk or single step
-        motionLowpassFilterPassband = 5;
-
-        motionSeedModeSurround = 'offset';
-        
-        numberOfCycles = 3;
-        numberOfEpochs = 20;
+        numberOfCycles = 5;
     end
     
     properties (Hidden)
-        version = 1
+        version = 2
         
-        motionModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','single step'});
+        motionPathModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','contrast reverse'});
+        
+        motionModeNames = {'center','surround','global','differential','static'};
+        curMotionMode
+        numberOfMotionModes = 5;
         
         figureBackgroundModeType = symphonyui.core.PropertyType('char','row',{'aperture','object'});
         
@@ -47,7 +54,6 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         motionPathSurround
         motionSeedSurround
-        motionSeedModeSurroundType = symphonyui.core.PropertyType('char', 'row', {'same','offset','random'})
         
         patternModeType = symphonyui.core.PropertyType('char', 'row', {'grating','texture'});
         gratingProfileType = symphonyui.core.PropertyType('char', 'row', {'sine', 'square'});
@@ -88,113 +94,165 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             % create the motion filters
             frameRate = 60;
-            obj.motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassband,...
-                'StopbandFrequency',obj.motionLowpassFilterPassband*1.2,...
-                'FilterOrder', 20, 'SampleRate',frameRate);
+            if strcmp(obj.motionPathMode, 'filtered noise')
+                obj.motionFilter = designfilt('lowpassfir','PassbandFrequency',obj.motionLowpassFilterPassband,...
+                    'StopbandFrequency',obj.motionLowpassFilterPassband*1.2,...
+                    'FilterOrder', 20, 'SampleRate',frameRate);
+            end
+            
+            % create the set of motion mode options
+            obj.motionModes = [];
+            if obj.motionIncludeCenter
+                obj.motionModes = horzcat(obj.motionModes, 1);
+            end
+            if obj.motionIncludeSurround
+                obj.motionModes = horzcat(obj.motionModes, 2);
+            end
+            if obj.motionIncludeGlobal
+                obj.motionModes = horzcat(obj.motionModes, 3);
+            end
+            if obj.motionIncludeDifferential
+                obj.motionModes = horzcat(obj.motionModes, 4);
+            end
+            if obj.motionIncludeStatic
+                obj.motionModes = horzcat(obj.motionModes, 5);
+            end
+            obj.numberOfMotionModes = length(obj.motionModes);
+            
+            fprintf('enabled motion modes: ');
+            disp(obj.motionModes)
             
         end
         
         function prepareEpoch(obj, epoch)
+            % Randomize motion modes if this is a new set
+            index = mod(obj.numEpochsPrepared, obj.numberOfMotionModes) + 1;
+            if index == 1
+                obj.motionModes = obj.motionModes(randperm(obj.numberOfMotionModes)); 
+            end
             
-            % Select a center motion seeds
+            %get current epoch mode
+            obj.curMotionMode = obj.motionModes(index);
+            epoch.addParameter('motionMode', obj.motionModeNames{obj.curMotionMode});
+            fprintf('current motion mode: %s\n', obj.motionModeNames{obj.curMotionMode});
+            
+            % Select a center motion seed (probably not correctly incrementing now)
             if strcmp(obj.motionSeedChangeModeCenter, 'repeat only')
-                seed = obj.motionSeedStart;
+                centerSeed = obj.motionSeedStart;
             elseif strcmp(obj.motionSeedChangeModeCenter, 'increment only')
-                seed = obj.numEpochsCompleted + obj.motionSeedStart;
+                centerSeed = obj.numEpochsCompleted + obj.motionSeedStart;
             else
                 seedIndex = mod(obj.numEpochsCompleted,2);
                 if seedIndex == 0
-                    seed = obj.motionSeedStart;
+                    centerSeed = obj.motionSeedStart;
                 elseif seedIndex == 1
-                    seed = obj.motionSeedStart + (obj.numEpochsCompleted + 1) / 2;
+                    centerSeed = obj.motionSeedStart + (obj.numEpochsCompleted + 1) / 2;
                 end
             end
-            obj.motionSeedCenter = seed;
+            obj.motionSeedCenter = centerSeed;
             
             % make a surround motion seed
-            switch obj.motionSeedModeSurround
-                case 'same'
-                    obj.motionSeedSurround = seed;
-                case 'offset'
-                    obj.motionSeedSurround = seed + 10;
-                case 'random'
-                    obj.motionSeedSurround = randi(1e4,1);
+            switch obj.curMotionMode
+                case 1 % center only
+                    obj.motionSeedSurround = -1;
+                case 2 % surround only
+                    obj.motionSeedSurround = centerSeed;
+                    obj.motionSeedCenter = -1;
+                case 3 % global
+                    obj.motionSeedSurround = centerSeed;
+                case 4 % differential
+                    obj.motionSeedSurround = centerSeed + 1;
+                case 5 % static
+                    obj.motionSeedCenter = -1;
+                    obj.motionSeedSurround = -1;
             end
             
             epoch.addParameter('motionSeedCenter', obj.motionSeedCenter);
             epoch.addParameter('motionSeedSurround', obj.motionSeedSurround);
             
-            fprintf('Using motion path seeds %g, %g\n', obj.motionSeedCenter, obj.motionSeedSurround);
+            fprintf('Using motion path seeds %g, %g (-1 is static)\n', obj.motionSeedCenter, obj.motionSeedSurround);
             
             
             frameRate = 60;
             pathLength = round((obj.stimTime + obj.preTime)/1000 * frameRate + 100);
-            switch obj.motionMode
-                case 'single step'
-                    % use mod to alternate which region makes step
-                    if mod(obj.motionSeedCenter, 2) == 0
-                        mpathc = zeros(pathLength,1);
-                    else
-                        mpathc = zeros(pathLength,1);
-                        % shift motionStandardDeviation after half
-                        % stim length
-                        changeFrame = round(obj.stimTime / 2 / 1000 * 60);
-                        mpathc(changeFrame:end) = obj.motionStandardDeviation;
-                    end
-                        
-                    obj.motionPathCenter = mpathc;
+            
+            switch obj.motionPathMode
+                case 'contrast reverse'
+                    T = (0:(pathLength-1)) ./ frameRate;
+                    stepInterval = 2.0; % sec
                     
-                    if mod(obj.motionSeedSurround, 2) == 0
-                        mpaths = zeros(pathLength,1);
-                    else
-                        mpaths = zeros(pathLength,1);
-                        % shift motionStandardDeviation after half
-                        % stim length
-                        changeFrame = round(obj.stimTime / 2 / 1000 * 60);
-                        mpaths(changeFrame:end) = obj.motionStandardDeviation;
+                    obj.motionPathCenter = zeros(pathLength,1);
+                    if obj.motionSeedCenter > 0
+                        obj.motionPathCenter = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) < 0);
                     end
-                        
-                    obj.motionPathSurround = mpaths;
-                        
+                    
+                    obj.motionPathSurround = zeros(pathLength,1);
+                    if obj.motionSeedSurround > 0
+                        if obj.curMotionMode ~= 4
+                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) < 0);
+                        else % differential mode offset steps by half of stepInterval
+                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * (T - stepInterval/2) ./ stepInterval) < 0);
+                        end
+                    end
+                    
                 case 'filtered noise'
-                    stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
-                    mpathc = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
-                    obj.motionPathCenter = filtfilt(obj.motionFilter, mpathc);
+                    if obj.motionSeedCenter > 0
+                        stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
+                        mpathc = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
+                        obj.motionPathCenter = filtfilt(obj.motionFilter, mpathc);
+                    else
+                        obj.motionPathCenter = zeros(pathLength, 1);
+                    end
                     
-                    stream = RandStream('mt19937ar', 'Seed', obj.motionSeedSurround);
-                    mpaths = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
-                    obj.motionPathSurround = filtfilt(obj.motionFilter, mpaths);
+                    if obj.motionSeedSuround > 0
+                        stream = RandStream('mt19937ar', 'Seed', obj.motionSeedSurround);
+                        mpaths = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
+                        obj.motionPathSurround = filtfilt(obj.motionFilter, mpaths);
+                    else
+                        obj.motionPathSurround = zeros(pathLength, 1);
+                    end                        
                     
                 case 'random walk'
-                    stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
-                    mpathc = zeros(pathLength,1);
-                    for i = 2:pathLength
-                        if stream.rand(1) > 0.5
-                            step = 1;
-                        else
-                            step = -1;
+                    if obj.motionSeedCenter > 0
+                        stream = RandStream('mt19937ar', 'Seed', obj.motionSeedCenter);
+                        mpathc = zeros(pathLength,1);
+                        for i = 2:pathLength
+                            if stream.rand(1) > 0.5
+                                step = 1;
+                            else
+                                step = -1;
+                            end
+                            mpathc(i) = mpathc(i-1) + step * obj.motionStandardDeviation;
                         end
-                        mpathc(i) = mpathc(i-1) + step * obj.motionStandardDeviation;
+                        obj.motionPathCenter = mpathc;
+                    else
+                        obj.motionPathCenter = zeros(pathLength, 1);
                     end
-                    obj.motionPathCenter = mpathc;
                     
-                    stream = RandStream('mt19937ar', 'Seed', obj.motionSeedSurround);
-                    mpaths = zeros(pathLength,1);
-                    for i = 2:pathLength
-                        if stream.rand(1) > 0.5
-                            step = 1;
-                        else
-                            step = -1;
+                    if obj.motionSeedSurround > 0
+                        stream = RandStream('mt19937ar', 'Seed', obj.motionSeedSurround);
+                        mpaths = zeros(pathLength,1);
+                        for i = 2:pathLength
+                            if stream.rand(1) > 0.5
+                                step = 1;
+                            else
+                                step = -1;
+                            end
+                            mpaths(i) = mpaths(i-1) + step * obj.motionStandardDeviation;
                         end
-                        mpaths(i) = mpaths(i-1) + step * obj.motionStandardDeviation;
-                    end
-                    obj.motionPathSurround = mpaths;
+                        obj.motionPathSurround = mpaths;
+                    else
+                        obj.motionPathSurround = zeros(pathLength, 1);
+                    end                      
                     
             end
-            
-            startCenter = mean([obj.motionPathCenter(1), obj.motionPathSurround(1)]);
-            obj.motionPathCenter(1) = startCenter;
-            obj.motionPathSurround(1) = startCenter;
+
+            % below I have some start position code, not sure what problem
+            % it solves. Probably needs a better solution if the problem is
+            % still around after disabling this
+%             startCenter = mean([obj.motionPathCenter(1), obj.motionPathSurround(1)]);
+%             obj.motionPathCenter(1) = startCenter;
+%             obj.motionPathSurround(1) = startCenter;
             obj.motionPathCenter = obj.um2pix(obj.motionPathCenter);
             obj.motionPathSurround = obj.um2pix(obj.motionPathSurround);
                         
@@ -293,7 +351,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                     frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
                 end
 
-                im = circshift(imageMatrix, round(motionPath(frame) * scale), 2); % second dim?
+                im = circshift(imageMatrix, round(motionPath(frame) * scale), 2); % second dim
             end
 
             function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels)
@@ -334,11 +392,9 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            
-            totalNumEpochs = obj.numberOfCycles * obj.numberOfEpochs;
-            
+            totalNumEpochs = obj.numberOfCycles * obj.numberOfMotionModes;
         end
-        
+                
         
     end
     
