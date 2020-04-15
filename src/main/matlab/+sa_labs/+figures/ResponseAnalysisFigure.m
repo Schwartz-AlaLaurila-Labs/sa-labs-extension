@@ -179,7 +179,19 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             title(obj.axesHandlesAnalysis(1), t);
         end
         
+        
         function handleEpoch(obj, epoch)
+            try
+                obj.doHandleEpoch(epoch);
+                
+            catch e
+                disp(getReport(e));
+                
+                rethrow(e);
+            end
+        end
+        
+        function doHandleEpoch(obj, epoch)
             channels = cell(obj.numChannels, 1);
             obj.channelNames = cell(obj.numChannels,1);
             

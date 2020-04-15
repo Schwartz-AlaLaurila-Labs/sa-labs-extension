@@ -289,7 +289,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
 
                     fprintf('making texture (%d x %d) with blur sigma %d pixels\n', obj.imageMatrixDimensions(1), obj.imageMatrixDimensions(2), sigma);
 
-                    patternStream = RandStream('mt19937ar','Seed',obj.motionSeedCenter);
+                    patternStream = RandStream('mt19937ar','Seed',max(obj.motionSeedCenter, obj.motionSeedSurround));
 
                     M = randn(patternStream, obj.imageMatrixDimensions);
                     defaultSize = 2*ceil(2*sigma)+1;
