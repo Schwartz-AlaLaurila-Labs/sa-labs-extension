@@ -4,12 +4,12 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         % properties not accessible here; have to be fed into a device to work
         rigName = 'Schwartz Lab Rig A UV Projector';
         testMode = false;
-        filterWheelNdfValues = [0, 2, 3, 4, 5, 8];
+        filterWheelNdfValues = [1, 2, 3, 4, 5, 22];
         filterWheelDefaultValue = 5;
         
-        filterWheelAttenuationValues_Blue = [1, .00702, .000551, .0000477, .00000523, .0656];%updated 11/21/2019 -David
+        filterWheelAttenuationValues_Blue = [.1, .00702, .000551, .0000477, .00000523, .001];%updated 11/21/2019 -David
         filterWheelAttenuationValues_Green = [1,1,1,1,1,1];%Green projector broken 
-        filterWheelAttenuationValues_UV = [1, .00172, .0000807, .00000652, .0000027, .969];%updated 11/21/2019 -David
+        filterWheelAttenuationValues_UV = [.1, .00172, .0000807, .00000652, .0000027, .00172];%updated 11/21/2019 -David
         
         fitBlue = [4.71e-12, -7.68e-9, 2.84e-6, -1.19e-5];%updated 11/21/2019 -David
         fitGreen =[-6.80e-13, -4.58e-11, 1.56e-7, 1.49e-5];%Green projector broken

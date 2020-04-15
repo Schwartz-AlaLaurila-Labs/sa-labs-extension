@@ -41,6 +41,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         motionPathModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','contrast reverse'});
         
+        motionModes
         motionModeNames = {'center','surround','global','differential','static'};
         curMotionMode
         numberOfMotionModes = 5;
@@ -60,7 +61,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         uniformDistribution = 1;
         
         responsePlotMode = false;
-        responsePlotSplitParameter = 'motionSeedCenter';
+        responsePlotSplitParameter = 'motionMode';
         
         patternSizeMicrons = [2000,2000];
         
@@ -126,6 +127,8 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
             % Randomize motion modes if this is a new set
+            fprintf('epoch %g\n', obj.numEpochsPrepared)
+            
             index = mod(obj.numEpochsPrepared, obj.numberOfMotionModes) + 1;
             if index == 1
                 obj.motionModes = obj.motionModes(randperm(obj.numberOfMotionModes)); 
@@ -183,15 +186,15 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                     
                     obj.motionPathCenter = zeros(pathLength,1);
                     if obj.motionSeedCenter > 0
-                        obj.motionPathCenter = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) < 0);
+                        obj.motionPathCenter = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) > 0);
                     end
                     
                     obj.motionPathSurround = zeros(pathLength,1);
                     if obj.motionSeedSurround > 0
                         if obj.curMotionMode ~= 4
-                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) < 0);
+                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) > 0);
                         else % differential mode offset steps by half of stepInterval
-                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * (T - stepInterval/2) ./ stepInterval) < 0);
+                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * (T - stepInterval/2) ./ stepInterval) > 0);
                         end
                     end
                     
@@ -204,7 +207,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                         obj.motionPathCenter = zeros(pathLength, 1);
                     end
                     
-                    if obj.motionSeedSuround > 0
+                    if obj.motionSeedSurround > 0
                         stream = RandStream('mt19937ar', 'Seed', obj.motionSeedSurround);
                         mpaths = obj.motionStandardDeviation .* stream.randn(pathLength, 1);
                         obj.motionPathSurround = filtfilt(obj.motionFilter, mpaths);
