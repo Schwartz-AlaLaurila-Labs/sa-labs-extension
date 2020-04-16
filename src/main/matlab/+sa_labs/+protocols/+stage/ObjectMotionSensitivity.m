@@ -37,7 +37,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 2
+        version = 3
         
         motionPathModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','contrast reverse'});
         
@@ -60,7 +60,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         gratingProfileType = symphonyui.core.PropertyType('char', 'row', {'sine', 'square'});
         uniformDistribution = 1;
         
-        responsePlotMode = false;
+        responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'motionMode';
         
         patternSizeMicrons = [2000,2000];
@@ -136,7 +136,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             %get current epoch mode
             obj.curMotionMode = obj.motionModes(index);
-            epoch.addParameter('motionMode', obj.motionModeNames{obj.curMotionMode});
+            epoch.addParameter('motionMode', obj.curMotionMode);
             fprintf('current motion mode: %s\n', obj.motionModeNames{obj.curMotionMode});
             
             % Select a center motion seed (probably not correctly incrementing now)
