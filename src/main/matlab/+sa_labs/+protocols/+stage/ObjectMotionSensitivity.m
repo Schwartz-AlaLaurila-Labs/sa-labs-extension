@@ -387,6 +387,8 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             end
 
             % Motion controllers
+            
+            % center
             motionScale = obj.imageMatrixDimensions(1) / obj.patternSizeMicrons(1); % convert image pixel shift to world um shift
             switch obj.figureBackgroundMode
                 case 'aperture'
@@ -399,11 +401,24 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             end
             p.addController(controllerCenter);
             
+            % annulus moves in center-object mode
+            if obj.annulusThickness > 0 && strcmp(obj.figureBackgroundMode, 'object')
+                motionPathPixels = obj.um2pix(obj.motionPathCenter);
+                controllerAnnulus = stage.builtin.controllers.PropertyController(annulus, ...
+                    'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels, obj.motionCenterDelayFrames));
+            end
+            p.addController(controllerAnnulus);
+            
+            % surround
             controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
                 'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround));
             p.addController(controllerSurround);
             
+            
             obj.setOnDuringStimController(p, patternCenter);
+            if obj.annulusThickness > 0
+                obj.setOnDuringStimController(p, annulus);
+            end
             obj.setOnDuringStimController(p, patternSurround);
 
             
