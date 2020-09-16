@@ -23,13 +23,15 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         motionPathMode = 'random walk';
         motionSeedStart = 1;
+        motionCenterDelayFrames = 0;
         
         motionSeedChangeModeCenter = 'increment only';
         motionStandardDeviation = 1; % µm noise std, or random walk step, or contrast reverse step
         motionLowpassFilterPassband = 5;
         
-        centerDiameter = 200;
-        patternMode = 'grating'; % grating only for now
+        centerDiameter = 200; % µm
+        annulusThickness = 0; % µm
+        patternMode = 'grating'; %
         patternSpatialScale = 100; % µm, spatial scale
         gratingProfile = 'sine'; %sine, square, or sawtooth
         
@@ -37,7 +39,8 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 3
+        version = 4
+        % v4: add center delay frames & annulus thickness
         
         motionPathModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','contrast reverse'});
         
@@ -328,13 +331,25 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             disp('done');
             
-            % create objects to hold images
+            
+            % create object to hold images for surround
             patternSurround = stage.builtin.stimuli.Image(obj.imageMatrixSurround);
             patternSurround.position = canvasSize / 2;
             patternSurround.orientation = obj.motionAngle;
             patternSurround.size = obj.um2pix(obj.patternSizeMicrons);
             p.addStimulus(patternSurround);
+
+            % draw annulus circle
+            if obj.annulusThickness > 0
+                annulus = stage.builtin.stimuli.Ellipse();
+                annulus.radiusX = round(obj.um2pix(obj.patternSizeMicrons / 2 + obj.annulusThickness));
+                annulus.radiusY = annulus.radiusX;
+                annulus.color = obj.meanLevel;
+                annulus.position = canvasSize / 2;
+                p.addStimulus(annulus);
+            end
             
+            % create object to hold images for center
             patternCenter = stage.builtin.stimuli.Image(obj.imageMatrixCenter);
             patternCenter.position = canvasSize / 2;
             patternCenter.orientation = obj.motionAngle;
@@ -347,22 +362,22 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             patternCenter.setMask(centerMask);
             
             
-            function im = imageMovementController(state, startMotionTime, imageMatrix, scale, motionPath)
+            function im = imageMovementController(state, startMotionTime, imageMatrix, scale, motionPath, centerDelayFrames)
                 if state.time < startMotionTime / 1000
                     frame = 1;
                 else
-                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
+                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000)) + centerDelayFrames;
                 end
 
                 im = circshift(imageMatrix, round(motionPath(frame) * scale), 2); % second dim
             end
 
-            function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels)
+            function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels, centerDelayFrames)
 
                 if state.time < startMotionTime / 1000
                     frame = 1;
                 else
-                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
+                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000)) + centerDelayFrames;
                 end
                 
                 y = sind(angle) * motionPathPixels(frame);
@@ -376,11 +391,11 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             switch obj.figureBackgroundMode
                 case 'aperture'
                     controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                        'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixCenter, motionScale, obj.motionPathCenter));
+                        'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixCenter, motionScale, obj.motionPathCenter, obj.motionCenterDelayFrames));
                 case 'object'
                     motionPathPixels = obj.um2pix(obj.motionPathCenter);
                     controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                        'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
+                        'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels, obj.motionCenterDelayFrames));
             end
             p.addController(controllerCenter);
             
