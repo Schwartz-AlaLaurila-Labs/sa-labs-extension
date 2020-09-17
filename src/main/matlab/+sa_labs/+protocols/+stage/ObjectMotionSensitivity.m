@@ -267,7 +267,19 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
         end
         
+        
         function p = createPresentation(obj)
+            try
+                p = obj.doCreatePresentation();
+            catch e
+                disp(getReport(e));
+                
+                rethrow(e);
+            end
+        end
+        
+        
+        function p = doCreatePresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
