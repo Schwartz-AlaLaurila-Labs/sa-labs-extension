@@ -252,13 +252,13 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                     end                      
                     
             end
+            
+            % add center frame delay
+            if obj.motionCenterDelayFrames > 0
+                D = round(obj.motionCenterDelayFrames);
+                obj.motionPathCenter = vertcat(zeros(D,1) + obj.motionPathCenter(1), obj.motionPathCenter(1:end-D));
+            end
 
-            % below I have some start position code, not sure what problem
-            % it solves. Probably needs a better solution if the problem is
-            % still around after disabling this
-%             startCenter = mean([obj.motionPathCenter(1), obj.motionPathSurround(1)]);
-%             obj.motionPathCenter(1) = startCenter;
-%             obj.motionPathSurround(1) = startCenter;
             obj.motionPathCenter = obj.um2pix(obj.motionPathCenter);
             obj.motionPathSurround = obj.um2pix(obj.motionPathSurround);
                         
@@ -362,22 +362,22 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             patternCenter.setMask(centerMask);
             
             
-            function im = imageMovementController(state, startMotionTime, imageMatrix, scale, motionPath, centerDelayFrames)
+            function im = imageMovementController(state, startMotionTime, imageMatrix, scale, motionPath)
                 if state.time < startMotionTime / 1000
                     frame = 1;
                 else
-                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000)) + centerDelayFrames;
+                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
                 end
 
                 im = circshift(imageMatrix, round(motionPath(frame) * scale), 2); % second dim
             end
 
-            function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels, centerDelayFrames)
+            function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels)
 
                 if state.time < startMotionTime / 1000
                     frame = 1;
                 else
-                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000)) + centerDelayFrames;
+                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
                 end
                 
                 y = sind(angle) * motionPathPixels(frame);
@@ -393,11 +393,11 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             switch obj.figureBackgroundMode
                 case 'aperture'
                     controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                        'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixCenter, motionScale, obj.motionPathCenter, obj.motionCenterDelayFrames));
+                        'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixCenter, motionScale, obj.motionPathCenter));
                 case 'object'
                     motionPathPixels = obj.um2pix(obj.motionPathCenter);
                     controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                        'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels, obj.motionCenterDelayFrames));
+                        'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
             end
             p.addController(controllerCenter);
             
@@ -405,13 +405,13 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             if obj.annulusThickness > 0 && strcmp(obj.figureBackgroundMode, 'object')
                 motionPathPixels = obj.um2pix(obj.motionPathCenter);
                 controllerAnnulus = stage.builtin.controllers.PropertyController(annulus, ...
-                    'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels, obj.motionCenterDelayFrames));
+                    'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
                 p.addController(controllerAnnulus);
             end
             
             % surround
             controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
-                'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround, 0));
+                'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround));
             p.addController(controllerSurround);
             
             
