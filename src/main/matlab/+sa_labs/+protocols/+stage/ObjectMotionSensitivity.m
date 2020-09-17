@@ -411,7 +411,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             % surround
             controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
-                'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround));
+                'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround, 0));
             p.addController(controllerSurround);
             
             
