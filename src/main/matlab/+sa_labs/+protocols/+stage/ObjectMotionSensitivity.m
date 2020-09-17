@@ -406,8 +406,8 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                 motionPathPixels = obj.um2pix(obj.motionPathCenter);
                 controllerAnnulus = stage.builtin.controllers.PropertyController(annulus, ...
                     'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels, obj.motionCenterDelayFrames));
+                p.addController(controllerAnnulus);
             end
-            p.addController(controllerAnnulus);
             
             % surround
             controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
