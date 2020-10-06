@@ -185,7 +185,17 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                
         function controllerDidStartHardware(obj)
             controllerDidStartHardware@sa_labs.protocols.BaseProtocol(obj);
-            obj.rig.getDevice('Stage').play(obj.createPresentation());
+            
+            % create presentation with an error handling wrapper since
+            % Stage bungles error reporting uselessly
+            try
+                p = obj.createPresentation();
+            catch e
+                disp(getReport(e));
+                
+                rethrow(e);
+            end            
+            obj.rig.getDevice('Stage').play(p);
         end
         
         function prepareRun(obj, setAmpHoldSignals)

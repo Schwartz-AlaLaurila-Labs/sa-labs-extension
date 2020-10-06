@@ -13,11 +13,11 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         motionAngle = 0;
         
-        motionIncludeCenter = true; % 1
-        motionIncludeSurround = true; % 2
-        motionIncludeGlobal = true; % 3
+        motionIncludeCenter = false; % 1
+        motionIncludeSurround = false; % 2
+        motionIncludeGlobal = false; % 3
         motionIncludeDifferential = true; % 4
-        motionIncludeStatic = true; % 5
+        motionIncludeStatic = false; % 5
         
         figureBackgroundMode = 'aperture'; % use standard aperture or an actual moving object
         
@@ -26,7 +26,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         motionCenterDelayFrames = 0;
         
         motionSeedChangeModeCenter = 'increment only';
-        motionStandardDeviation = 1; % µm noise std, or random walk step, or contrast reverse step
+        motionStandardDeviation = 0.826; % µm noise std, or random walk step (this is the old version value / 1.21)
         motionLowpassFilterPassband = 5;
         
         centerDiameter = 200; % µm
@@ -40,7 +40,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
     
     properties (Hidden)
         version = 4
-        % v4: add center delay frames & annulus thickness
+        % v4: add center delay frames & annulus thickness, remove double um2pix call, simplify contrast reverse mode
         
         motionPathModeType = symphonyui.core.PropertyType('char','row',{'filtered noise','random walk','contrast reverse'});
         
@@ -186,18 +186,19 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                 case 'contrast reverse'
                     T = (0:(pathLength-1)) ./ frameRate;
                     stepInterval = 2.0; % sec
+                    flipDistance = obj.patternSpatialScale / 2;
                     
                     obj.motionPathCenter = zeros(pathLength,1);
                     if obj.motionSeedCenter > 0
-                        obj.motionPathCenter = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) > 0);
+                        obj.motionPathCenter = flipDistance * (sin(3.141 * T ./ stepInterval) > 0)';
                     end
                     
                     obj.motionPathSurround = zeros(pathLength,1);
                     if obj.motionSeedSurround > 0
                         if obj.curMotionMode ~= 4
-                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * T ./ stepInterval) > 0);
+                            obj.motionPathSurround = flipDistance * (sin(3.141 * T ./ stepInterval) > 0)';
                         else % differential mode offset steps by half of stepInterval
-                            obj.motionPathSurround = obj.motionStandardDeviation * (sin(3.141 * (T - stepInterval/2) ./ stepInterval) > 0);
+                            obj.motionPathSurround = flipDistance * (sin(3.141 * (T - stepInterval/2) ./ stepInterval) > 0)';
                         end
                     end
                     
@@ -258,9 +259,6 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                 D = round(obj.motionCenterDelayFrames);
                 obj.motionPathCenter = vertcat(zeros(D,1) + obj.motionPathCenter(1), obj.motionPathCenter(1:end-D));
             end
-
-            obj.motionPathCenter = obj.um2pix(obj.motionPathCenter);
-            obj.motionPathSurround = obj.um2pix(obj.motionPathSurround);
                         
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -269,20 +267,10 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
         
         
         function p = createPresentation(obj)
-            try
-                p = obj.doCreatePresentation();
-            catch e
-                disp(getReport(e));
-                
-                rethrow(e);
-            end
-        end
-        
-        
-        function p = doCreatePresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
+            disp('create presentation');
             
             % Create image matrices
             for csi = 1:2 % center surround index
@@ -341,7 +329,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
                 end
             end
             
-            disp('done');
+            disp('matrix gen done');
             
             
             % create object to hold images for surround
@@ -352,9 +340,11 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             p.addStimulus(patternSurround);
 
             % draw annulus circle
-            if obj.annulusThickness > 0
+            annulusEnabled = obj.annulusThickness > 0;
+            if annulusEnabled
+                disp('annulus enabled');
                 annulus = stage.builtin.stimuli.Ellipse();
-                annulus.radiusX = round(obj.um2pix(obj.patternSizeMicrons / 2 + obj.annulusThickness));
+                annulus.radiusX = obj.um2pix(obj.centerDiameter / 2 + obj.annulusThickness);
                 annulus.radiusY = annulus.radiusX;
                 annulus.color = obj.meanLevel;
                 annulus.position = canvasSize / 2;
@@ -414,7 +404,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             p.addController(controllerCenter);
             
             % annulus moves in center-object mode
-            if obj.annulusThickness > 0 && strcmp(obj.figureBackgroundMode, 'object')
+            if annulusEnabled && strcmp(obj.figureBackgroundMode, 'object')
                 motionPathPixels = obj.um2pix(obj.motionPathCenter);
                 controllerAnnulus = stage.builtin.controllers.PropertyController(annulus, ...
                     'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
@@ -428,7 +418,7 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             
             
             obj.setOnDuringStimController(p, patternCenter);
-            if obj.annulusThickness > 0
+            if annulusEnabled
                 obj.setOnDuringStimController(p, annulus);
             end
             obj.setOnDuringStimController(p, patternSurround);
