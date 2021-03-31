@@ -9,7 +9,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         alignSpotDiam = 150;
         alignSpotIntensity = 1.0;
         %         numSpots = 100;
-        mapResolution = 80; % um
+        mapResolution = 75; % um
         spotTotalTime = 0.3;
         spotOnTime = 0.05;
         
@@ -59,7 +59,7 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
-            obj.NDF = 6;
+            % obj.NDF = 6;
         end
         
         function prepareRun(obj)

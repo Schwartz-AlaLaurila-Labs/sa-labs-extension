@@ -10,7 +10,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         contrast2 = 1           % Weber contrast from mean for object, color 2
         offsetX = 0             % um
         offsetY = 0             % um
-        NDF = 6                 % Filter NDF value
+        NDF1 = 6                 % First filter wheel NDF value
+        NDF2 = 6                 % Second filter wheel NDF value
         blueLED = 100            % 0-255
         greenLED = 0            % 0-255
         redLED = 0              % 0-255
@@ -131,8 +132,17 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.colorPattern1 = 'blue';
             end
             
-            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                obj.NDF = obj.rig.getDevice('neutralDensityFilterWheel').getResource('defaultNdfValue');
+            ndfs = obj.rig.getDevices('neutralDensityFilterWheel');
+            if ~ isempty(ndfs)
+                for ndf = ndfs
+                    switch ndf{1}.getResource('wheelID')
+                        case 1
+                            obj.NDF1 = ndf{1}.getResource('defaultNdfValue');
+                        case 2
+                            obj.NDF2 = ndf{1}.getResource('defaultNdfValue');
+                    end
+                end
+                %obj.NDF1 = obj.rig.getDevice('neutralDensityFilterWheel').getResource('defaultNdfValue');
             end
             obj.rigProperty = sa_labs.factory.getInstance('rigProperty');
         end
@@ -163,10 +173,19 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             
             % obj.showFigure('sa_labs.figures.FrameTimingFigure', obj.rig.getDevice('Stage'));
             
-            % set the NDF filter wheel
-            if ~ isempty(obj.rig.getDevices('neutralDensityFilterWheel'))
-                ndfs = obj.rig.getDevices('neutralDensityFilterWheel');
-                ndfs{1}.setNdfValue(obj.NDF);
+            % set the NDF filter wheels
+            ndfs = obj.rig.getDevices('neutralDensityFilterWheel');
+            if ~ isempty(ndfs)
+                for ndf = ndfs
+                    switch ndf{1}.getResource('wheelID')
+                        case 1
+                            ndf{1}.setNdfValue(obj.NDF1);
+                        case 2
+                            ndf{1}.setNdfValue(obj.NDF2);
+                    end
+                end
+                %ndfs = obj.rig.getDevices('neutralDensityFilterWheel');
+                %ndfs{1}.setNdfValue(obj.NDF1);
             end
             
             if ~isempty(obj.rig.getDevices('LightCrafter'))

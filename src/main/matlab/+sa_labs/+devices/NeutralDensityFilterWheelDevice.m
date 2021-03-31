@@ -1,5 +1,5 @@
 classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
-
+    
     properties (Access = private)
         serialPortObject
         currentndf
@@ -11,17 +11,18 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
 
     methods
 
-        function obj = NeutralDensityFilterWheelDevice(comPort)
+        function obj = NeutralDensityFilterWheelDevice(comPort, wheelID)
 
             if nargin < 1
                 comPort = 0;
             end
 
-            cobj = Symphony.Core.UnitConvertingExternalDevice('neutralDensityFilterWheel', 'Thorlabs', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
+            cobj = Symphony.Core.UnitConvertingExternalDevice(['neutralDensityFilterWheel', num2str(wheelID)], 'Thorlabs', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
             obj@symphonyui.core.Device(cobj);
             obj.cobj.MeasurementConversionTarget = symphonyui.core.Measurement.UNITLESS;
 
             if comPort > 0
+                obj.addResource('wheelID', wheelID);
                 obj.serialPortObject = serial(comPort,...
                     'BaudRate', 115200,...
                     'DataBits', 8, ...
