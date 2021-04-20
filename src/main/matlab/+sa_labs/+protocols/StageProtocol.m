@@ -11,7 +11,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetY = 0         % um
         
         NDF = 5             % Filter NDF value
-        blueLED = 24        % 0-255
+        blueLED = 35        % 0-255
         greenLED = 0   % 0-255
         redLED = 0   % 0-255 
         uvLED = 0
@@ -147,13 +147,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
             if strcmp(obj.colorMode, 'uv')
-                obj.blueLED = 0;
-                obj.greenLED = 10;
+                obj.blueLED = 35;
+                obj.greenLED = 0;
                 obj.redLED = 0;
-                obj.uvLED = 50;
-                obj.colorPattern1 = 'green';
+                obj.uvLED = 0;
+                obj.colorPattern1 = 'blue';
             elseif strcmp(obj.colorMode, 'standard')
-                obj.blueLED = 20;
+                obj.blueLED = 35;
                 obj.greenLED = 0;
                 obj.redLED = 0;
                 obj.uvLED = 0;
@@ -185,17 +185,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                
         function controllerDidStartHardware(obj)
             controllerDidStartHardware@sa_labs.protocols.BaseProtocol(obj);
-            
-            % create presentation with an error handling wrapper since
-            % Stage bungles error reporting uselessly
-            try
-                p = obj.createPresentation();
-            catch e
-                disp(getReport(e));
-                
-                rethrow(e);
-            end            
-            obj.rig.getDevice('Stage').play(p);
+            obj.rig.getDevice('Stage').play(obj.createPresentation());
         end
         
         function prepareRun(obj, setAmpHoldSignals)
@@ -246,6 +236,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             % uses the frame tracker on the monitor to inform the HEKA that
             % the stage presentation has begun. Improves temporal alignment
             epoch.shouldWaitForTrigger = true;
+           %epoch.shouldWaitForTrigger = false;
+            
             
             testMode = obj.rig.getDevice('rigProperty').getConfigurationSetting('testMode');
             if testMode

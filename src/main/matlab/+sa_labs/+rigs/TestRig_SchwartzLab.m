@@ -6,13 +6,22 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         testMode = true;
         filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
         filterWheelDefaultValue = 5;
-        filterWheelAttenuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        
+        %filterWheelAttenuationValues = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        filterWheelAttenuationValues_Blue = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        filterWheelAttenuationValues_Green = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        filterWheelAttenuationValues_UV = [0.0105, 8.0057e-05, 6.5631e-06, 5.5485e-07, 5.5485e-08, 5.5485e-09];
+        
         filterWheelComPort = -1; % 
         numberOfAmplifiers = 2;
         
         fitBlue = [-1.566e-10, 1.317e-07, -9.457e-07];
         fitGreen = [-1.931e-11, 1.278e-08,  1.389e-07];
         fitUV = [];
+        
+        spectralOverlap_Blue = [4e18 4e18 4e18];
+        spectralOverlap_Green = [4e18 4e18 4e18];
+        spectralOverlap_UV = [0 0 0];
         
         micronsPerPixel = 1;
         orientation = [false, false];
@@ -21,6 +30,7 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         frameTrackerSize = [40,40];
         
         projectorColorMode = 'standard';
+        enableDynamicClamp = false;
     end
     
     methods

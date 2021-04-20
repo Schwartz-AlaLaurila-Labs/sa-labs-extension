@@ -11,7 +11,8 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             if obj.testMode
                 daq = HekaSimulationDaqController();
             else
-                daq = HekaDaqController(HekaDeviceType.USB18);
+                %daq = HekaDaqController(HekaDeviceType.USB18);
+                daq = NiDaqController();
             end
             
             obj.daqController = daq;
@@ -25,17 +26,22 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             obj.addDevice(propertyDevice);
             
             if ~obj.testMode
-                oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                daq.getStream('doport1').setBitPosition(oscopeTrigger, 0);
+                oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
+                daq.getStream('doport0').setBitPosition(oscopeTrigger, 0);
                 obj.addDevice(oscopeTrigger);
                 
-                scanTrigger = UnitConvertingDevice('Scanhead Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                daq.getStream('doport1').setBitPosition(scanTrigger, 2);
-                obj.addDevice(scanTrigger);
+                %scanTrigger = UnitConvertingDevice('Scanhead Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                %daq.getStream('doport1').setBitPosition(scanTrigger, 2);
+                %obj.addDevice(scanTrigger);
                 
-                optoTrigger = UnitConvertingDevice('Optogenetics Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                daq.getStream('doport1').setBitPosition(optoTrigger, 3);
-                obj.addDevice(optoTrigger);
+                %optoTrigger = UnitConvertingDevice('Optogenetics Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                %daq.getStream('doport1').setBitPosition(optoTrigger, 3);
+                %obj.addDevice(optoTrigger);
+                
+                % sending to scanimage for when stimulus is on
+                stimTimeRecorder = UnitConvertingDevice('Stim Time Recorder', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
+                daq.getStream('doport0').setBitPosition(stimTimeRecorder, 1);
+                obj.addDevice(stimTimeRecorder);
                 
                 if obj.enableDynamicClamp
                    % Dynamic clamp

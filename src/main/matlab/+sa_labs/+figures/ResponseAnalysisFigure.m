@@ -103,7 +103,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     case {'cartesian', 'autocenter'}
                         obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
                     case 'polar'
-                        obj.axesHandlesAnalysis(measi) = polaraxes('Parent', rowBoxes(measi));
+                        %obj.axesHandlesAnalysis(measi) = polaraxes('Parent', rowBoxes(measi));
+                        obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
                 end
                 
                 plotControlBoxes(measi) = uix.VBox('Parent',rowBoxes(measi));
@@ -179,19 +180,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             title(obj.axesHandlesAnalysis(1), t);
         end
         
-        
         function handleEpoch(obj, epoch)
-            try
-                obj.doHandleEpoch(epoch);
-                
-            catch e
-                disp(getReport(e));
-                
-                rethrow(e);
-            end
-        end
-        
-        function doHandleEpoch(obj, epoch)
             channels = cell(obj.numChannels, 1);
             obj.channelNames = cell(obj.numChannels,1);
             
@@ -398,10 +387,23 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         X_rad(end+1) = X_rad(1);
                         Y(end+1) = Y(1);
                         Y_std(end+1) = Y_std(1);
-                        polarplot(thisAxis, X_rad, Y, '-o','LineWidth',2, 'Color', color);
+                        
+                        %Changed 03/11/2020 to do pseudo-polarplots
+                        % obviously we would want to call axis() and
+                        % grid() at initialization time for efficiency
+                        
+                        %polarplot(thisAxis, X_rad, Y, '-o','LineWidth',2, 'Color', color);
+                        plot(thisAxis, Y.*cos(X_rad), Y.*sin(X_rad), '-o','LineWidth',2, 'Color', color);
+                        
                         hold(thisAxis, 'on');
-                        polarplot(thisAxis, X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
-                        polarplot(thisAxis, X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
+                        
+                        %polarplot(thisAxis, X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                        %polarplot(thisAxis, X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
+                        plot(thisAxis, (Y+Y_std).*cos(X_rad), (Y+Y_std).*sin(X_rad), '.--','LineWidth',.5, 'Color', color);
+                        plot(thisAxis, (Y-Y_std).*cos(X_rad), (Y-Y_std).*sin(X_rad), '.--','LineWidth',.5, 'Color', color);
+                        axis(thisAxis,'square');
+                        grid(thisAxis,'on');
+                        
                         title(thisAxis, sprintf('DSI: %g Angle: %g deg', dsi, dsang));
                         hold(thisAxis, 'off');
                     end

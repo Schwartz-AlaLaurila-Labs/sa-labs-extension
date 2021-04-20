@@ -9,7 +9,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function obj = LightCrafterDevice(varargin)
             ip = inputParser();
-            ip.addParameter('host', 'localhost', @ischar);
+            %ip.addParameter('host', 'localhost', @ischar);
+            ip.addParameter('host', '192.168.0.3', @ischar);
             ip.addParameter('port', 5678, @isnumeric);
             ip.addParameter('micronsPerPixel', @isnumeric);
             ip.addParameter('colorMode', 'standard', @ischar);
