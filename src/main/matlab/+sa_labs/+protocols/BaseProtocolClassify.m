@@ -1,4 +1,4 @@
-classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
+classdef (Abstract) BaseProtocolClassify < symphonyui.core.Protocol
 % this class handles protocol control which is not visual stimulus specific
 
     properties
@@ -139,7 +139,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             end
             
             if obj.responsePlotMode ~= false
-                obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigure', obj.devices, ...
+                obj.responseFigure = obj.showFigure('sa_labs.figures.ResponseAnalysisFigureClassify', obj.devices, ...
                     'activeFunctionNames', {'mean'}, ...
                     'totalNumEpochs',obj.totalNumEpochs,...
                     'epochSplitParameter',obj.responsePlotSplitParameter,...
@@ -184,11 +184,11 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 %p = symphonyui.builtin.stimuli.PulseTrainGenerator();
                 p = symphonyui.builtin.stimuli.PulseGenerator();
                 
-                p.preTime = obj.preTime; %trigger at start of stimTime
-                p.stimTime = 5;
+                p.preTime = 0; %trigger at start of pretime and end of stimtime
+                p.stimTime = 1;
                 %p.pulseTime = 1; %ms
                 %p.intervalTime = obj.preTime;
-                p.tailTime = obj.stimTime + obj.tailTime - p.stimTime;
+                p.tailTime = obj.preTime + obj.stimTime + obj.tailTime - 1;
                 %p.tailTime = obj.tailTime + obj.stimTime - 2;
                 p.amplitude = 1;
                 p.mean = 0;

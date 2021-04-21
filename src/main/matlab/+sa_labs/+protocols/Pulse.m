@@ -45,6 +45,9 @@ classdef Pulse < sa_labs.protocols.BaseProtocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
+            shutterDevice = obj.rig.getDevice('ScanImageShutter');
+            epoch.addResponse(shutterDevice);
+            
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
         end

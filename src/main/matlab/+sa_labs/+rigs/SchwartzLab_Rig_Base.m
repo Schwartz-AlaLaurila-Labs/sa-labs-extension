@@ -37,6 +37,10 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 daq.getStream('doport1').setBitPosition(optoTrigger, 3);
                 obj.addDevice(optoTrigger);
                 
+                scanImageShutter = UnitConvertingDevice('ScanImageShutter', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('diport0'));
+                daq.getStream('diport0').setBitPosition(scanImageShutter, 2);
+                obj.addDevice(scanImageShutter);
+                
                 if obj.enableDynamicClamp
                    % Dynamic clamp
                    gExc = UnitConvertingDevice('Excitatory conductance', 'V').bindStream(daq.getStream('ao2'));
