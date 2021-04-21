@@ -19,8 +19,8 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         frameTrackerPosition = [0,0];
         frameTrackerSize = [550,550];
         filterWheelComPort = 'COM8';
-        orientation = [false, true];
-        angleOffset = 0;
+        orientation = [false, true];%[flip Y, flip X]
+        angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
         spectralOverlap_Blue = [4.73506311955843e+18,4.35096443208340e+15,3.77614022065689e+18];%updated 11/21/2019 -David
