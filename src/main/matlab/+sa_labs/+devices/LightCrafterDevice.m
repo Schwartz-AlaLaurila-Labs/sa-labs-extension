@@ -7,62 +7,87 @@ classdef LightCrafterDevice < symphonyui.core.Device
     
     methods
         
-        function obj = LightCrafterDevice(varargin)
-            ip = inputParser();
-            ip.addParameter('host', 'localhost', @ischar);
-            ip.addParameter('port', 5678, @isnumeric);
-            ip.addParameter('micronsPerPixel', @isnumeric);
-            ip.addParameter('colorMode', 'standard', @ischar);
-            ip.addParameter('orientation', [0,0]);
-            ip.parse(varargin{:});
+        function obj = LightCrafterDevice(RigConfig)    
+            %% Default values that might be changed by RigConfig
+            settings = containers.Map();
+            settings('host') = 'localhost';
+            settings('port') = 5678;
+            settings('projectorColorMode') = 'standard';
+            settings('orientation') = [0,0];
+            settings('micronsPerPixel') = 1;
+            settings('angleOffset') = 0;
+            settings('frameTrackerPosition') = [40,40];
+            settings('frameTrackerSize') = [80,80];
+            settings('fitBlue') = 0;
+            settings('fitGreen') = 0;
+            settings('fitUV') = 0;
+            settings('spectralOverlap_Blue') = 0;
+            settings('spectralOverlap_Green') = 0;
+            settings('spectralOverlap_UV') = 0;
             
-            cobj = Symphony.Core.UnitConvertingExternalDevice(['LightCrafter Stage@' ip.Results.host], 'Texas Instruments', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
+            %% Overwrite default values with values from RigConfig if present
+            RigProperties = properties(RigConfig);
+            for ii = 1:length(RigProperties)
+                if settings.isKey(RigProperties{ii})
+                    settings(RigProperties{ii}) = RigConfig.(RigProperties{ii});
+                end
+            end
+            
+            %%
+            cobj = Symphony.Core.UnitConvertingExternalDevice(['LightCrafter Stage@' settings('host')], 'Texas Instruments', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
             obj@symphonyui.core.Device(cobj);
             obj.cobj.MeasurementConversionTarget = symphonyui.core.Measurement.UNITLESS;
             
-            % Set up Stage
+            %% Set up Stage
             obj.stageClient = stage.core.network.StageClient();
-            obj.stageClient.connect(ip.Results.host, ip.Results.port);
+            obj.stageClient.connect(settings('host'), settings('port'));
             obj.stageClient.setMonitorGamma(1);
             
             trueCanvasSize = obj.stageClient.getCanvasSize();
             canvasSize = [trueCanvasSize(1) * 2, trueCanvasSize(2)];
-            frameTrackerSizeDefault = [80,80];
-            frameTrackerPositionDefault = [40,40];
             
             obj.stageClient.setCanvasProjectionIdentity();
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
             
-            % Set up Lightcrafter
-            colorMode = ip.Results.colorMode;
-            orientation = ip.Results.orientation;
+            %% Set up Lightcrafter
+            orientation = settings('orientation');
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
-            fprintf('init proj color %s\n', ip.Results.colorMode)
+            fprintf('init proj color %s\n', settings('projectorColorMode'))
             
-            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, ip.Results.colorMode);
+            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, settings('projectorColorMode'));
             obj.lightCrafter.connect();
             obj.lightCrafter.setMode('pattern');
             obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
             
+            
+            %% Save Settings
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
-            obj.addConfigurationSetting('frameTrackerSize', frameTrackerSizeDefault);
-            obj.addConfigurationSetting('frameTrackerPosition', frameTrackerPositionDefault);
+            obj.addConfigurationSetting('frameTrackerSize', settings('frameTrackerSize'));
+            obj.addConfigurationSetting('frameTrackerPosition', settings('frameTrackerPosition'));
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false);
-            obj.addConfigurationSetting('micronsPerPixel', 1);
+            obj.addConfigurationSetting('micronsPerPixel', settings('micronsPerPixel'));
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
             obj.addConfigurationSetting('frameTrackerDuration', .1);
-            obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
+            obj.addConfigurationSetting('colorMode', settings('projectorColorMode'), 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundPatternMode', 'noPattern');
             obj.addConfigurationSetting('backgroundIntensity', 0); % also pattern 1 if contrast mode
             obj.addConfigurationSetting('backgroundIntensity2', 0)
             obj.addConfigurationSetting('backgroundPattern', 1);
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
-            obj.addConfigurationSetting('angleOffset', 0);
+            obj.addConfigurationSetting('angleOffset', settings('angleOffset'));
+            
+            obj.addResource('fitBlue', settings('fitBlue'));
+            obj.addResource('fitGreen', settings('fitGreen'));
+            obj.addResource('fitUV', settings('fitUV'));
+            obj.addResource('spectralOverlap_Blue', settings('spectralOverlap_Blue'));
+            obj.addResource('spectralOverlap_Green', settings('spectralOverlap_Green'));
+            obj.addResource('spectralOverlap_UV', settings('spectralOverlap_UV'));
+
                         
         end
         
@@ -157,11 +182,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));            
             obj.stageClient.setCanvasProjectionTranslate(canvasTranslation(1), canvasTranslation(2), 0);
-            orientation = obj.getConfigurationSetting('imageOrientation');
-            obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
             
-            % BACKGROUND
-            
+            % BACKGROUND 
             background = stage.builtin.stimuli.Rectangle();
             background.size = canvasSize;
             background.position = canvasSize/2 - canvasTranslation;

@@ -10,8 +10,12 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             
             if obj.testMode
                 daq = HekaSimulationDaqController();
-            else
+            elseif strcmpi(obj.daq_type, 'Heka')
                 daq = HekaDaqController(HekaDeviceType.USB18);
+            elseif strcmpi(obj.daq_type, 'NI')
+                daq = NiDaqController();
+            else
+                error('Could not identify Daq type from RigConfig')
             end
             
             obj.daqController = daq;
@@ -25,21 +29,22 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             obj.addDevice(propertyDevice);
             
             if ~obj.testMode
-                oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                daq.getStream('doport1').setBitPosition(oscopeTrigger, 0);
+                oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
+                daq.getStream('doport0').setBitPosition(oscopeTrigger, 0);
                 obj.addDevice(oscopeTrigger);
                 
-                scanTrigger = UnitConvertingDevice('Scanhead Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                daq.getStream('doport1').setBitPosition(scanTrigger, 2);
-                obj.addDevice(scanTrigger);
+                %scanTrigger = UnitConvertingDevice('Scanhead Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                %daq.getStream('doport1').setBitPosition(scanTrigger, 2);
+                %obj.addDevice(scanTrigger);
                 
-                optoTrigger = UnitConvertingDevice('Optogenetics Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                daq.getStream('doport1').setBitPosition(optoTrigger, 3);
-                obj.addDevice(optoTrigger);
+                %optoTrigger = UnitConvertingDevice('Optogenetics Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+                %daq.getStream('doport1').setBitPosition(optoTrigger, 3);
+                %obj.addDevice(optoTrigger);
                 
-                scanImageShutter = UnitConvertingDevice('ScanImageShutter', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('diport0'));
-                daq.getStream('diport0').setBitPosition(scanImageShutter, 2);
-                obj.addDevice(scanImageShutter);
+                % sending to scanimage for when stimulus is on
+                stimTimeRecorder = UnitConvertingDevice('Stim Time Recorder', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
+                daq.getStream('doport0').setBitPosition(stimTimeRecorder, 1);
+                obj.addDevice(stimTimeRecorder);
                 
                 if obj.enableDynamicClamp
                    % Dynamic clamp
@@ -59,20 +64,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             neutralDensityFilterWheel.addResource('defaultNdfValue', obj.filterWheelDefaultValue);
             obj.addDevice(neutralDensityFilterWheel);
             
-            lightCrafter = sa_labs.devices.LightCrafterDevice('colorMode', obj.projectorColorMode, 'orientation', obj.orientation);
-            lightCrafter.setConfigurationSetting('micronsPerPixel', obj.micronsPerPixel);
-            lightCrafter.setConfigurationSetting('angleOffset', obj.angleOffset);
-            lightCrafter.setConfigurationSetting('frameTrackerPosition', obj.frameTrackerPosition);
-            lightCrafter.setConfigurationSetting('frameTrackerSize', obj.frameTrackerSize);
-            
-            lightCrafter.addResource('fitBlue', obj.fitBlue);
-            lightCrafter.addResource('fitGreen', obj.fitGreen);
-            lightCrafter.addResource('fitUV', obj.fitUV);
-            
-            lightCrafter.addResource('spectralOverlap_Blue', obj.spectralOverlap_Blue);
-            lightCrafter.addResource('spectralOverlap_Green', obj.spectralOverlap_Green);
-            lightCrafter.addResource('spectralOverlap_UV', obj.spectralOverlap_UV);
-            
+            lightCrafter = sa_labs.devices.LightCrafterDevice(obj);
             obj.addDevice(lightCrafter);
             
         end
