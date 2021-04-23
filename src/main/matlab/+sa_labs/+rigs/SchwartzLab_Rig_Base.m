@@ -1,4 +1,7 @@
 classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
+    properties
+        daqStreams = containers.Map();
+    end
     
     methods
         
@@ -28,33 +31,27 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             propertyDevice = sa_labs.devices.RigPropertyDevice(obj.rigName, obj.testMode);
             obj.addDevice(propertyDevice);
             
+            
             if ~obj.testMode
-                oscopeTrigger = UnitConvertingDevice('Oscilloscope Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
-                daq.getStream('doport0').setBitPosition(oscopeTrigger, 0);
-                obj.addDevice(oscopeTrigger);
-                
-                %scanTrigger = UnitConvertingDevice('Scanhead Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                %daq.getStream('doport1').setBitPosition(scanTrigger, 2);
-                %obj.addDevice(scanTrigger);
-                
-                %optoTrigger = UnitConvertingDevice('Optogenetics Trigger', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-                %daq.getStream('doport1').setBitPosition(optoTrigger, 3);
-                %obj.addDevice(optoTrigger);
-                
-                % sending to scanimage for when stimulus is on
-                stimTimeRecorder = UnitConvertingDevice('Stim Time Recorder', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport0'));
-                daq.getStream('doport0').setBitPosition(stimTimeRecorder, 1);
-                obj.addDevice(stimTimeRecorder);
-                
-                if obj.enableDynamicClamp
-                   % Dynamic clamp
-                   gExc = UnitConvertingDevice('Excitatory conductance', 'V').bindStream(daq.getStream('ao2'));
-                   obj.addDevice(gExc);
-                   gInh = UnitConvertingDevice('Inhibitory conductance', 'V').bindStream(daq.getStream('ao3'));
-                   obj.addDevice(gInh);
+                names = obj.daqStreams.keys;
+                for ii = 1:obj.daqStreams.length
+                    dS = obj.daqStreams(names{ii});
+                    port = dS{1};
+                    bit = dS{2};
+                    unit = dS{3};
+
+                    if ~unit
+                        unit = symphonyui.core.Measurement.UNITLESS;
+                    end
+                    
+                    Stream = UnitConvertingDevice(names{ii}, unit).bindStream(daq.getStream(port));
+                    
+                    if bit ~= -1
+                        daq.getStream(port).setBitPosition(Stream, bit); %Set bit depth for Digital signal
+                    end                
+                    obj.addDevice(Stream);
                 end
-                
-            end            
+            end
             
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
             neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
@@ -66,35 +63,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             
             lightCrafter = sa_labs.devices.LightCrafterDevice(obj);
             obj.addDevice(lightCrafter);
-            
         end
-        
-        
-%         function [rstar, mstar, sstar] = getIsomerizations(obj, intensity, parameter)
-%             rstar = [];
-%             mstar = [];
-%             sstar = [];
-%             if isempty(intensity)
-%                 return
-%             end
-%             
-%             NDF_attenuation = obj.filterWheelAttenuationValues(obj.filterWheelNdfValues == parameter.NDF);
-%             
-%             if strcmp('standard', obj.projectorColorMode)
-%                 [R, M, S] = sa_labs.util.photoIsom2(parameter.blueLED, parameter.greenLED, ...
-%                     parameter.color, obj.fitBlue, obj.fitGreen);
-%             else
-%                 % UV mode
-%                 [R, M, S] = sa_labs.util.photoIsom2_triColor(parameter.blueLED, parameter.greenLED, parameter.uvLED, ...
-%                     parameter.color, obj.fitBlue, obj.fitGreen, obj.fitUV);
-%             end
-%             
-%             rstar = round(R * intensity * NDF_attenuation / parameter.numberOfPatterns, 1);
-%             mstar = round(M * intensity * NDF_attenuation / parameter.numberOfPatterns, 1);
-%             sstar = round(S * intensity * NDF_attenuation / parameter.numberOfPatterns, 1);
-%         end
-        
     end
-    
 end
 
