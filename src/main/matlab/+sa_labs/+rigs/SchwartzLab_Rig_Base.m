@@ -65,8 +65,8 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             neutralDensityFilterWheel.addResource('defaultNdfValue', obj.filterWheelDefaultValue);
             obj.addDevice(neutralDensityFilterWheel);
             
-            lightCrafter = sa_labs.devices.LightCrafterDevice(obj);
-            obj.addDevice(lightCrafter, obj.lcr);
+            lightCrafter = sa_labs.devices.LightCrafterDevice(obj, obj.lcr);
+            obj.addDevice(lightCrafter);
         end
     end
 end
