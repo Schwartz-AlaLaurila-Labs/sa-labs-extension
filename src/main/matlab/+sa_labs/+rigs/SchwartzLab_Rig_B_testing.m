@@ -6,6 +6,10 @@ classdef SchwartzLab_Rig_B_testing < sa_labs.rigs.SchwartzLab_Rig_B
             self.host = 'localhost';
             self.lcr = @MockLightCrafter4500;
 
+            if nargin < 1
+                delayInit = false;
+            end
+            
             if ~delayInit
                 self.initializeRig();
             end
