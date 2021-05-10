@@ -126,7 +126,7 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
                 spots=vertcat(spots,[locs, ones(size(locs,1),1)*s]); %#ok<AGROW>
             end
 
-            gridRect = [-self.gridY/2, -self.gridX/2, self.gridY, self.gridX];
+            gridRect = [-self.gridX/2, -self.gridY/2, self.gridX, self.gridY];
             
         end
     end

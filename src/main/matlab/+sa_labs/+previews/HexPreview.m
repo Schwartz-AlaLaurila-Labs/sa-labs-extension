@@ -35,7 +35,7 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
 
             [spots, rect] = self.getInfo();
             [rads,~,radI] = unique(spots(:,3));
-            nRads = numel(rads)
+            nRads = numel(rads);
             
             if nRads > 7
                 colors = colorcube(nRads);
@@ -45,9 +45,9 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
 
             ratio = min(pyx ./ rect(3:4)) * .8; %take the larger ratio
             spots = spots * ratio;
-            spots(:,1:2) = spots(:,[2, 1]) + pyx./2;
+            spots(:,1:2) = spots(:,1:2) + pyx([2,1])./2;
             rect = rect * ratio;
-            rect(1:2) = rect(1:2) + pyx./2;
+            rect(1:2) = rect(1:2) + pyx([2,1])./2;
             %the box will now fill 80% of the smaller axis (y)
 
             render = insertShape(render, 'filledcircle', spots, 'color', colors(radI,:), 'opacity', .2, 'smoothedges', false);
