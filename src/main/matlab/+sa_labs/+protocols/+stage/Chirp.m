@@ -102,7 +102,6 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             p.addController(spotIntensity);
         end
         
-        
         function stimTime = get.stimTime(obj)
             stimTime = obj.interTime*3 + obj.stepTime*2 + obj.freqTotalTime + obj.contrastTotalTime;
         end
