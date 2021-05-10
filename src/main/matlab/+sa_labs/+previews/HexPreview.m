@@ -31,7 +31,7 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
             cla(self.axes);
             
             pyx = self.panel.Position([4,3]);
-            render = zeros(pyx,3);
+            render = zeros([pyx,3]);
 
             [spots, rect] = self.getInfo();
             [rads,~,radI] = unique(spots(:,3));
