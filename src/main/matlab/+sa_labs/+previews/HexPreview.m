@@ -43,7 +43,7 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
                 colors = lines(nRads);
             end
 
-            ratio = min(pyx ./ rect([4,3]])) * .8; %take the larger ratio
+            ratio = min(pyx ./ rect([4,3])) * .8; %take the larger ratio
             spots = spots * ratio;
             spots(:,1:2) = spots(:,1:2) + pyx([2,1])./2;
             rect = rect * ratio;
