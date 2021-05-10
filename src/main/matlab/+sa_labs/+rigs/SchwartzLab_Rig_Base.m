@@ -3,6 +3,10 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
         daqStreams = containers.Map();
     end
     
+    properties (Access=protected)
+        lcr = @LightCrafter4500;
+    end
+    
     methods
         
         function initializeRig(obj)
@@ -62,7 +66,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             obj.addDevice(neutralDensityFilterWheel);
             
             lightCrafter = sa_labs.devices.LightCrafterDevice(obj);
-            obj.addDevice(lightCrafter);
+            obj.addDevice(lightCrafter, obj.lcr);
         end
     end
 end

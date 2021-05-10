@@ -7,7 +7,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
     
     methods
         
-        function obj = LightCrafterDevice(RigConfig)    
+        function obj = LightCrafterDevice(RigConfig, lcr)    
             %% Default values that might be changed by RigConfig
             settings = containers.Map();
             settings('host') = 'localhost';
@@ -56,7 +56,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             fprintf('init proj color %s\n', settings('projectorColorMode'))
             
-            obj.lightCrafter = LightCrafter4500(monitorRefreshRate, settings('projectorColorMode'));
+            obj.lightCrafter = lcr(monitorRefreshRate, settings('projectorColorMode'));
             obj.lightCrafter.connect();
             obj.lightCrafter.setMode('pattern');
             obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
