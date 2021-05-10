@@ -23,6 +23,10 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
         version = 1;
         spots;
         currSpot;
+
+        %TODO: fix the nightmarish inheritance of the response analysis figure
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = 'curSpotSize';
     end
     
     
