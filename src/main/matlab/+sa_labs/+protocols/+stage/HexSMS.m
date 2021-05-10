@@ -32,7 +32,7 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
     
     methods
         function p = getPreview(self, panel)
-            p = sa_labs.previews.HexPreview(panel, self.getSpots);
+            p = sa_labs.previews.HexPreview(panel, @self.getSpots);
         end
         
         function prepareRun(self)
@@ -68,7 +68,7 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
             self.setColorController(p, spot);
         end
         
-        function spots = getSpots(self)
+        function [spots,gridRect] = getSpots(self)
             if self.logScaling
                 S = logspace(log10(self.minSize), log10(self.maxSize), self.numberOfSizeSteps);
             else
@@ -125,6 +125,8 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
                 %store the spot locations and sizes
                 spots=vertcat(spots,[locs, ones(size(locs,1),1)*s]); %#ok<AGROW>
             end
+
+            gridRect = [-self.gridY/2, -self.gridX/2, self.gridY, self.gridX];
             
         end
     end
