@@ -38,9 +38,9 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
     methods
         
         function self = HexSMS()
-        
-%             self@sa_labs.protocols.StageProtocol(varargin);
-            self.spots = self.getSpots();
+            
+            %             self@sa_labs.protocols.StageProtocol(varargin);
+            self.spots = self.updateSpots();
         end
         
         function p = getPreview(self, panel)
@@ -80,7 +80,7 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
             self.setColorController(p, spot);
         end
         
-        function [spots,gridRect] = getSpots(self)
+        function spots = updateSpots(self)
             if self.logScaling
                 S = logspace(log10(self.minSize), log10(self.maxSize), self.numberOfSizeSteps);
             else
@@ -108,7 +108,7 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
                 
                 ya = [0:-2*yspacing:-self.gridY/2-yspacing, 2*yspacing:2*yspacing:self.gridY/2+yspacing];
                 yb = [ya - yspacing, ya(end) + yspacing];
-
+                
                 %create the grid
                 [xqa, yqa] = meshgrid(xa,ya); %doing it in this order causes larger spots to be centered
                 [xqb, yqb] = meshgrid(xb,yb);
@@ -123,24 +123,29 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
                 % if either of the coordinates is inside the box, it
                 % definitely intersects
                 % otherwise it must intersect the corner
-                locs = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= s.^2 , :); 
-
+                locs = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= s.^2 , :);
+                
                 spots=vertcat(spots,[locs, ones(size(locs,1),1)*s]); %#ok<AGROW>
             end
             
-            gridRect = [-self.gridX/2, -self.gridY/2, self.gridX, self.gridY];
             self.spots = spots;
             
         end
         
+        function [spots,gridRect] = getSpots(self)
+            spots = self.spots;
+            gridRect = [-self.gridX/2, -self.gridY/2, self.gridX, self.gridY];
+            
+        end
+        
         function totalNumEpochs = get.totalNumEpochs(self)
-%             totalNumEpochs = self.numberOfCycles * size(self.getSpots,1);
+            %             totalNumEpochs = self.numberOfCycles * size(self.getSpots,1);
             totalNumEpochs = self.numberOfCycles * size(self.spots,1);
-%             fprintf('got total num epochs: %d * %d = %d\n', self.numberOfCycles, size(self.getSpots,1));
+            %             fprintf('got total num epochs: %d * %d = %d\n', self.numberOfCycles, size(self.getSpots,1));
         end
         
         function timeEstimate = get.timeEstimate(self)
-           timeEstimate = self.numberOfCycles * size(self.spots,1) * (self.preTime + self.stimTime + self.tailTime) * 1e-3 / 60;
+            timeEstimate = self.numberOfCycles * size(self.spots,1) * (self.preTime + self.stimTime + self.tailTime) * 1e-3 / 60;
         end
     end
     
