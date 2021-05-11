@@ -6,24 +6,29 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
         
         intensity = 0.5;
         
-        minSize = 30
-        maxSize = 1200
+        minSize = 30 % Diameter of smallest spot (um)
+        maxSize = 1200 % Diameter of largest spot (um)
         numberOfSizeSteps = 12
         numberOfCycles = 3
         
-        gridX = 125; %width of grid in microns
-        gridY = 125; %height of grid in microns
-        coverage = 2.5; %the average number of spots at each point in space for a given spot size
+        gridX = 125; % Width of grid (um)
+        gridY = 125; % Height of grid (um)
+        coverage = 2.5; % The average number of spots at each point in space for a given spot size. At ~0.9069 there is 0 overlap.
         
-        logScaling = true
+        logScaling = true % Scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true
+    end
+    
+    properties (Dependent)
+        totalNumEpochs % The total number of epochs for this grid
+        timeEstimate % An estimate of the time in minutes to complete the experiment
     end
     
     properties (Hidden)
         version = 1;
         spots;
         currSpot;
-
+        
         %TODO: fix the nightmarish inheritance of the response analysis figure
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'curSpotSize';
@@ -31,6 +36,13 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
     
     
     methods
+        
+        function self = HexSMS()
+        
+%             self@sa_labs.protocols.StageProtocol(varargin);
+            self.spots = self.getSpots();
+        end
+        
         function p = getPreview(self, panel)
             p = sa_labs.previews.HexPreview(panel, @self.getSpots);
         end
@@ -47,8 +59,8 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
             end
             
             self.currSpot = self.spots(index,:);
-            epoch.addParameter('x', self.currSpot(1));
-            epoch.addParameter('y', self.currSpot(2));
+            epoch.addParameter('cx', self.currSpot(1));
+            epoch.addParameter('cy', self.currSpot(2));
             epoch.addParameter('curSpotSize', self.currSpot(3));
             
             prepareEpoch@sa_labs.protocols.StageProtocol(self, epoch);
@@ -57,7 +69,7 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
         function p = createPresentation(self)
             p = stage.core.Presentation((self.preTime + self.stimTime + self.tailTime) * 1e-3);
             spot = stage.builtin.stimuli.Ellipse();
-            spot.radiusX = round(self.um2pix(self.currSpot(3)/2));
+            spot.radiusX = self.um2pix(self.currSpot(3)/2);
             spot.radiusY = spot.radiusX;
             spot.color = self.intensity;
             canvasSize = self.rig.getDevice('Stage').getCanvasSize();
@@ -76,7 +88,8 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
             end
             spots = [];
             
-            spaceFactor = 3*pi/4 / self.coverage / (3*sqrt(3)/2);
+            %coverage = 3pi/4 * spacing / (3sqrt(3)/2* diameter)
+            spaceFactor = sqrt(3*pi/4 / self.coverage / (3*sqrt(3)/2));
             halfGrids = [self.gridX, self.gridY]/2;
             
             
@@ -85,49 +98,49 @@ classdef HexSMS < sa_labs.protocols.StageProtocol
                 
                 %space the spots to achieve the desired coverage factor
                 %uses the ratio of the area of a hexagon to that of a circle
-                spacing = sqrt(spaceFactor * s^2);
+                spacing = spaceFactor * s;
                 
                 %find the x and y coordinates for the hex grid
-                xa = 0:spacing:self.gridX+spacing;
-                xa(end) = [];
-                xb= [xa(1) - spacing/2, xa+spacing/2];
-                y = -cos(pi/6)*spacing:cos(pi/6)*spacing:self.gridY+cos(pi/6)*spacing;
+                xa = [0:-spacing:-self.gridX/2-spacing, spacing:spacing:self.gridX/2+spacing];
+                xb= [xa - spacing/2, xa(end)+spacing/2];
                 
+                yspacing = cos(pi/6)*spacing;
+                
+                ya = [0:-2*yspacing:-self.gridY/2-yspacing, 2*yspacing:2*yspacing:self.gridY/2+yspacing];
+                yb = [ya - yspacing, ya(end) + yspacing];
+
                 %create the grid
-                [xqa, yqa] = meshgrid(xa,y(2:2:end)); %doing it in this order causes larger spots to be centered
-                [xqb, yqb] = meshgrid(xb,y(1:2:end));
+                [xqa, yqa] = meshgrid(xa,ya); %doing it in this order causes larger spots to be centered
+                [xqb, yqb] = meshgrid(xb,yb);
                 locs = [xqa(:), yqa(:); xqb(:), yqb(:)];
                 
-                %center the grid on 0,0 using the center of mass
-                cm = mean(locs, 1);
-                locs = locs - cm;
-                
                 %remove any circles that don't intersect the viewing rectangle
-                %the first part rejects any points that don't intersect the corner
-                %the second part rejects any points that are are not in the voronoi
-                %space of the faces
-                locs( 4*sum((abs(locs) - halfGrids).^2,2) > s.^2 & all(abs(locs) > halfGrids, 2), :) = [];
-
-                if isempty(locs)
-                    %try sliding the grid
-                    [xqa, yqa] = meshgrid(xa,y(1:2:end)); 
-                    [xqb, yqb] = meshgrid(xb,y(2:2:end));
-                    locs = [xqa(:), yqa(:); xqb(:), yqb(:)];
-                    cm = mean(locs);
-                    locs = locs - cm;
-                    locs( 4*sum((abs(locs) - halfGrids).^2,2) > s.^2  & all(abs(locs) > halfGrids, 2), :) = [];
-                    if isempty(locs)
-                        locs = [0,0]; %we still want a spot at the center
-                        %we should never reach this?
-                    end
-                end
+                % the bounding box of the circle must intersect the rectangle
+                locs = locs(all(abs(locs) < halfGrids + s/2, 2), :);
                 
-                %store the spot locations and sizes
+                % circles near the corners might have an intersecting
+                % bounding box but not actually intersect
+                % if either of the coordinates is inside the box, it
+                % definitely intersects
+                % otherwise it must intersect the corner
+                locs = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= s.^2 , :); 
+
                 spots=vertcat(spots,[locs, ones(size(locs,1),1)*s]); %#ok<AGROW>
             end
-
-            gridRect = [-self.gridX/2, -self.gridY/2, self.gridX, self.gridY];
             
+            gridRect = [-self.gridX/2, -self.gridY/2, self.gridX, self.gridY];
+            self.spots = spots;
+            
+        end
+        
+        function totalNumEpochs = get.totalNumEpochs(self)
+%             totalNumEpochs = self.numberOfCycles * size(self.getSpots,1);
+            totalNumEpochs = self.numberOfCycles * size(self.spots,1);
+%             fprintf('got total num epochs: %d * %d = %d\n', self.numberOfCycles, size(self.getSpots,1));
+        end
+        
+        function timeEstimate = get.timeEstimate(self)
+           timeEstimate = self.numberOfCycles * size(self.spots,1) * (self.preTime + self.stimTime + self.tailTime) * 1e-3 / 60;
         end
     end
     

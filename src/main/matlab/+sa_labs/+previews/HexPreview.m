@@ -43,13 +43,13 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
                 colors = lines(nRads);
             end
 
-            ratio = min(pyx ./ rect([4,3])) * .8; %take the larger ratio
+            ratio = min(pyx ./ rect([4,3])) * .4; %take the larger ratio
             spots = spots * ratio;
             spots(:,1:2) = spots(:,1:2) + pyx([2,1])./2;
+            spots(:,3) = spots(:,3) / 2;
             rect = rect * ratio;
             rect(1:2) = rect(1:2) + pyx([2,1])./2;
-            %the box will now fill 80% of the smaller axis (y)
-
+           
             render = insertShape(render, 'filledcircle', spots, 'color', colors(radI,:), 'opacity', .2, 'smoothedges', false);
             
             render = insertShape(render, 'rectangle', rect, 'color', 'white', 'linewidth', 3);
