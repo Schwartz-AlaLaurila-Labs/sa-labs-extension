@@ -1,4 +1,4 @@
-classdef HexPreview < symphonyui.core.ProtocolPreview
+classdef MultiSMSPreview < symphonyui.core.ProtocolPreview
     
     properties
        getInfo 
@@ -11,7 +11,7 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
     end
     
     methods
-        function self = HexPreview(panel, getInfo)
+        function self = MultiSMSPreview(panel, getInfo)
             self@symphonyui.core.ProtocolPreview(panel);
             self.getInfo = getInfo;
             self.createUi();
@@ -34,6 +34,9 @@ classdef HexPreview < symphonyui.core.ProtocolPreview
             render = zeros([pyx,3]);
 
             [spots, rect] = self.getInfo();
+            [~,spotsI] = sort(spots(:,3),'descend');
+            spots = spots(spotsI,:);
+            
             [rads,~,radI] = unique(spots(:,3));
             nRads = numel(rads);
             

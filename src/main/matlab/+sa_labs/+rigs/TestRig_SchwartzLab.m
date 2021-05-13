@@ -4,6 +4,7 @@ classdef TestRig_SchwartzLab < sa_labs.rigs.SchwartzLab_Rig_Base
         % properties not accessible here; have to be fed into a device to work
         rigName = 'Test Rig';
         testMode = true;
+        daq_type = 'Heka';
         filterWheelNdfValues = [2, 4, 5, 6, 7, 8];
         filterWheelDefaultValue = 5;
         

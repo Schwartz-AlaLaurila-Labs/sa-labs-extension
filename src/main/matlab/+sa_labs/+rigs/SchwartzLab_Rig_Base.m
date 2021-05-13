@@ -16,13 +16,21 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             import symphonyui.core.*;
             
             if obj.testMode
-                daq = HekaSimulationDaqController();
-            elseif strcmpi(obj.daq_type, 'Heka')
-                daq = HekaDaqController(HekaDeviceType.USB18);
-            elseif strcmpi(obj.daq_type, 'NI')
-                daq = NiDaqController();
+                if strcmpi(obj.daq_type, 'Heka')
+                    daq = HekaSimulationDaqController();
+                elseif strcmpi(obj.daq_type, 'NI')
+                    daq = NiSimulationDaqController();
+                else
+                    error('Could not identify Daq type from RigConfig')
+                end
             else
-                error('Could not identify Daq type from RigConfig')
+                if strcmpi(obj.daq_type, 'Heka')
+                    daq = HekaDaqController(HekaDeviceType.USB18);
+                elseif strcmpi(obj.daq_type, 'NI')
+                    daq = NiDaqController();
+                else
+                    error('Could not identify Daq type from RigConfig')
+                end
             end
             
             obj.daqController = daq;

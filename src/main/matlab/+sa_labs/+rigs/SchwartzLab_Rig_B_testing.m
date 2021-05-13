@@ -6,6 +6,7 @@ classdef SchwartzLab_Rig_B_testing < sa_labs.rigs.SchwartzLab_Rig_B
             self.host = 'localhost';
             self.lcr = @MockLightCrafter4500;
             self.filterWheelComPort = -1;
+            self.testMode = true;
 
             if nargin < 1
                 delayInit = false;

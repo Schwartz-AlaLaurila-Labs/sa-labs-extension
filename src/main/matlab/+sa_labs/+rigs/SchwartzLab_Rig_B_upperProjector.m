@@ -4,6 +4,8 @@ classdef SchwartzLab_Rig_B_upperProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         % properties not accessible here; have to be fed into a device to work
         rigName = 'Schwartz Lab Rig B Upper Projector';
         testMode = false;
+        daq_type = 'NI';
+        
         filterWheelNdfValues = [2, 3, 4]; % calibration code has the NDF3 built in, so these are relative to that
         filterWheelDefaultValue = 4;
         filterWheelAttenuationValues = [1/152, 1/1672, 1/4514]; %good for green, not UV, Adam 4/5/17
