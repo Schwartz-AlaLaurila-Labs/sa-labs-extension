@@ -1,5 +1,5 @@
 classdef CommonControl < symphonyui.ui.Module
-    
+
     properties
         % projector
         offsetX = 0         % um
@@ -7,7 +7,8 @@ classdef CommonControl < symphonyui.ui.Module
         backgroundSize      % um
         meanLevel = 0.0     % (0 - 1)
         
-        NDF = 5             % Filter wheel position
+        NDF1 = 4             % Filter wheel position
+        NDF2 = 4             % Filter wheel position
         frameRate = 60      % Hz
         patternRate = 60    % Hz
         blueLED = 20        % 0-255
@@ -38,11 +39,13 @@ classdef CommonControl < symphonyui.ui.Module
         stageY = 0          % Y co-ordinates of stage
         settings
         log
+        rstarPerSecond = 0
+        rstarPerSecondText
     end
     
     properties(Hidden)
         
-        projectorPropertyNames = {'spikeThreshold','spikeDetectorMode', 'NDF', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'meanLevel', 'stageX', 'stageY'};
+        projectorPropertyNames = {'rstarPerSecond', 'spikeThreshold','spikeDetectorMode', 'NDF1', 'NDF2', 'blueLED','greenLED','offsetX','offsetY', 'backgroundSize', 'meanLevel', 'stageX', 'stageY'};
         chan1Type
         chan2Type
         chan3Type
@@ -55,6 +58,8 @@ classdef CommonControl < symphonyui.ui.Module
         spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'Simple Threshold', 'Filtered Threshold', 'none'});
         protocolPropertyGrid
         ampList
+        rstarTable
+        rstarMeta
     end
     
     methods (Access = protected)
@@ -62,6 +67,7 @@ classdef CommonControl < symphonyui.ui.Module
         function willGo(obj)
             obj.updateDeviceList();
             obj.populateProtocolProperties();
+            obj.loadRstarTable();
             try
                 obj.loadSettings();
             catch x
@@ -72,7 +78,7 @@ classdef CommonControl < symphonyui.ui.Module
         function bind(obj)
             bind@symphonyui.ui.Module(obj);
             
-            c = obj.configurationService;
+            c = obj.configurationService;            
             obj.addListener(c, 'InitializedRig', @obj.onServiceInitializedRig);
             obj.addListener(obj.acquisitionService, 'SelectedProtocol', @obj.onServiceSelectedProtocol);
         end
@@ -94,6 +100,7 @@ classdef CommonControl < symphonyui.ui.Module
         end
         
         function createUi(obj, figureHandle)
+            import appbox.*;
             set(figureHandle, ...
                 'Name', 'Common Control', ...
                 'Position', appbox.screenCenter(240, 340));
@@ -101,6 +108,23 @@ classdef CommonControl < symphonyui.ui.Module
             layout = uix.VBox( ...
                 'Parent', figureHandle, ...
                 'Padding', 11);
+            
+            rstarLayout = uix.Grid(...
+                'Parent', layout, ...
+                'Padding', 2);
+            
+            Label( ...
+                'Parent', rstarLayout, ...
+                'String', 'R*/rod/sec:');
+            
+            obj.rstarPerSecondText = uicontrol( ...
+                'Parent', rstarLayout, ...
+                'style', 'edit', ...
+                'Callback',  @obj.onSetRstarPerSecond);
+            
+            set(rstarLayout, ...
+                'Widths', [65], ...
+                'Heights', [25]);
             
             obj.protocolPropertyGrid = uiextras.jide.PropertyGrid(layout);
             
@@ -110,7 +134,7 @@ classdef CommonControl < symphonyui.ui.Module
                 'String', 'Apply', ...
                 'Callback', @obj.cbSetParameters);
             
-            set(layout, 'Heights', [-1, 30]);
+            set(layout, 'Heights', [50 -1, 30]);
             obj.settings = sa_labs.modules.settings.CommonControlSettings();
         end
         
@@ -224,6 +248,56 @@ classdef CommonControl < symphonyui.ui.Module
             obj.settings.viewPosition = obj.view.position;
             obj.settings.save();
         end
+        
+        function loadRstarTable(obj)
+            
+            dataLocation = fileparts(which('aalto_rig_calibration_data_readme'));
+            obj.rstarTable = readtable(fullfile(dataLocation, 'rstar-table.csv'));
+            
+            rstarVars = obj.rstarTable.Properties.VariableNames;
+            index = 1;
+            for i =  1 : numel(obj.rstarTable.Properties.VariableNames)
+                if(strfind(rstarVars{i}, 'ndf'))
+                    splitValues = strsplit(rstarVars{i}, '_');
+                    wheelOne = splitValues{2};
+                    wheelTwo = splitValues{3};
+                    metaData(index).columnName = rstarVars{i};
+                    metaData(index).wheelOne = str2double(wheelOne(1));
+                    metaData(index).wheelTwo = str2double(wheelTwo(1));
+                    metaData(index).maxRstar = max(obj.rstarTable.(rstarVars{i}));
+                    index = index + 1;
+                end
+            end
+            obj.rstarMeta = metaData;
+        end
+        
+        function onSetRstarPerSecond(obj, ~, ~)
+            rstarInput = str2double(get(obj.rstarPerSecondText, 'String'));
+            
+            metaIndices = find([obj.rstarMeta(:).maxRstar] > rstarInput);
+            ndfColumn = obj.rstarMeta(metaIndices(1)).columnName;
+            tableIndices = find(obj.rstarTable.(ndfColumn) >= rstarInput);
+            
+            ledCurrent = obj.rstarTable.Ledurrents(tableIndices(1));
+            ndf1= obj.rstarMeta(metaIndices(1)).wheelOne;
+            ndf2 = obj.rstarMeta(metaIndices(1)).wheelTwo;
+            rstars = obj.rstarTable.(ndfColumn);
+            obj.rstarPerSecond = rstars(tableIndices(1));
+            
+            ndf1Prop = obj.protocolPropertyGrid.Properties.FindByName('NDF1');
+            ndf2Prop = obj.protocolPropertyGrid.Properties.FindByName('NDF2');
+            blueLedProp = obj.protocolPropertyGrid.Properties.FindByName('blueLED');
+            rstarPerSecondProp = obj.protocolPropertyGrid.Properties.FindByName('rstarPerSecond');
+            
+            
+            set(ndf1Prop, 'Value', ndf1);
+            set(ndf2Prop, 'Value', ndf2);
+            set(blueLedProp, 'Value', ledCurrent);
+            set(rstarPerSecondProp, 'Value', obj.rstarPerSecond);
+            obj.protocolPropertyGrid.UpdateProperties([ndf1Prop, ndf2Prop, blueLedProp, rstarPerSecondProp])
+            
+        end
+
     end
     
 end

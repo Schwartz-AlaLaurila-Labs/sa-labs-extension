@@ -6,7 +6,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
     end
 
     properties (Constant)
-        EMPTY_NDF = 'Empty'
+        EMPTY_NDF = 1
     end
 
     methods
@@ -20,7 +20,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             cobj = Symphony.Core.UnitConvertingExternalDevice(['neutralDensityFilterWheel', num2str(wheelID)], 'Thorlabs', Symphony.Core.Measurement(0, symphonyui.core.Measurement.UNITLESS));
             obj@symphonyui.core.Device(cobj);
             obj.cobj.MeasurementConversionTarget = symphonyui.core.Measurement.UNITLESS;
-
+            
             if comPort > 0
                 obj.addResource('wheelID', wheelID);
                 obj.serialPortObject = serial(comPort,...
@@ -35,6 +35,7 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             else
                 obj.serialPortObject = [];
                 obj.addConfigurationSetting('type', 'manual', 'isReadOnly', true);
+                obj.addResource('wheelID', wheelID);
             end
         end
 

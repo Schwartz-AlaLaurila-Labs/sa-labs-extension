@@ -23,6 +23,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'contrast'
+        rstarPerSecond = 0
     end
     
     properties (Dependent)
@@ -100,7 +101,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     d.category = '6 Isomerizations';
                     d.isHidden = obj.numberOfPatterns == 1;
                     
-                case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
+                case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1', 'rstarPerSecond'}
                     d.category = '6 Isomerizations';
             end
             
@@ -330,6 +331,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         
         function [rStar, mStar, sStar] = invokeGetIsomerizations(obj, pattern)
             [rStar, mStar, sStar] = obj.rigProperty.rigDescription.getIsomerizations(obj, pattern);
+        end
+        
+        function rstar = get.rstarPerSecond(obj)
+           rstar = obj.rstarPerSecond * obj.intensity;
         end
         
         function bitDepth = get.bitDepth(obj)
