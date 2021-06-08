@@ -60,6 +60,7 @@ classdef CommonControl < symphonyui.ui.Module
         ampList
         rstarTable
         rstarMeta
+        maxLedCurrent
     end
     
     methods (Access = protected)
@@ -155,6 +156,7 @@ classdef CommonControl < symphonyui.ui.Module
             try
                 lcr = obj.configurationService.getDevices('lightcrafter');
                 obj.backgroundSize = lcr{1}.getBackgroundSizeInMicrons();
+                obj.maxLedCurrent = lcr{1}.getConfigurationSetting('recommendedMaxLedCurrent');
             catch x 
                 obj.log.debug(['Failed to get background size: ' x.message], x);
             end
@@ -252,10 +254,11 @@ classdef CommonControl < symphonyui.ui.Module
         function loadRstarTable(obj)
             
             dataLocation = fileparts(which('aalto_rig_calibration_data_readme'));
-            obj.rstarTable = readtable(fullfile(dataLocation, 'rstar-table.csv'));
-            
+            t = readtable(fullfile(dataLocation, 'rstar-table.csv'));
+            obj.rstarTable =  t(t.Ledurrents <= obj.maxLedCurrent, :);
             rstarVars = obj.rstarTable.Properties.VariableNames;
             index = 1;
+            
             for i =  1 : numel(obj.rstarTable.Properties.VariableNames)
                 if(strfind(rstarVars{i}, 'ndf'))
                     splitValues = strsplit(rstarVars{i}, '_');
