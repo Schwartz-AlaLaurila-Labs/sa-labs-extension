@@ -104,7 +104,7 @@ classdef CommonControl < symphonyui.ui.Module
             import appbox.*;
             set(figureHandle, ...
                 'Name', 'Common Control', ...
-                'Position', appbox.screenCenter(240, 340));
+                'Position', appbox.screenCenter(270, 520));
             
             layout = uix.VBox( ...
                 'Parent', figureHandle, ...
@@ -135,7 +135,7 @@ classdef CommonControl < symphonyui.ui.Module
                 'String', 'Apply', ...
                 'Callback', @obj.cbSetParameters);
             
-            set(layout, 'Heights', [50 -1, 30]);
+            set(layout, 'Heights', [50, -1, 30]);
             obj.settings = sa_labs.modules.settings.CommonControlSettings();
         end
         
