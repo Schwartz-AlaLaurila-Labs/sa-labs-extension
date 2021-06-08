@@ -291,12 +291,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function RstarMean = get.RstarMean(obj)
-            pattern = 1;
-            if obj.numberOfPatterns == 1
-                [RstarMean, ~, ~] = obj.invokeGetIsomerizations(pattern);
-            else
-                [RstarMean, ~, ~] = obj.invokeGetIsomerizations(obj.backgroundPattern);
+            meanLevel = 0;
+            if(isprop(obj, 'meanLevel'))
+                meanLevel = obj.meanLevel;
             end
+            RstarMean = obj.rstarPerSecond * meanLevel;
         end
         
         function RstarIntensity = get.RstarIntensity1(obj)
@@ -334,7 +333,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function rstar = get.rstarPerSecond(obj)
-           rstar = obj.rstarPerSecond * obj.intensity;
+            intensity = 0;
+            if(isprop(obj, 'intensity'))
+                intensity = obj.intensity;
+            end
+           rstar = obj.rstarPerSecond * intensity;
         end
         
         function bitDepth = get.bitDepth(obj)

@@ -6,9 +6,9 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         stimTime = 1000	% Spot duration (ms)
         tailTime = 1000	% Spot trailing duration (ms)
         
-        intensity = 0.5;
+        intensity = 1;
         
-        spotSize = 200; % um
+        spotSize = 340; % um
         numberOfEpochs = 500;
         
         alternatePatterns = false % alternates spot pattern between PRIMARY and SECONDARY OBJECT PATTERNS
