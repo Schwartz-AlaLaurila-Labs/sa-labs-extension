@@ -51,6 +51,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace','contrast'});
         forcePrerenderType = symphonyui.core.PropertyType('char', 'row', {'auto','prerender on','prerender off'});
         colorMode = '';
+        rstarPerSecondForIntesnityOne = 0;
     end
 
     properties (Hidden, Transient)
@@ -295,7 +296,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if(isprop(obj, 'meanLevel'))
                 meanLevel = obj.meanLevel;
             end
-            RstarMean = obj.rstarPerSecond * meanLevel;
+            RstarMean = obj.rstarPerSecondForIntesnityOne * meanLevel;
         end
         
         function RstarIntensity = get.RstarIntensity1(obj)
@@ -337,6 +338,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             if(isprop(obj, 'intensity'))
                 intensity = obj.intensity;
             end
+           obj.rstarPerSecondForIntesnityOne = obj.rstarPerSecond;
            rstar = obj.rstarPerSecond * intensity;
         end
         
