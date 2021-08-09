@@ -43,7 +43,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
+        colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green','blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorCombinationModeType = symphonyui.core.PropertyType('char', 'row', {'add','replace','contrast'});
@@ -147,11 +147,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
             
             if strcmp(obj.colorMode, 'uv')
-                obj.blueLED = 0;
+                obj.blueLED = 40;
                 obj.greenLED = 10;
                 obj.redLED = 0;
                 obj.uvLED = 50;
-                obj.colorPattern1 = 'green';
+                obj.colorPattern1 = 'blue';
             elseif strcmp(obj.colorMode, 'standard')
                 obj.blueLED = 20;
                 obj.greenLED = 0;

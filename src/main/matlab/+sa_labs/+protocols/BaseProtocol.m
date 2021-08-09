@@ -22,7 +22,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         spikeThreshold = -6 % pA or (pseudo-)std
         
         scanHeadTrigger = false; %scanhead trigger for function imaging, added by Greg 3/5/18
-        stimTimeRecord = false;
+        stimTimeRecord = true;
     end
     
     properties (Transient, Hidden)
