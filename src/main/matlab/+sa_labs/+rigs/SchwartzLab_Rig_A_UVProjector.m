@@ -48,7 +48,6 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
             obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %obj.daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %obj.daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
-            obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
             
             
             if nargin < 1
