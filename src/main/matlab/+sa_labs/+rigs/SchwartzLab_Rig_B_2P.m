@@ -11,8 +11,8 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelDefaultValue = 5;
         
         filterWheelAttenuationValues_Blue = [0.087209302	0.00744186	0.000612403	6.77132E-05	6.47287E-06 1];%updated 7/1/21 - David
-        filterWheelAttenuationValues_Green = 0;%Only use blue LED when bluepass filter is in place. - David
-        filterWheelAttenuationValues_UV = 0; %Only use blue LED when bluepass filter is in place. - David
+        filterWheelAttenuationValues_Green = [0,0,0,0,0,0];%Only use blue LED when bluepass filter is in place. - David
+        filterWheelAttenuationValues_UV = [0,0,0,0,0,0]; %Only use blue LED when bluepass filter is in place. - David
         
         fitBlue = [8.05816831848421e-18,-5.14680445171829e-15,1.73086178980379e-12,-4.00660672245227e-11];%updated 7/1/21 - David
         fitGreen = 0;%Only use blue LED when bluepass filter is in place. - David
