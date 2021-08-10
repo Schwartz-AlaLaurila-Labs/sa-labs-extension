@@ -7,13 +7,13 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelNdfValues = [1, 2, 3, 4, 5, 0]; %updated 4/2/21 - David
         filterWheelDefaultValue = 5;
         
-        filterWheelAttenuationValues_Blue = [0.085483871	0.007104839	0.000581452	6.26613E-05	4.91935E-06 1];%updated 04/02/21 -David
+        filterWheelAttenuationValues_Blue = [0.087209302	0.00744186	0.000612403	6.77132E-05	6.47287E-06 1];%updated 7/1/21 - David
         filterWheelAttenuationValues_Green = [0.089974684	0.008658228	0.000759494	7.06621E-05	6.48122E-06 1];%updated 02/25/21 -David - NDF 4 & 5 were predicted from lower NDF values
         filterWheelAttenuationValues_UV = [0.035217391	0.002063241	8.60316E-05	3.90679E-06	1.77411E-07 1]; %updated 02/25/21 -David - NDF 3, 4, & 5 were predicted from lower NDF values
         
-        fitBlue = [8.93243522328669e-12	-6.33655824874954e-09	2.28583593567928e-06	-5.36819002998869e-05];%updated 04/02/21 -David
-        fitGreen =[2.89068828608872e-12	-3.87496510471152e-09	1.82887343961211e-06	-4.47651235638903e-05];%updated 04/02/21 -David
-        fitUV = [1.89128424063915e-14	-1.36173777885635e-10	9.89066087064172e-08	4.92915628123552e-06];%updated 04/02/21 -David
+        fitBlue = [3.25505089943941e-07, -0.000224272868860027, 0.0814483163631007, -1.90624692265164];%updated 7/1/21 - David
+        fitGreen =[1.73199288410808e-07,-0.000167443533558009,0.0703569302199794,-1.74022321159309];%updated 7/1/21 - David
+        fitUV = [4.87820062937748e-09,-6.28336948287351e-06,0.00389109288987364,0.187942119180508];%updated 7/1/21 - David
         
         micronsPerPixel = 1.65 %updated 2/25/21 -David -- There is a slight discrepancy between X and Y axis.  1.7 is best for X, 1.6 if best for Y.  I split the difference.
 
@@ -26,9 +26,9 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
-        spectralOverlap_Blue = [4.49937844347436e+18,4.24282748934854e+15,3.54491702447797e+18];%updated 11/21/2019 -David
-        spectralOverlap_Green = [3.23202384601926e+18,470157632364029,4.54479333609599e+18];%updated 11/21/2019 -David
-        spectralOverlap_UV = [9.35392735238728e+17,1.45353301827043e+18,1.11745334749763e+18];%updated 11/21/2019 -David
+        spectralOverlap_Blue = [4.73e+18,2.85e+15,3.76e+18];%updated 7/1/21 - David
+        spectralOverlap_Green = [3.41e+18,1730000000000,4.56e+18];%updated 7/1/21 - David
+        spectralOverlap_UV = [1.09e+18,1.15e+18,1.17e+18];%updated 7/1/21 - David
         
         projectorColorMode = 'uv';
         numberOfAmplifiers = 2;
