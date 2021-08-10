@@ -5,7 +5,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         % This rigConfiguration is for use when the blue passband filter (ET460) is
         % swiveled into place to allow for simultaneous 2P imaging and projector stimulation.
         % Only blue projector light should be used.
-        rigName = 'Schwartz Lab Rig B 2P Imaging';
+        rigName = 'Schwartz Lab Rig B 2P';
         testMode=false;
         filterWheelNdfValues = [1, 2, 3, 4, 5, 0]; %updated 4/2/21 - David
         filterWheelDefaultValue = 5;
@@ -42,7 +42,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
     
     methods
         
-        function obj = SchwartzLab_Rig_B(delayInit)
+        function obj = SchwartzLab_Rig_B_2P(delayInit)
             %{Port, bit number, unit} for any datastreams. 
             % unit = 0 for unitless.  
             % bit number = -1 for analog.
