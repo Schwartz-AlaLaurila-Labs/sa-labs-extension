@@ -223,8 +223,15 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     disp('no stim time trigger device found')
                 end
             end
+            
+            name = obj.rig.getDeviceNames('LED_blanking_signal');       
+            if ~isempty(name)
+                D = obj.rig.getDevice('LED_blanking_signal');
+                epoch.addResponse(D);
+            end
                                     
         end
+        
         
         function tf = shouldContinuePreparingEpochs(obj)
             tf = obj.numEpochsPrepared < obj.totalNumEpochs;

@@ -15,7 +15,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen = [4.49248176839518e-18,-4.34318771541836e-15,1.82493374651640e-12,-4.51382977537234e-11];%updated 7/1/21 - David
         fitUV = [1.26531855824211e-19,-1.62979438916323e-16,1.00928035139656e-13,4.87488460073430e-12];%updated 7/1/21 - David
         
-        micronsPerPixel = 1.65 %updated 2/25/21 -David -- There is a slight discrepancy between X and Y axis.  1.7 is best for X, 1.6 if best for Y.  I split the difference.
+        micronsPerPixel = 1.45 %updated 9/10/21 -Davide.
 
         frameTrackerPosition = [0,1280];%updated 02/23/21 -David
 

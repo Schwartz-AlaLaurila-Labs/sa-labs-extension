@@ -18,7 +18,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen = 0;%Only use blue LED when bluepass filter is in place. - David
         fitUV = 0;%Only use blue LED when bluepass filter is in place. - David
         
-        micronsPerPixel = 1.65 %updated 2/25/21 -David -- There is a slight discrepancy between X and Y axis.  1.7 is best for X, 1.6 if best for Y.  I split the difference.
+        micronsPerPixel = 1.45 %updated 9/10/21 -David
 
         frameTrackerPosition = [0,1280];%updated 02/23/21 -David
 
@@ -55,6 +55,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
+            obj.daqStreams('LED_blanking_signal') = {'ai3', -1, 'V'}; %
             
             if nargin < 1
                 delayInit = false;
