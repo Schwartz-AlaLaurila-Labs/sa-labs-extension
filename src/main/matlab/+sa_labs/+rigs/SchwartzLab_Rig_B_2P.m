@@ -1,21 +1,24 @@
-classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
+classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
     
     properties
         % properties not accessible here; have to be fed into a device to work
-        rigName = 'Schwartz Lab Rig B';
+        % This rigConfiguration is for use when the blue passband filter (ET460) is
+        % swiveled into place to allow for simultaneous 2P imaging and projector stimulation.
+        % Only blue projector light should be used.
+        rigName = 'Schwartz Lab Rig B 2P';
         testMode=false;
         filterWheelNdfValues = [1, 2, 3, 4, 5, 0]; %updated 4/2/21 - David
         filterWheelDefaultValue = 5;
         
         filterWheelAttenuationValues_Blue = [0.087209302	0.00744186	0.000612403	6.77132E-05	6.47287E-06 1];%updated 7/1/21 - David
-        filterWheelAttenuationValues_Green = [0.089974684	0.008658228	0.000759494	7.06621E-05	6.48122E-06 1];%updated 02/25/21 -David - NDF 4 & 5 were predicted from lower NDF values
-        filterWheelAttenuationValues_UV = [0.035217391	0.002063241	8.60316E-05	3.90679E-06	1.77411E-07 1]; %updated 02/25/21 -David - NDF 3, 4, & 5 were predicted from lower NDF values
+        filterWheelAttenuationValues_Green = [0,0,0,0,0,0];%Only use blue LED when bluepass filter is in place. - David
+        filterWheelAttenuationValues_UV = [0,0,0,0,0,0]; %Only use blue LED when bluepass filter is in place. - David
         
-        fitBlue = [8.38335849964113e-18,-5.79109357290939e-15,2.10936942123996e-12,-4.93337644663386e-11];%updated 7/1/21 - David
-        fitGreen = [4.49248176839518e-18,-4.34318771541836e-15,1.82493374651640e-12,-4.51382977537234e-11];%updated 7/1/21 - David
-        fitUV = [1.26531855824211e-19,-1.62979438916323e-16,1.00928035139656e-13,4.87488460073430e-12];%updated 7/1/21 - David
+        fitBlue = [8.05816831848421e-18,-5.14680445171829e-15,1.73086178980379e-12,-4.00660672245227e-11];%updated 7/1/21 - David
+        fitGreen = 0;%Only use blue LED when bluepass filter is in place. - David
+        fitUV = 0;%Only use blue LED when bluepass filter is in place. - David
         
-        micronsPerPixel = 1.45 %updated 9/10/21 -Davide.
+        micronsPerPixel = 1.45 %updated 9/10/21 -David
 
         frameTrackerPosition = [0,1280];%updated 02/23/21 -David
 
@@ -26,9 +29,9 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
-        spectralOverlap_Blue = [4.73e+18,2.85e+15,3.76e+18];%updated 7/1/21 - David
-        spectralOverlap_Green = [3.41e+18,1730000000000,4.56e+18];%updated 7/1/21 - David
-        spectralOverlap_UV = [1.09e+18,1.15e+18,1.17e+18];%updated 7/1/21 - David
+        spectralOverlap_Blue = [4.86e+18,5.57e+15,3.87e+18];%updated 7/1/21 - David
+        spectralOverlap_Green = [2.47e+18,2.65e+17,2.36e+18];%updated 7/1/21 - David
+        spectralOverlap_UV = [1.35e+18,3.02e+17,1.41e+18];%updated 7/1/21 - David
         
         projectorColorMode = 'uv';
         numberOfAmplifiers = 2;
@@ -39,7 +42,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
     
     methods
         
-        function obj = SchwartzLab_Rig_B(delayInit)
+        function obj = SchwartzLab_Rig_B_2P(delayInit)
             %{Port, bit number, unit} for any datastreams. 
             % unit = 0 for unitless.  
             % bit number = -1 for analog.
@@ -52,6 +55,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
+            obj.daqStreams('LED_blanking_signal') = {'ai3', -1, 'V'}; %
             
             if nargin < 1
                 delayInit = false;
