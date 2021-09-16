@@ -11,9 +11,9 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_Green = [1,1,1,1,1,1];%Green projector broken 
         filterWheelAttenuationValues_UV = [.1, .00172, .0000807, .00000652, .0000027, .00172];%updated 11/21/2019 -David
         
-        fitBlue = [4.71e-12, -7.68e-9, 2.84e-6, -1.19e-5];%updated 11/21/2019 -David
-        fitGreen =[-6.80e-13, -4.58e-11, 1.56e-7, 1.49e-5];%Green projector broken
-        fitUV = [-6.80e-13, -4.58e-11, 1.56e-7, 1.49e-5];%updated 11/21/2019 -David
+        fitBlue = [4.71e-18, -7.68e-15, 2.84e-12, -1.19e-11];%updated 11/21/2019 -David
+        fitGreen =[-6.80e-19, -4.58e-17, 1.56e-13, 1.49e-11];%Green projector broken
+        fitUV = [-6.80e-19, -4.58e-17, 1.56e-11, 1.49e-11];%updated 11/21/2019 -David
         
         micronsPerPixel = 1.21;%updated 11/21/2019 -David
         frameTrackerPosition = [0,0];
