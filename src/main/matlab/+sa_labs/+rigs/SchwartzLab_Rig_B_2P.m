@@ -35,7 +35,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         spectralOverlap_UV = [1.35e+18,3.02e+17,1.41e+18];%updated 7/1/21 - David
         
         projectorColorMode = 'uv';
-        numberOfAmplifiers = 1;
+        numberOfAmplifiers = 2;
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
