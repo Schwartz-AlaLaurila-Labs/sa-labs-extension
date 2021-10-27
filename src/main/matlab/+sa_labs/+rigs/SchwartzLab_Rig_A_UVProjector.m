@@ -16,9 +16,12 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         fitUV = [-6.80e-19, -4.58e-17, 1.56e-11, 1.49e-11];%updated 11/21/2019 -David
         
         micronsPerPixel = 1.21;%updated 11/21/2019 -David
+        
         frameTrackerPosition = [0,0];
+        
         frameTrackerSize = [550,550];
-        filterWheelComPort = 'COM8';
+        
+        filterWheelComPort = 'COM7';
         orientation = [false, true];%[flip Y, flip X]
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
@@ -30,8 +33,8 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         projectorColorMode = 'uv2'; % Rig A has MkII projector
         numberOfAmplifiers = 2;
         
-        host = 'localhost'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
-        daq_type = 'Heka'; %What brand data aquisition board is being used?  'Heka' or 'NI'
+        host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
+        daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
     end
     
     methods
@@ -42,13 +45,13 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
             % bit number = -1 for analog.
             % Comment out if you don't want to use.
      
-            obj.daqStreams('Oscilloscope Trigger') = {'doport1', 0, 0}; %
+            obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
             %obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
             %obj.daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
-            obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
+%             obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %obj.daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %obj.daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
-            obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
+%             obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
             
             
             if nargin < 1

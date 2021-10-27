@@ -243,7 +243,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             epoch.addParameter('micronsPerPixel', obj.lightCrafterParams.micronsPerPixel);
             epoch.addParameter('angleOffsetFromRig', obj.lightCrafterParams.angleOffset);
             
-            % uses the frame tracker on the monitor to inform the HEKA that
+            % uses the frame tracker on the monitor to inform the NIDAQ that
             % the stage presentation has begun. Improves temporal alignment
             epoch.shouldWaitForTrigger = true;
             
