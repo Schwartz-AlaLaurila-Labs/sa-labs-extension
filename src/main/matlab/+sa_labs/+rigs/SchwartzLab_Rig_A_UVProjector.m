@@ -52,7 +52,8 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
             %obj.daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %obj.daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
 %             obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
-            
+            obj.daqStreams('Bath Temperature') = {'ai2',-1,'degC'};
+            obj.daqStreams('Bath Temperature Control') = {'ai3',-1,'degC'};
             
             if nargin < 1
                 delayInit = false;

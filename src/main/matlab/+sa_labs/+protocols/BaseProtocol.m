@@ -176,6 +176,9 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                         epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Iclamp');
                     end
                 end
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
+                
             end
             
             %scanhead trigger for function imaging, added by Greg 3/5/18

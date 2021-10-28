@@ -56,7 +56,11 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                         unit = symphonyui.core.Measurement.UNITLESS;
                     end
                     
-                    Stream = UnitConvertingDevice(names{ii}, unit).bindStream(daq.getStream(port));
+                    if length(dS)>3
+                        Stream = CalibratedDevice(names{ii}, unit, dS{4}, dS{5}).bindStream(daq.getStream(port));
+                    else
+                        Stream = UnitConvertingDevice(names{ii}, unit).bindStream(daq.getStream(port));
+                    end
                     
                     if bit ~= -1
                         daq.getStream(port).setBitPosition(Stream, bit); %Set bit depth for Digital signal
@@ -64,6 +68,8 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                     obj.addDevice(Stream);
                 end
             end
+            
+            Symphony.Core.Converters.Register('V','degC', Symphony.Core.ConvertProcs.Scale(10,'degC')); %for the bath controller
             
             neutralDensityFilterWheel = sa_labs.devices.NeutralDensityFilterWheelDevice(obj.filterWheelComPort);
             neutralDensityFilterWheel.setConfigurationSetting('filterWheelNdfValues', obj.filterWheelNdfValues);
