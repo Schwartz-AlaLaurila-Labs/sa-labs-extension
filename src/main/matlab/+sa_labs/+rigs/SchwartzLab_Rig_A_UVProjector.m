@@ -15,7 +15,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen =[-6.80e-19, -4.58e-17, 1.56e-13, 1.49e-11];%Green projector broken
         fitUV = [-6.80e-19, -4.58e-17, 1.56e-11, 1.49e-11];%updated 11/21/2019 -David
         
-        micronsPerPixel = 1.21;%updated 11/21/2019 -David
+        micronsPerPixel = 1.3;%updated 11/2/2021 -David and Sophia (and a little Zach)
         
         frameTrackerPosition = [0,0];
         
