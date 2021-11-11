@@ -17,7 +17,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         
         micronsPerPixel = 1.3;%updated 11/2/2021 -David and Sophia (and a little Zach)
         
-        frameTrackerPosition = [0,0];
+        frameTrackerPosition = [0,-150];
         
         frameTrackerSize = [550,550];
         
