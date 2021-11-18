@@ -178,9 +178,10 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
                 
             end
-            epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
-            epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
-                
+            if any(strcmp(obj.rig.getDeviceNames, 'Bath Tempature'))
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
+            end
             
             %scanhead trigger for function imaging, added by Greg 3/5/18
             if obj.scanHeadTrigger
