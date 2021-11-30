@@ -176,6 +176,11 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                         epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Iclamp');
                     end
                 end
+                
+            end
+            if any(strcmp(obj.rig.getDeviceNames, 'Bath Tempature'))
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
             end
             
             %scanhead trigger for function imaging, added by Greg 3/5/18
@@ -223,8 +228,15 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     disp('no stim time trigger device found')
                 end
             end
+            
+            name = obj.rig.getDeviceNames('LED_blanking_signal');       
+            if ~isempty(name)
+                D = obj.rig.getDevice('LED_blanking_signal');
+                epoch.addResponse(D);
+            end
                                     
         end
+        
         
         function tf = shouldContinuePreparingEpochs(obj)
             tf = obj.numEpochsPrepared < obj.totalNumEpochs;

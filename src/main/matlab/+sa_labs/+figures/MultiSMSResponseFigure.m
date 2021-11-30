@@ -26,11 +26,18 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
         t;
         
         rightPanel;
+        kernelAxes;
+        kernels;
+        kernelD;
+        kernelIm;
+        resolution = [2,2];
         
         axesTitle;
         fmtString;
         
         epochNumber = 0;
+        
+        spikeDetector;
     end
     
     methods
@@ -43,7 +50,7 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
             [rads,~,radI] = unique(self.spotsA(:,3));
             nRads = numel(rads);
             self.spotsA = cat(2, self.spotsA, radI, zeros(size(self.spotsA,1),1));
-            self.spotsA(:,3) = self.spotsA(:,3);
+%             self.spotsA(:,3) = self.spotsA(:,3);
             if nRads > 7
                 self.colors = colorcube(nRads);
             else
@@ -68,6 +75,21 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
             
             self.rightPanel = uipanel('Parent', self.figureHandle, 'Position',[.7,0,.3,1],'Units','Normalized','backgroundColor','black',...
                 'shadowcolor',[0,.8,1], 'highlightcolor',[0,.5,.7]);
+            self.kernelAxes = axes('Parent',self.rightPanel);
+            
+            self.kernels = self.density_estimator();
+            self.kernelD = zeros(size(self.kernels,2),size(self.kernels,3));
+            self.kernelIm = imagesc(self.kernelD,'parent', self.kernelAxes);
+            colormap(self.kernelAxes,'bone');
+            axis(self.kernelAxes,'xy');
+            axis(self.kernelAxes,'off');
+            axis(self.kernelAxes,'equal');
+            %TODO: lots of cleaning up of kernel plotting
+            %optimization
+            %plot spike times
+            %plot sms curve... how?
+            
+            self.spikeDetector = sa_labs.util.SpikeDetector('advanced',-6);
             
             if strcmpi(self.protocol.chan2,'none')
                 self.nChans = 1;
@@ -121,6 +143,23 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
             
         end
         
+        function kernels = density_estimator(self)
+            %meshgrid, self.protocol.gridX / gridY, self.resolution...
+            gridCount = [2*self.resolution(1)*self.protocol.gridX, 2*self.resolution(2)*self.protocol.gridY];
+            [xi,yi] = meshgrid(linspace(-self.protocol.gridX, self.protocol.gridX, gridCount(1)),...
+                linspace(-self.protocol.gridY, self.protocol.gridY, gridCount(2))...
+                );
+            xy = [xi(:), yi(:)];
+            nSpots = size(self.spotsA,1);
+            sigmaInv = (2./self.spotsA(:,3)).^2;
+            temp = arrayfun( @(i) density(self.spotsA(i,1:2), sigmaInv(i)), 1:nSpots, 'uniformoutput', false );
+            kernels = reshape(horzcat(temp{:})' .* sigmaInv ./ (2*pi), [nSpots, gridCount]);
+            
+            function g = density(mu, sI)
+                g = exp(-sI/2*sum((xy-mu).^2,2));
+            end
+        end
+        
         function update(self, pyx)
             %when the figure size changes we need to resize the pixel
             %buffer
@@ -146,7 +185,7 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
         end
         
         function reset(self)
-            %clears the state of the repsonse figure so it can be recycled
+            %clears the state of the response figure so it can be recycled
             
             self.spotsA(:,5) = 0;
             self.cycle = 1;
@@ -159,6 +198,7 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
             
 %             self.stimIm = imshow(self.renderB, 'parent', self.stimAxes);
             set(self.stimIm, 'cdata', self.renderB);
+            self.kernelD = zeros(size(self.kernels,2),size(self.kernels,3));            
         end
         
         function handleEpoch(self, epoch)
@@ -178,13 +218,24 @@ classdef MultiSMSResponseFigure < symphonyui.core.FigureHandler
             
             %epoch.getResponse(self.protocol.devices{ci});
             %draw response
-            set(self.recordPlotA,'ydata',epoch.getResponse(self.protocol.devices{1}).getData());
+            ch1 = epoch.getResponse(self.protocol.devices{1}).getData();
+            set(self.recordPlotA,'ydata',ch1);
             if self.nChans>1
                 set(self.recordPlotB,'ydata', epoch.getResponse(self.protocol.devices{2}).getData());
             end
+            
+            sp = self.spikeDetector.detectSpikes(ch1); %result is sp.sp?
+%             fprintf('detected %d spikes\n', numel(sp.sp));
+            
             %draw rf(s)
-            
-            
+            self.kernelD = self.kernelD + squeeze(self.kernels(thisSpotI,:,:))*numel(sp.sp);
+%             set(self.kernelIm,'cdata',self.kernelD);
+            self.kernelIm = imagesc(self.kernelD,'parent', self.kernelAxes);
+            colormap(self.kernelAxes,'bone');
+            axis(self.kernelAxes,'xy');
+            axis(self.kernelAxes,'equal');
+            axis(self.kernelAxes,'off');
+
             %finish
             set(self.axesTitle,'string',sprintf(self.fmtString, self.cycle, self.epochNumber, epoch.parameters('cx'), epoch.parameters('cy'), epoch.parameters('curSpotSize')));
             self.spotsA(thisSpotI,5) = self.cycle;

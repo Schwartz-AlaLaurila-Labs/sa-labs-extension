@@ -11,14 +11,17 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_Green = [1,1,1,1,1,1];%Green projector broken 
         filterWheelAttenuationValues_UV = [.1, .00172, .0000807, .00000652, .0000027, .00172];%updated 11/21/2019 -David
         
-        fitBlue = [4.71e-12, -7.68e-9, 2.84e-6, -1.19e-5];%updated 11/21/2019 -David
-        fitGreen =[-6.80e-13, -4.58e-11, 1.56e-7, 1.49e-5];%Green projector broken
-        fitUV = [-6.80e-13, -4.58e-11, 1.56e-7, 1.49e-5];%updated 11/21/2019 -David
+        fitBlue = [4.71e-18, -7.68e-15, 2.84e-12, -1.19e-11];%updated 11/21/2019 -David
+        fitGreen =[-6.80e-19, -4.58e-17, 1.56e-13, 1.49e-11];%Green projector broken
+        fitUV = [-6.80e-19, -4.58e-17, 1.56e-11, 1.49e-11];%updated 11/21/2019 -David
         
-        micronsPerPixel = 1.21;%updated 11/21/2019 -David
-        frameTrackerPosition = [0,0];
+        micronsPerPixel = 1.3;%updated 11/2/2021 -David and Sophia (and a little Zach)
+        
+        frameTrackerPosition = [0,-150];
+        
         frameTrackerSize = [550,550];
-        filterWheelComPort = 'COM8';
+        
+        filterWheelComPort = 'COM7';
         orientation = [false, true];%[flip Y, flip X]
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
@@ -30,8 +33,8 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         projectorColorMode = 'uv2'; % Rig A has MkII projector
         numberOfAmplifiers = 2;
         
-        host = 'localhost'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
-        daq_type = 'Heka'; %What brand data aquisition board is being used?  'Heka' or 'NI'
+        host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
+        daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
     end
     
     methods
@@ -42,13 +45,15 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
             % bit number = -1 for analog.
             % Comment out if you don't want to use.
      
-            obj.daqStreams('Oscilloscope Trigger') = {'doport1', 0, 0}; %
+            obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
             %obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
             %obj.daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
-            obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
+%             obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %obj.daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %obj.daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
-            
+%             obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
+            obj.daqStreams('Bath Temperature') = {'ai2',-1,'degC'};
+            obj.daqStreams('Bath Temperature Control') = {'ai3',-1,'degC'};
             
             if nargin < 1
                 delayInit = false;
