@@ -24,6 +24,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             settings('spectralOverlap_Blue') = 0;
             settings('spectralOverlap_Green') = 0;
             settings('spectralOverlap_UV') = 0;
+            settings('blankingFactor') = 1;
             
             %% Overwrite default values with values from RigConfig if present
             RigProperties = properties(RigConfig);
@@ -90,6 +91,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addResource('spectralOverlap_Blue', settings('spectralOverlap_Blue'));
             obj.addResource('spectralOverlap_Green', settings('spectralOverlap_Green'));
             obj.addResource('spectralOverlap_UV', settings('spectralOverlap_UV'));
+            obj.addResource('blankingFactor', settings('blankingFactor'));
 
                         
         end

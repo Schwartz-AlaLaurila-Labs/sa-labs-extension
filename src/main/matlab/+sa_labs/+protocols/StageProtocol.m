@@ -171,6 +171,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.lightCrafterParams.spectralOverlap_Blue = lightCrafter.getResource('spectralOverlap_Blue');
                 obj.lightCrafterParams.spectralOverlap_Green = lightCrafter.getResource('spectralOverlap_Green');
                 obj.lightCrafterParams.spectralOverlap_UV = lightCrafter.getResource('spectralOverlap_UV');
+                obj.lightCrafterParams.blankingFactor = lightCrafter.getResource('blankingFactor');
                 
                 obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
                 obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
@@ -501,6 +502,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             rstar = round(R * intensity / parameters.numberOfPatterns, 1);
             mstar = round(M * intensity / parameters.numberOfPatterns, 1);
             sstar = round(S * intensity / parameters.numberOfPatterns, 1);
+
+            if obj.imaging 
+                rstar = rstar * obj.lightCrafterParams.blankingFactor;
+                mstar = mstar * obj.lightCrafterParams.blankingFactor;
+                sstar = sstar * obj.lightCrafterParams.blankingFactor;
+                
+            end
         end
              
         

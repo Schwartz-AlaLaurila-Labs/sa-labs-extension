@@ -25,6 +25,8 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
 
         frameTrackerSize = [100,100];%updated 02/23/21 -David
        
+        blankingFactor = .4 %assumes line rate > 600 Hz. updated 09/09/21 - David and Zach
+
         filterWheelComPort = 'COM5';
         orientation = [false, true]; %[flip Y, flip X]
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
