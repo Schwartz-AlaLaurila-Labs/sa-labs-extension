@@ -78,6 +78,9 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('backgroundIntensity', 0); % also pattern 1 if contrast mode
             obj.addConfigurationSetting('backgroundIntensity2', 0)
             obj.addConfigurationSetting('backgroundPattern', 1);
+            obj.addConfigurationSetting('midgroundSize', [0,0]); %central region to remove background, for imaging
+            obj.addConfigurationSetting('midgroundIntensity', 0);
+            obj.addConfigurationSetting('midgroundIntensity2', 0);
             obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', settings('angleOffset'));
             
@@ -166,6 +169,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             end
             
         end
+
+        function setMidground(obj, width, height, intensity1, intensity2)
+            obj.setConfigurationSetting('midgroundSize',[width, height]);
+            obj.setConfigurationSetting('midgroundIntensity', intensity1);
+            obj.setConfigurationSetting('midgroundIntensity2',intensity2)
+        end
         
         function tf = getPrerender(obj)
             tf = obj.getConfigurationSetting('prerender');
@@ -189,6 +198,15 @@ classdef LightCrafterDevice < symphonyui.core.Device
             background.position = canvasSize/2 - canvasTranslation;
             background.opacity = 1;
             
+            
+            midground = stage.builtin.stimuli.Rectangle();
+            midground.size = obj.getConfigurationSetting('midgroundSize');
+            midground.position = canvasSize/2 - canvasTranslation;
+            midground.opacity = 1;
+            midgroundIntensity = obj.getConfigurationSetting('midgroundIntensity');
+            midgroundIntensity2 = obj.getConfigurationSetting('midgroundIntensity2');
+            
+
             mode = obj.getConfigurationSetting('backgroundPatternMode');
             intensity1 = obj.getConfigurationSetting('backgroundIntensity');
             intensity2 = obj.getConfigurationSetting('backgroundIntensity2');
@@ -197,19 +215,36 @@ classdef LightCrafterDevice < symphonyui.core.Device
             switch mode
                 case 'noPattern'
                     background.color = intensity1;
+                    midground.color = midgroundIntensity;
                     
                 case 'singlePattern'
                     background.color = intensity1;
                     backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
                         @(state)(1 * (state.pattern == backgroundPattern - 1)));
                     presentation.addController(backgroundPatternController);
-                    
+
+                    if any(midground.size)
+                        midground.color = midgroundIntensity;
+                        midgroundPatternController = stage.builtin.controllers.PropertyController(midground, 'opacity',...
+                        @(state)(1 * (state.pattern == backgroundPattern - 1)));
+                        presentation.addController(midgroundPatternController);
+                    end
+
                 case 'twoPattern'
                     backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
                         @(state)(intensity1 * (state.pattern == 0) + intensity2 * (state.pattern == 1)));
                     presentation.addController(backgroundPatternController);
+                    
+                    if any(midground.size)
+                        midgroundPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
+                            @(state)(midgroundIntensity1 * (state.pattern == 0) + midgroundIntensity2 * (state.pattern == 1)));
+                        presentation.addController(midgroundPatternController);
+                    end
+
             end
-            
+            if any(midground.size)
+            presentation.insertStimulus(1, midground); %insert the midground in front of the background....
+            end
             presentation.insertStimulus(1, background);
             
             % FRAME TRACKER

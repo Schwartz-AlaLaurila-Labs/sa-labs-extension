@@ -22,6 +22,14 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'contrast'
+
+        imaging = false % declare whether this is an imaging trial        
+        doSubtration = true %opt to remove a section from the background corresponding to imaging field
+        imagingMean = 0
+        imagingMean1 = 0
+        imagingMean2 = 0
+        imagingFieldWidth = 125
+        imagingFieldHeight = 125
     end
     
     properties (Dependent)
@@ -55,6 +63,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         filterWheelAttenuationValues_Green
         filterWheelAttenuationValues_UV
         lightCrafterParams
+
     end
        
     methods (Abstract)
@@ -119,6 +128,31 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     
                 case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                     d.category = '6 Isomerizations';
+
+                case {'imagingMean'}
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || ~obj.doSubtration
+                        d.isHidden = true;
+                    end
+                    if obj.numberOfPatterns > 1
+                        if strcmp(obj.colorCombinationMode, 'contrast')
+                            d.isHidden = true;
+                        end
+                    end
+                case {'imagingMean1', 'imagingMean2'}
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || ~obj.doSubtration
+                        d.isHidden = true;
+                    end
+                    if obj.numberOfPatterns == 1 || ~strcmp(obj.colorCombinationMode, 'contrast')
+                        d.isHidden = true;
+                    end
+                case {'imagingFieldWidth', 'imagingFieldHeight'}
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || ~obj.doSubtration
+                        d.isHidden = true;
+                    end
+
             end
             
         end
@@ -226,6 +260,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 else
                     lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
                 end
+                if obj.imaging && obj.doSubtration
+                    if obj.numberOfPatterns > 1
+                        lightCrafter.setMidground(obj.imagingFieldWidth, obj.imagingFieldHeight, obj.imagingMean1, obj.imagingMean2);
+                    else
+                        lightCrafter.setMidground(obj.imagingFieldWidth, obj.imagingFieldHeight, obj.imagingMean, 0);
+                    end
+                else
+                    lightCrafter.setMidground(0, 0, 0, 0);
+                end
+
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
