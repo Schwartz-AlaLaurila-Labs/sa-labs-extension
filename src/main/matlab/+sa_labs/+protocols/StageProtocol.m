@@ -24,7 +24,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         colorCombinationMode = 'contrast'
 
         imaging = false % declare whether this is an imaging trial        
-        doSubtration = true %opt to remove a section from the background corresponding to imaging field
+        doSubtraction = true %opt to remove a section from the background corresponding to imaging field
         imagingMean = 0
         imagingMean1 = 0
         imagingMean2 = 0
@@ -35,6 +35,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     properties (Dependent)
         numberOfPatterns = 1        
         RstarMean
+        RstarMidground
         RstarIntensity1
         MstarIntensity1
         SstarIntensity1
@@ -128,10 +129,14 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     
                 case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                     d.category = '6 Isomerizations';
-
+                case 'RstarMidground'
+                    d.category = '6 Isomerizations';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
                 case {'imagingMean'}
                     d.category = '3 Imaging';
-                    if ~obj.imaging || ~obj.doSubtration
+                    if ~obj.imaging || ~obj.doSubtraction
                         d.isHidden = true;
                     end
                     if obj.numberOfPatterns > 1
@@ -141,7 +146,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     end
                 case {'imagingMean1', 'imagingMean2'}
                     d.category = '3 Imaging';
-                    if ~obj.imaging || ~obj.doSubtration
+                    if ~obj.imaging || ~obj.doSubtraction
                         d.isHidden = true;
                     end
                     if obj.numberOfPatterns == 1 || ~strcmp(obj.colorCombinationMode, 'contrast')
@@ -149,9 +154,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     end
                 case {'imagingFieldWidth', 'imagingFieldHeight'}
                     d.category = '3 Imaging';
-                    if ~obj.imaging || ~obj.doSubtration
+                    if ~obj.imaging || ~obj.doSubtraction
                         d.isHidden = true;
                     end
+                case 'doSubtraction'
+                    d.category = '3 Imaging';
+                    if ~obj.imaging
+                        d.isHidden = true;
+                    end
+                case 'imaging'
+                    d.category = '1 Basic';
 
             end
             
@@ -261,11 +273,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 else
                     lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
                 end
-                if obj.imaging && obj.doSubtration
+                if obj.imaging && obj.doSubtraction
                     if obj.numberOfPatterns > 1
-                        lightCrafter.setMidground(obj.imagingFieldWidth, obj.imagingFieldHeight, obj.imagingMean1, obj.imagingMean2);
+                        lightCrafter.setMidground(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingMean1, obj.imagingMean2);
                     else
-                        lightCrafter.setMidground(obj.imagingFieldWidth, obj.imagingFieldHeight, obj.imagingMean, 0);
+                        lightCrafter.setMidground(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingMean, 0);
                     end
                 else
                     lightCrafter.setMidground(0, 0, 0, 0);
@@ -391,6 +403,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 [RstarMean, ~, ~] = obj.getIsomerizations(props, pattern);
             else
                 [RstarMean, ~, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
+            end
+        end
+
+        function RstarMidground = get.RstarMidground(obj)
+            props = {'imagingMean'};
+            pattern = 1;
+            if obj.numberOfPatterns == 1
+                [RstarMidground, ~, ~] = obj.getIsomerizations(props, pattern);
+            else
+                [RstarMidground, ~, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
             end
         end
     
