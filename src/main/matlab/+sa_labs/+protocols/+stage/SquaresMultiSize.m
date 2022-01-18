@@ -70,8 +70,8 @@ classdef SquaresMultiSize < sa_labs.protocols.StageProtocol
             %set bg
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);            
             spot = stage.builtin.stimuli.Rectangle();
-            spot.width = round(obj.um2pix(obj.curSize));
-            spot.height = spot.height;
+            side = round(obj.um2pix(obj.curSize));
+            spot.size = [side,side];
             spot.color = obj.intensity;
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             spot.position = canvasSize / 2;
