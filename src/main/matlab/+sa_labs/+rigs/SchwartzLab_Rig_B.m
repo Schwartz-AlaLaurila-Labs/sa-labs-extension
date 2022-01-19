@@ -11,7 +11,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_Green = [0.089974684	0.008658228	0.000759494	7.06621E-05	6.48122E-06 1];%updated 02/25/21 -David - NDF 4 & 5 were predicted from lower NDF values
         filterWheelAttenuationValues_UV = [0.035217391	0.002063241	8.60316E-05	3.90679E-06	1.77411E-07 1]; %updated 02/25/21 -David - NDF 3, 4, & 5 were predicted from lower NDF values
         
-        fitBlue = [8.38335849964113e-18,-5.79109357290939e-15,2.10936942123996e-12,-4.93337644663386e-11];%updated 7/1/21 - David
+        fitBlue = [5.01054711270044e-18	-2.21188541610487e-15	5.27272199418043e-13	-1.20400470830141e-11];%updated 10/05/21 - David
         fitGreen = [4.49248176839518e-18,-4.34318771541836e-15,1.82493374651640e-12,-4.51382977537234e-11];%updated 7/1/21 - David
         fitUV = [1.26531855824211e-19,-1.62979438916323e-16,1.00928035139656e-13,4.87488460073430e-12];%updated 7/1/21 - David
         
