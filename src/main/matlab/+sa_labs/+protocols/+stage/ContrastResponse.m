@@ -8,12 +8,16 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
         minContrast = 0.02              % Minimum contrast (0-1)
         maxContrast = 1                 % Maximum contrast (0-1)
         contrastDirection = 'positive'  % Direction of contrast
+        shape = 'circle'
+        sizeY = 800
         spotDiameter = 200              % Spot diameter (um)
         numberOfCycles = 2               % Number of cycles through all contrasts
+        
     end
     
     properties (Hidden)
         contrastDirectionType = symphonyui.core.PropertyType('char', 'row', {'both', 'positive', 'negative'})
+        shapeType = symphonyui.core.PropertyType('char', 'row', {'circle', 'square'})
         contrastValues                  % Linspace range between min and max contrast for given contrast steps
         intensityValues                 % Spot meanLevel * (1 + contrast Values)
         contrast                        % Spot contrast value for current epoch @see prepareEpoch
@@ -83,10 +87,20 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
-            spot = stage.builtin.stimuli.Ellipse();
+            if strcmp(obj.shape, 'circle')
+                spot = stage.builtin.stimuli.Ellipse();
+                spot.radiusX = spotDiameterPix/2;
+                spot.radiusY = spotDiameterPix/2;
+                
+            elseif strcmp(obj.shape, 'square')
+                spot = stage.builtin.stimuli.Rectangle();
+                side = round(obj.um2pix(obj.spotDiameter));
+                Y = round(obj.um2pix(obj.sizeY));
+                spot.size = [side,Y];
+            end
+
             spot.color = obj.intensity;
-            spot.radiusX = spotDiameterPix/2;
-            spot.radiusY = spotDiameterPix/2;
+            
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
