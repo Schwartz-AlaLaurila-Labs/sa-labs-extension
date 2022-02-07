@@ -14,15 +14,11 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
         
         textureSize = 200; % um
         numberOfEpochs = 200
-
-        alternatePatterns = false
     end
     
     properties (Hidden)
         version = 1;
-        currentTexturePattern
-        responsePlotMode = 'cartesian'; 
-        responsePlotSplitParameter = 'currentTexturePattern';
+        responsePlotMode = false;
     end
     
     properties (Dependent, Hidden)
@@ -32,21 +28,6 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
     methods
         
         function prepareEpoch(obj, epoch)
-            %TODO: remove this?
-            obj.currentTexturePattern = obj.primaryObjectPattern;
-            if obj.numberOfPatterns > 1
-                if obj.alternatePatterns
-                    if mod(obj.numEpochsPrepared, 2) == 1
-                        obj.currentTexturePattern = obj.secondaryObjectPattern;
-                        currentTextureColor = obj.colorPattern2;
-                    else
-                        obj.currentTexturePattern = obj.primaryObjectPattern;
-                        currentTextureColor = obj.colorPattern1;
-                    end
-                    disp(currentTextureColor)
-                end
-            end
-            epoch.addParameter('currentTexturePattern', obj.currentTexturePattern);
            
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -60,9 +41,6 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
             texture = stage.builtin.stimuli.Image(randi(255,[200,200],'uint8'));
             texture.color = obj.intensity;
             texture.opacity = 1;
-            % texture = stage.builtin.stimuli.Ellipse();
-            % texture.radiusX = obj.textureSize;
-            % texture.radiusY = obj.textureSize;
             
             
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
