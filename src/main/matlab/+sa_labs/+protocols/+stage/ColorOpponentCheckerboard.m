@@ -35,10 +35,10 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
         end
         
         function p = createPresentation(obj)
-            p = stage.core.Presentation(obj.preTime + obj.stimTime + obj.tailTime);
+            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime)*1e-3);
             
             % Image is M-by-N (grayscale), M-by-N-by-3 (truecolor)
-            texture = stage.builtin.stimuli.Image(rand([200,200]));
+            texture = stage.builtin.stimuli.Image(rand([200,200], 'uint8'));
             texture.color = obj.intensity;
             texture.opacity = 1;
             
