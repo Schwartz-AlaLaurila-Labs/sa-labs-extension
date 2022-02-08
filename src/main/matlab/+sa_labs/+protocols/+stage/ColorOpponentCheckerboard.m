@@ -42,8 +42,7 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
 
             %% [R, G, B] -> [UV, G, B]
             % Create Im as a 3D array of true colors (M-by-N-by-3 (true color))
-            Im(:, :, 1) = randi(255, [200, 200], 'uint8');
-            Im(:, :, 2) = randi(255, [200, 200], 'uint8');
+            Im(:, :, 1:2) = randi(255, [200, 200, 2], 'uint8');
             Im(:, :, 3) = zeros(200, 200, 'uint8');
             texture = stage.builtin.stimuli.Image(Im);
 
