@@ -37,7 +37,8 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime)*1e-3);
             
-            % Image is M-by-N (grayscale), M-by-N-by-3 (truecolor)
+            % Image is M-by-N (grayscale), **** M-by-N-by-3 (truecolor)
+            %% [R,G,B] -> [uv, g, b]
             texture = stage.builtin.stimuli.Image(randi(255,[200,200], 'uint8'));
             texture.color = obj.intensity;
             texture.opacity = 1;
@@ -52,7 +53,7 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
             obj.setOnDuringStimController(p, texture);
             
             % shared code for multi-pattern objects
-            obj.setColorController(p, texture);
+            % obj.setColorController(p, texture);
             
         end
         
