@@ -46,7 +46,10 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
             
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             texture.position = canvasSize / 2;
-            texture.size = [obj.textureSize obj.textureSize]; %TODO: pixels2microns step
+
+            % Convert texture size from microns to pixels
+            textureDimPix = obj.um2pix(obj.textureSize);
+            texture.size = [textureDimPix, textureDimPix];
             
             p.addStimulus(texture);
             
