@@ -106,12 +106,13 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
                 if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
                     timeVal = state.time - preTime*1e-3; %s
                     %inelegant solution for zero mean
-                    if meanLevel < 0.05
-                        c = contrast * sin(2*pi*timeVal*freq);
-                        if c<0, c = 0; end %rectify
-                    else
-                        c = meanLevel + meanLevel * contrast * sin(2*pi*timeVal*freq);
-                    end
+%                     if meanLevel < 0.05
+%                         c = contrast * sin(2*pi*timeVal*freq);
+%                         if c<0, c = 0; end %rectify
+%                     else
+%                         c = meanLevel + meanLevel * contrast * sin(2*pi*timeVal*freq);
+%                     end
+                    c = contrast;
                 else
                     c = meanLevel;
                 end
