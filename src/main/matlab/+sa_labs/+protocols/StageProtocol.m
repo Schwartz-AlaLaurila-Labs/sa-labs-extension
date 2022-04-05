@@ -176,6 +176,18 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     else
                         d.isHidden = true;
                     end
+                case {'frequency'}
+                    if obj.sineWave
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end
+                case {'numberOfPulses'}
+                    if obj.sineWave
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end
             end
             
         end
