@@ -3,17 +3,19 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
     properties
         preTime = 250
         tailTime = 500
+        sineWave = false
         
-        contrast = 0.5
-        frequency = 4; %hz
-        numberOfContrastPulses = 4;
+        contrastOrIntensity = 0.5 %If Sine wave is selected, this sets the contrast.  If light step is selected, this sets the intensity
+        
+        frequency = 1; %hz
+        numberOfPulses = 1;
         
         probeAxis = 'vertical';
-        barSeparation = 30; %microns
-        barWidth = 30; %microns
+        barSeparation = 50; %microns
+        barWidth = 50; %microns
         barLength = 200; %microns
         
-        numberOfPositions = 11;
+        numberOfPositions = 9;
         numberOfCycles = 2;
     end
     
@@ -22,7 +24,7 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden)
-        version = 3
+        version = 4
         curPosXPx
         curPosYPx
         positions % in microns
@@ -102,23 +104,27 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             rect.position = [obj.curPosXPx, obj.curPosYPx];
             p.addStimulus(rect);
             
-            function c = sineWaveStim(state, preTime, stimTime, contrast, meanLevel, freq)
+            function c = stimWave(state, preTime, stimTime, conOrInt, meanLevel, freq)
                 if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    timeVal = state.time - preTime*1e-3; %s
-                    %inelegant solution for zero mean
-%                     if meanLevel < 0.05
-%                         c = contrast * sin(2*pi*timeVal*freq);
-%                         if c<0, c = 0; end %rectify
-%                     else
-%                         c = meanLevel + meanLevel * contrast * sin(2*pi*timeVal*freq);
-%                     end
-                    c = contrast;
+                    if obj.sineWave
+                        timeVal = state.time - preTime*1e-3; %s
+                        %inelegant solution for zero mean
+                        if meanLevel < 0.05
+                            c = conOrInt * sin(2*pi*timeVal*freq);
+                            if c<0, c = 0; end %rectify
+                        else
+                            c = meanLevel + meanLevel * conOrInt * sin(2*pi*timeVal*freq);
+                        end
+
+                    else
+                        c = conOrInt;
+                    end
                 else
                     c = meanLevel;
                 end
             end
             
-            controller = stage.builtin.controllers.PropertyController(rect, 'color', @(s)sineWaveStim(s, obj.preTime, obj.stimTime, obj.contrast, obj.meanLevel, obj.frequency));
+            controller = stage.builtin.controllers.PropertyController(rect, 'color', @(s)stimWave(s, obj.preTime, obj.stimTime, obj.contrastOrIntensity, obj.meanLevel, obj.frequency));
             p.addController(controller);
         end
         
@@ -127,7 +133,7 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
         end
         
         function stimTime = get.stimTime(obj)
-            stimTime = 1E3*(obj.numberOfContrastPulses/obj.frequency);
+            stimTime = 1E3*(obj.numberOfPulses/obj.frequency);
         end
     end
     
