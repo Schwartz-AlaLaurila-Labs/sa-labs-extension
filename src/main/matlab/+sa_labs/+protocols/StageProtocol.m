@@ -193,7 +193,18 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     else
                         d.isHidden = true;
                     end
-                
+                case {'frequency'}
+                    if obj.sineWave
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end
+                case {'numberOfPulses'}
+                    if obj.sineWave
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end                
                 case {'blueBlanking','greenBlanking'}
                     d.category = '3 Imaging';
                     if obj.imaging
@@ -609,11 +620,14 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
              
         
         function bitDepth = get.bitDepth(obj)
-            if obj.numberOfPatterns == 1
-                bitDepth = 8;
-            else
-                bitDepth = 6;
-            end
+            % if obj.numberOfPatterns == 1
+            %     bitDepth = 8;
+            % else
+            %     bitDepth = 6;
+            % end
+            %above code seems to be wrong for the Lightcrafter4500
+
+            bitDepth = 8;
         end
         
         function frameRate = get.frameRate(obj)
@@ -778,6 +792,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             pround = round(p);
         end
         
+        function um = pix2um(obj, pix)
+            stage = obj.rig.getDevice('Stage');
+            micronsPerPixel = stage.getConfigurationSetting('micronsPerPixel');
+            um = pix * micronsPerPixel;
+        end
+
     end
     
 
