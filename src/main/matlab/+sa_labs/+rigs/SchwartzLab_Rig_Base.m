@@ -81,6 +81,13 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             
             lightCrafter = sa_labs.devices.LightCrafterDevice(obj, obj.lcr);
             obj.addDevice(lightCrafter);
+
+            if isprop(obj,'blankingCircuitComPort')
+                blankingCircuit = sa_labs.devices.BlankingCircuit(obj.blankingCircuitComPort);
+            else
+                blankingCircuit = sa_labs.devices.MockBlankingCircuit();
+            end
+            obj.addDevice(blankingCircuit);
         end
     end
 end
