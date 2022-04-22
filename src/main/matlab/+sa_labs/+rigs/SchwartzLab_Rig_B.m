@@ -36,7 +36,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
 
-        blankingCircuitComPort = 'COM12';
+        blankingCircuitComPort = 'COM3';
     end
     
     methods

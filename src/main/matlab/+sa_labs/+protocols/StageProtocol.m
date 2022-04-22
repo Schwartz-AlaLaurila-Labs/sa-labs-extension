@@ -30,6 +30,17 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         imagingMean2 = 0
         imagingFieldWidth = 125
         imagingFieldHeight = 125
+
+        %which LED(s) will be modulated by the laser's line clock
+        %only applies when imaging is true
+        blueBlanking = false;
+        greenBlanking = false;
+        redBlanking = false;
+        uvBlanking = false;
+
+        %% PWM
+        doPWM = false; %if false, LEDs will be on all the time (or blanked)
+
     end
     
     properties (Dependent)
@@ -45,22 +56,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         bitDepth = 8
         prerender = false
         frameRate = 60; % changing this isn't implemented
-
-        %which LED(s) will be modulated by the laser's line clock
-        %only applies when imaging is true
-        blueBlanking logical;
-        greenBlanking logical;
-        redBlanking logical;
-        uvBlanking logical;
-
-        %% PWM
-        doPWM logical; %if false, LEDs will be on all the time (or blanked)
-
+        
+        
         %value indicates relative on time for each LED
-        bluePWM double;
-        greenPWM double;
-        redPWM double;
-        uvPWM double;
+        bluePWM
+        greenPWM
+        redPWM
+        uvPWM
     end
     
     properties % again, for ordering
@@ -80,8 +82,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         filterWheelAttenuationValues_Green
         filterWheelAttenuationValues_UV
         lightCrafterParams
+        
+        bluePWM_ = 1
+        redPWM_ = 1
+        greenPWM_ = 1
+        uvPWM_ = 1
 
-        doPWM_ = false;
     end
        
     methods (Abstract)
@@ -215,39 +221,51 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 
                 case 'redBlanking'
                     d.category = '3 Imaging';
-                    if strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2')
+                    if ~obj.imaging || (strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2'))
                         d.isHidden = true;
+                    else
+                        d.isHidden = false;
                     end
                 case 'uvBlanking'
                     d.category = '3 Imaging';
-                    if ~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2')
+                    if ~obj.imaging || (~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2'))
                         d.isHidden = true;
+                    else
+                        d.isHidden = false;
                     end
         
                 %% PWM
                 case 'doPWM'
-                    d.category = '7 Projector'
+                    d.category = '7 Projector';
         
                 %value indicates relative on time for each LED
                 case 'bluePWM'
-                    d.category = '7 Projector'
-                    if obj.blueBlanking
+                    d.category = '7 Projector';
+                    if obj.blueBlanking || ~obj.doPWM
                         d.isHidden = true;
+                    else
+                        d.isHidden = false;
                     end
                 case 'greenPWM'
-                    d.category = '7 Projector'
-                    if obj.greenBlanking
+                    d.category = '7 Projector';
+                    if obj.greenBlanking || ~obj.doPWM
                         d.isHidden = true;
+                    else
+                        d.isHidden = false;
                     end
                 case 'redPWM'
-                    d.category = '7 Projector'
-                    if obj.redBlanking || strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2')
+                    d.category = '7 Projector';
+                    if ~obj.doPWM || obj.redBlanking || strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2')
                         d.isHidden = true;
+                    else
+                        d.isHidden = false;
                     end
                 case 'uvPWM'
-                    d.category = '7 Projector'
-                    if obj.uvBlanking || (~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2'))
+                    d.category = '7 Projector';
+                    if ~obj.doPWM || obj.uvBlanking || (~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2'))
                         d.isHidden = true;
+                    else
+                        d.isHidden = false;
                     end
             end
             
@@ -344,7 +362,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     filterWheel.setNdfValue(obj.NDF);
                 end
             end
-                        
+            
+            %%set leds... blanking...
+            for color = {'red','green','blue','uv'}
+                if obj.(cell2mat(strcat(color,'Blanking')))
+                    obj.setBlanking(color, true);
+                else
+                    obj.setPWM(color, obj.(cell2mat(strcat(color,'PWM'))));
+                end
+            end
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
@@ -658,125 +684,107 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
 
-        function status = get.doPWM(obj)
-            status = obj.doPWM_ || any(obj.rig.getDevice('BlankingCircuit').getLevel(1:3) ~= 256);
-        end
-
-        function set.doPWM(obj, level)
-            if level
-                obj.doPWM_ = true;
-            else
-                obj.doPWM_ = false;
-            end
-        end
-
-        function status = get.blueBlanking(obj)
-            status = obj.getBlanking('blue');
-        end
-
         function set.blueBlanking(obj, level)
-            obj.setBlanking('blue', level);
-        end
-
-        function status = get.bluePWM(obj)
-            status = obj.getPWM('blue');
-        end
-
-        function set.bluePWM(obj, level)
-            status = obj.setPWM('blue', level);
-        end
-
-        function status = get.greenBlanking(obj)
-            status = obj.getBlanking('green');
-        end
-
-        function set.greenBlanking(obj, level)
-            obj.setBlanking('green', level);
-        end
-
-        function status = get.greenPWM(obj)
-            status = obj.getPWM('green');
-        end
-
-        function set.greenPWM(obj, level)
-            status = obj.setPWM('green', level);
-        end
-
-        function status = get.uvBlanking(obj)
-            status = obj.getBlanking('uv');
-        end
-
-        function set.uvBlanking(obj, level)
-            obj.setBlanking('uv', level);
-        end
-
-        function status = get.uvPWM(obj)
-            status = obj.getPWM('uv');
-        end
-
-        function set.uvPWM(obj, level)
-            status = obj.setPWM('uv', level);
-        end
-
-        function status = get.redBlanking(obj)
-            status = obj.getBlanking('red');
+            obj.blueBlanking = level;
         end
 
         function set.redBlanking(obj, level)
-            obj.setBlanking('red', level);
+            obj.redBlanking = level;
         end
 
-        function status = get.redPWM(obj)
-            status = obj.getPWM('red');
+        function set.greenBlanking(obj, level)
+            obj.greenBlanking = level;
+        end
+
+        function set.uvBlanking(obj, level)
+            obj.uvBlanking = level;
+        end
+
+        function set.bluePWM(obj, level)
+            obj.blueBlanking = false;
+            obj.bluePWM_ = level;
         end
 
         function set.redPWM(obj, level)
-            status = obj.setPWM('red', level);
+            obj.redBlanking = false;
+            obj.redPWM_ = level;
         end
 
-        function status = getBlanking(obj, color)
-            status = obj.rig.getDevice('BlankingCircuit').isBlanking(obj.getLEDNumber(color));
+        function set.greenPWM(obj, level)
+            obj.greenBlanking = false;
+            obj.greenPWM_ = level;
         end
 
-        function setBlanking(obj, color, level)
-            obj.rig.getDevice('BlankingCircuit').blank(obj.getLEDNumber(color), level);
+        function set.uvPWM(obj, level)
+            obj.uvBlanking = false;
+            obj.uvPWM_ = level;
+        end
+        
+        function level = get.bluePWM(obj)
+            level = ~obj.blueBlanking * obj.bluePWM_;
+        end
+        
+        function level = get.redPWM(obj)
+            level = ~obj.redBlanking * obj.redPWM_;
+        end
+        
+        function level = get.greenPWM(obj)
+            level = ~obj.greenBlanking * obj.greenPWM_;
+        end
+        
+        function level = get.uvPWM(obj)
+            level = ~obj.uvBlanking * obj.uvPWM_;
+        end
+        
+        function set.doPWM(obj, level)
+            if ~level
+                obj.bluePWM = 1;
+                obj.redPWM = 1;
+                obj.greenPWM = 1;
+                obj.uvPWM = 1;
+            end
+            obj.doPWM = level;
         end
 
-        function status = getPWM(obj, color)
-            status = obj.rig.getDevice('BlankingCircuit').getLevel(obj.getLEDNumber(color))/256;
+        function setBlanking(obj, colors, levels)
+            obj.rig.getDevice('BlankingCircuit').blank(obj.getLEDNumber(colors), levels);
+        end
+        
+        function setPWM(obj, colors, levels)
+            obj.rig.getDevice('BlankingCircuit').setLevel(obj.getLEDNumber(colors), levels*256);
         end
 
-        function setPWM(obj, color, level)
-            obj.rig.getDevice('BlankingCircuit').setLevel(obj.getLEDNumber(color), level*256);
-        end
-
-        function id = getLEDNumber(color)
-            switch color
-            case 'red'
-                if strcmp(obj.getColorMode(), 'standard')
-                    id = 1;
-                else
-                    id = -1;
-                end
-            case 'uv'
-                if strcmp(obj.getColorMode(), 'standard')
-                    id = -1;
-                else
-                    id = 2;
-                end
-            case 'green'
-                if strcmp(obj.getColorMode(), 'standard')
-                    id = 2;
-                elseif strcmp(obj.getColorMode(), 'uv')
-                    id = 1;
-                else
-                    id = 3;
-                end
-            case 'blue'
-                if strcmp(obj.getColorMode(), 'uv2')
-                    id = 1;
-                else
-                    id = 3;
+        function ids = getLEDNumber(obj, colors)
+            ids = zeros(size(colors));
+            for i = 1:numel(colors)
+                color = colors{i};
+                switch color
+                case 'red'
+                    if strcmp(obj.colorMode(), 'standard')
+                        ids(i) = 1;
+                    else
+                        ids(i) = -1;
+                    end
+                case 'uv'
+                    if strcmp(obj.colorMode(), 'standard')
+                        ids(i) = -1;
+                    else
+                        ids(i) = 2;
+                    end
+                case 'green'
+                    if strcmp(obj.colorMode(), 'standard')
+                        ids(i) = 2;
+                    elseif strcmp(obj.colorMode(), 'uv')
+                        ids(i) = 1;
+                    else
+                        ids(i) = 3;
+                    end
+                case 'blue'
+                    if strcmp(obj.colorMode(), 'uv2')
+                        ids(i) = 1;
+                    else
+                        ids(i) = 3;
+                    end
                 end
             end
         end

@@ -43,7 +43,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
 
         
-        blankingCircuitComPort = 'COM12';
+        blankingCircuitComPort = 'COM3';
     end
     
     methods
