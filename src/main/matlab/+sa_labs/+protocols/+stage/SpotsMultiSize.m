@@ -8,6 +8,10 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         %mean (bg) and amplitude of pulse
         intensity = 0.5;
         
+        %Option to pick specific spot sizes
+        pickSpecificSizes = false;
+        spotSizes = [100, 200, 1200];
+        
         %stim size in microns, use rigConfig to set microns per pixel
         minSize = 30
         maxSize = 1200
@@ -17,6 +21,8 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         
         logScaling = true % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true;
+        
+        
     end
     
     properties (Hidden)
@@ -38,10 +44,14 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
             %set spot size vector
-            if ~obj.logScaling
-                obj.sizes = linspace(obj.minSize, obj.maxSize, obj.numberOfSizeSteps);
+            if obj.pickSpecificSizes
+                obj.sizes = obj.spotSizes;
             else
-                obj.sizes = logspace(log10(obj.minSize), log10(obj.maxSize), obj.numberOfSizeSteps);
+                if ~obj.logScaling
+                    obj.sizes = linspace(obj.minSize, obj.maxSize, obj.numberOfSizeSteps);
+                else
+                    obj.sizes = logspace(log10(obj.minSize), log10(obj.maxSize), obj.numberOfSizeSteps);
+                end
             end
 
         end
@@ -49,9 +59,9 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         function prepareEpoch(obj, epoch)
 
             % Randomize sizes if this is a new set
-            index = mod(obj.numEpochsPrepared, obj.numberOfSizeSteps) + 1;
+            index = mod(obj.numEpochsPrepared, length(obj.sizes)) + 1;
             if index == 1 && obj.randomOrdering
-                obj.sizes = obj.sizes(randperm(obj.numberOfSizeSteps)); 
+                obj.sizes = obj.sizes(randperm(length(obj.sizes))); 
             end
             
             % compute current size and add parameter for it
@@ -85,7 +95,7 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfCycles * obj.numberOfSizeSteps;
+            totalNumEpochs = obj.numberOfCycles * length(obj.sizes);
         end
         
         

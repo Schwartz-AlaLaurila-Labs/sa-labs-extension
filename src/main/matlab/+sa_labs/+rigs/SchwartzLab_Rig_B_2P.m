@@ -14,7 +14,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_Green = [0,0,0,0,0,0];%Only use blue LED when bluepass filter is in place. - David
         filterWheelAttenuationValues_UV = [0,0,0,0,0,0]; %Only use blue LED when bluepass filter is in place. - David
         
-        fitBlue = [5.01054711270044e-18	-2.21188541610487e-15	5.27272199418043e-13	-1.20400470830141e-11];%updated 9/16/21 - David
+        fitBlue = [5.01054711270044e-18	-2.21188541610487e-15	5.27272199418043e-13	-1.20400470830141e-11];%updated 10/05/21 - David
         
         fitGreen = 0;%Only use blue LED when bluepass filter is in place. - David
         fitUV = 0;%Only use blue LED when bluepass filter is in place. - David
@@ -43,6 +43,8 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
 
         video_path = 'D:\Data\Movies\'
+        
+        blankingCircuitComPort = 'COM12';
     end
     
     methods

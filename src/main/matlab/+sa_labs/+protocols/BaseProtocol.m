@@ -36,6 +36,8 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         stimTime
         tailTime
         responsePlotMode
+%         responsePlotSplitParameter
+        totalNumEpochs
     end
     
     properties(Hidden)

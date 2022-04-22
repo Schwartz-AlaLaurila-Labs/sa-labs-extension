@@ -87,6 +87,12 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 camera = RigCamera.RigCamera(fname);
                 obj.addDevice(camera);
             end
+            if isprop(obj,'blankingCircuitComPort')
+                blankingCircuit = sa_labs.devices.BlankingCircuit(obj.blankingCircuitComPort);
+            else
+                blankingCircuit = sa_labs.devices.MockBlankingCircuit();
+            end
+            obj.addDevice(blankingCircuit);
         end
     end
 end
