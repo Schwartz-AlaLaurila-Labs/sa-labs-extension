@@ -652,8 +652,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             %     bitDepth = 6;
             % end
             %above code seems to be wrong for the Lightcrafter4500
-
-            bitDepth = 8;
+            if obj.numberOfPatterns < 3
+                bitDepth = 8;
+            else
+                bitDepth = 7;
+            end
         end
         
         function frameRate = get.frameRate(obj)
