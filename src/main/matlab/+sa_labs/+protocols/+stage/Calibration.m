@@ -16,7 +16,7 @@ properties (Hidden)
     version = 4
     
     responsePlotMode = 'cartesian';
-    responsePlotSplitParameter = 'spotSize';
+    responsePlotSplitParameter = 'blueLED';
 end
 
 properties (Hidden, Dependent)
@@ -39,15 +39,15 @@ methods
 
         %alter the LED values, PWM, NDF, intensity....
         r = rand;
-        if r < .33
-            i = ceil(r*5); %5 equally likely options
-            v = setdiff(1:6,obj.NDF); % exclude the current set point
-            obj.NDF = v(i); % select a new value
+        if r < .5
+        %     i = ceil(r*5); %5 equally likely options
+        %     v = setdiff(1:6,obj.NDF); % exclude the current set point
+        %     obj.NDF = v(i); % select a new value
 
-            obj.rig.getDevice('neutralDensityFilterWheel').setNdfValue(obj.NDF);
-            %hangs to completion (3sec)
-            %TODO: if we make an async method on the NDF class we can adjust simultaneously...
-        elseif r < .66
+        %     obj.rig.getDevice('neutralDensityFilterWheel').setNdfValue(obj.NDF);
+        %     %hangs to completion (3sec)
+        %     %TODO: if we make an async method on the NDF class we can adjust simultaneously...
+        % elseif r < .66
             r = randi(255,4,1);
             obj.redPWM = r(1)/255;
             obj.bluePWM = r(2)/255;
@@ -67,10 +67,10 @@ methods
             pause(0.2);
         end
 
-        obj.intensity = randi(127)/127; %no time cost here as long as we're inheriting from stage protocol
+        % obj.intensity = randi(127)/127; %no time cost here as long as we're inheriting from stage protocol
         
-        epoch.addParameter('intensity',obj.intensity * 127);
-        epoch.addParameter('NDF',obj.NDF);
+        % epoch.addParameter('intensity',obj.intensity * 127);
+        % epoch.addParameter('NDF',obj.NDF);
         epoch.addParameter('blueLED',obj.blueLED);
         epoch.addParameter('greenLED',obj.greenLED);
         epoch.addParameter('uvLED',obj.uvLED);
@@ -97,8 +97,7 @@ methods
         
         obj.setOnDuringStimController(p, spot);
         
-        % shared code for multi-pattern objects
-        obj.setColorController(p, spot);
+
     end
 
     function totalNumEpochs = get.totalNumEpochs(obj)
