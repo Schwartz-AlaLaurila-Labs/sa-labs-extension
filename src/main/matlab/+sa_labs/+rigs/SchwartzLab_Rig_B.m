@@ -37,7 +37,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
 
         blankingCircuitComPort = 'COM3';
-        video_path = 'D:\Data\Movies\'
+        video_path = 'D:\Movies\'
     end
     
     methods

@@ -83,7 +83,7 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
             obj.addDevice(lightCrafter);
 
             if isprop(obj,'video_path')
-                fname = sprintf('%s/%s.h264', obj.video_path, datestr(datetime(),'YYYYmmDD_HHMMSS'))
+                fname = sprintf('%s%s%s.h264', obj.video_path, filesep, datestr(datetime(),'YYYYmmDD_HHMMSS'));
                 camera = RigCamera.RigCamera(fname);
                 obj.addDevice(camera);
             end
