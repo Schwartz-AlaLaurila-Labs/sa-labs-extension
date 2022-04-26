@@ -15,8 +15,7 @@ end
 properties (Hidden)
     version = 4
     
-    responsePlotMode = 'cartesian';
-    responsePlotSplitParameter = 'blueLED';
+    responsePlotMode = false;
 end
 
 properties (Hidden, Dependent)
