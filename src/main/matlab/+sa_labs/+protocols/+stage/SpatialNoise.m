@@ -119,11 +119,25 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             p.addController(checkerboardImageController);
 
             offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
-                @(state) canvasSize/2 + obj.um2pix(obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,2,1) - obj.maxOffset));
+                @(state) getPosition(obj, state.frame - preFrames));
             p.addController(offsetController);
             
             
             obj.setOnDuringStimController(p, checkerboard);
+            
+            function p = getPosition(obj,frame)
+                persistent position;
+                if frame<0 %pre frames. frame 0 starts stimPts
+                    position = canvasSize/2;
+                else %in stim frames
+                    if mod(frame, obj.frameDwell) == 0 %noise update
+                        position = canvasSize/2 + obj.um2pix(...
+                            obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,2,1) - obj.maxOffset...
+                            );
+                    end
+                end
+                p = position;
+            end
             
             % TODO: verify X vs Y in matrix
             
