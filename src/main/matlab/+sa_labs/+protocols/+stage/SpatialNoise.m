@@ -124,6 +124,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             
             
             obj.setOnDuringStimController(p, checkerboard);
+
+            stage = obj.rig.getDevice('Stage');
+            ppm = 1./stage.getConfigurationSetting('micronsPerPixel');
             
             function p = getPosition(obj,frame)
                 persistent position;
@@ -131,9 +134,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     position = canvasSize/2;
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        position = canvasSize/2 + obj.um2pix(...
-                            obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,2,1) - obj.maxOffset...
-                            );
+                        position = canvasSize/2 + ppm*...
+                            (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,2,1) - obj.maxOffset)...
+                            ;
                     end
                 end
                 p = position;
