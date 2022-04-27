@@ -17,6 +17,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         colorNoiseMode = '1 pattern';
 
         numberOfEpochs = uint16(30) % number of epochs to queue
+
+        offsetDelta = 0 %um
+        maxOffset = 100 %um 
     end
 
     properties (Hidden)
@@ -28,6 +31,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         
         noiseSeed
         noiseStream
+
+        offsetSeed
+        offsetStream
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
@@ -75,12 +81,14 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             end
                                     
             obj.noiseSeed = seed;
+            obj.offsetSeed = 2^32 - seed;
             fprintf('Using seed %g\n', obj.noiseSeed);
 
             %at start of epoch, set random streams using this cycle's seeds
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
-
+            obj.offsetStream = RandStream('mt19937ar', 'Seed', obj.offsetSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
+            epoch.addParameter('offsetSeed', obj.offsetSeed);
         end
 
         function p = createPresentation(obj)
@@ -109,6 +117,11 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     @(state)getImageMatrix2Pattern(obj, state.frame - preFrames, state.pattern, [obj.resolutionY, obj.resolutionX]));
             end
             p.addController(checkerboardImageController);
+
+            offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
+                @(state) canvasSize/2 + obj.um2pix(obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,2,1) - obj.maxOffset));
+            p.addController(offsetController);
+            
             
             obj.setOnDuringStimController(p, checkerboard);
             
