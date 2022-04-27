@@ -187,18 +187,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     end
                 case 'imaging'
                     d.category = '1 Basic';
-                case {'minSize', 'maxSize', 'numberOfSizeSteps', 'logScaling'}
-                    if obj.pickSpecificSizes
-                        d.isHidden = true;
-                    else
-                        d.isHidden = false;
-                    end
-                case {'spotSizes'}
-                    if obj.pickSpecificSizes
-                        d.isHidden = false;
-                    else
-                        d.isHidden = true;
-                    end
                 case {'frequency'}
                     if obj.sineWave
                         d.isHidden = false;
