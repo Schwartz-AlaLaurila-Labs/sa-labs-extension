@@ -125,8 +125,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             
             obj.setOnDuringStimController(p, checkerboard);
 
-            stage = obj.rig.getDevice('Stage');
-            ppm = 1./stage.getConfigurationSetting('micronsPerPixel');
+            ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
             
             function p = getPosition(obj,frame)
                 persistent position;
