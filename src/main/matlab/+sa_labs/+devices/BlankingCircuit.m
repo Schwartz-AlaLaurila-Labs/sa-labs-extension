@@ -82,9 +82,12 @@ classdef BlankingCircuit < symphonyui.core.Device
             end
         end
 
+        function close(obj)
+            fclose(obj.serialPortObject);
+        end
 
-        function delete(obj)
-            fclose(obj.serialPortObject);            
+
+        function delete(obj)           
             delete(obj.serialPortObject);
         end
     end
