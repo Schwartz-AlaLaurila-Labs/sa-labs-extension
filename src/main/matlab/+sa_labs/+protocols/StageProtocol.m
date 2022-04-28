@@ -25,9 +25,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
         imaging = false % declare whether this is an imaging trial        
         doSubtraction = true %opt to remove a section from the background corresponding to imaging field
-        imagingMean = 0
-        imagingMean1 = 0
-        imagingMean2 = 0
+        imagingSubtraction = 0 %how much to reduce intensity/mean by in the imaging field
+        imagingSubtraction1 = 0 %how much to reduce intensity/mean by in the imaging field
+        imagingSubtraction2 = 0 %how much to reduce intensity/mean by in the imaging field
         imagingFieldWidth = 125
         imagingFieldHeight = 125
 
@@ -46,7 +46,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     properties (Dependent)
         numberOfPatterns = 1        
         RstarMean
-        RstarMidground
+        SstarMean
+        MstarMean
+        RstarSubtraction % the r* difference in the imaging window
+        RstarSubtraction1 % the r* difference in the imaging window
+        RstarSubtraction2 % the r* difference in the imaging window
         RstarIntensity1
         MstarIntensity1
         SstarIntensity1
@@ -150,14 +154,22 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                         d.isHidden = true;
                     end
                     
-                case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
+                case {'RstarMean','MstarMean','SstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                     d.category = '6 Isomerizations';
-                case 'RstarMidground'
+                case 'RstarSubtraction'
                     d.category = '6 Isomerizations';
                     if ~obj.imaging || ~obj.doSubtraction
                         d.isHidden = true;
                     end
-                case {'imagingMean'}
+                case {'RstarSubtraction1', 'RstarSubtraction2'}
+                    d.category = '6 Isomerizations';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
+                    if obj.numberOfPatterns == 1
+                        d.isHidden = true;
+                    end
+                case {'imagingSubtraction'}
                     d.category = '3 Imaging';
                     if ~obj.imaging || ~obj.doSubtraction
                         d.isHidden = true;
@@ -167,7 +179,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                             d.isHidden = true;
                         end
                     end
-                case {'imagingMean1', 'imagingMean2'}
+                case {'imagingSubtraction1', 'imagingSubtraction2'}
                     d.category = '3 Imaging';
                     if ~obj.imaging || ~obj.doSubtraction
                         d.isHidden = true;
@@ -373,12 +385,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 end
                 if obj.imaging && obj.doSubtraction
                     if obj.numberOfPatterns > 1
-                        lightCrafter.setMidground(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingMean1, obj.imagingMean2);
+                        lightCrafter.setLaserCorrection(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingSubtraction1, obj.imagingSubtraction2);
                     else
-                        lightCrafter.setMidground(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingMean, 0);
+                        lightCrafter.setLaserCorrection(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingSubtraction, 0);
                     end
                 else
-                    lightCrafter.setMidground(0, 0, 0, 0);
+                    lightCrafter.setLaserCorrection(0, 0, 0, 0);
                 end
 
                 lightCrafter.setPrerender(obj.prerender);
@@ -504,14 +516,36 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             end
         end
 
-        function RstarMidground = get.RstarMidground(obj)
-            props = {'imagingMean'};
+        function MstarMean = get.MstarMean(obj)
+            props = {'meanLevel'};
             pattern = 1;
             if obj.numberOfPatterns == 1
-                [RstarMidground, ~, ~] = obj.getIsomerizations(props, pattern);
+                [~, MstarMean, ~] = obj.getIsomerizations(props, pattern);
             else
-                [RstarMidground, ~, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
+                [~, MstarMean, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
             end
+        end
+
+        function SstarMean = get.SstarMean(obj)
+            props = {'meanLevel'};
+            pattern = 1;
+            if obj.numberOfPatterns == 1
+                [~, ~, SstarMean] = obj.getIsomerizations(props, pattern);
+            else
+                [~, ~, SstarMean] = obj.getIsomerizations(props, obj.backgroundPattern);
+            end
+        end
+
+        function RstarSubtraction = get.RstarSubtraction(obj)
+            RstarSubtraction = obj.getIsomerizations({'imagingSubtraction'}, 1);
+        end
+
+        function RstarSubtraction = get.RstarSubtraction1(obj)
+            RstarSubtraction = obj.getIsomerizations({'imagingSubtraction1'}, 1);
+        end
+
+        function RstarSubtraction = get.RstarSubtraction2(obj)
+            RstarSubtraction = obj.getIsomerizations({'imagingSubtraction1'}, 2);
         end
     
         function RstarIntensity = get.RstarIntensity1(obj)
