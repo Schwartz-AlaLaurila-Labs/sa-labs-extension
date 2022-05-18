@@ -22,7 +22,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         spikeThreshold = -6 % pA or (pseudo-)std
         
         scanHeadTrigger = false; %scanhead trigger for function imaging, added by Greg 3/5/18
-        stimTimeRecord = false;
+        stimTimeRecord = true;
     end
     
     properties (Transient, Hidden)
@@ -213,18 +213,19 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             
             % added by Sophia 3/4/21, digital stim time signal
             if obj.stimTimeRecord
-                p = symphonyui.builtin.stimuli.PulseGenerator();
-                
-                p.preTime = obj.preTime; %trigger at start of pretime and end of stimtime
-                p.stimTime = obj.stimTime;
-                p.tailTime = obj.tailTime;
-                p.amplitude = 1;
-                p.mean = 0;
-                p.sampleRate = obj.sampleRate;
-                p.units = Symphony.Core.Measurement.UNITLESS;
                 
                 triggers = obj.rig.getDevices('Stim Time Recorder');
                 if ~isempty(triggers)
+                    p = symphonyui.builtin.stimuli.PulseGenerator();
+                
+                    p.preTime = obj.preTime; %trigger at start of pretime and end of stimtime
+                    p.stimTime = obj.stimTime;
+                    p.tailTime = obj.tailTime;
+                    p.amplitude = 1;
+                    p.mean = 0;
+                    p.sampleRate = obj.sampleRate;
+                    p.units = Symphony.Core.Measurement.UNITLESS;
+                
                     epoch.addStimulus(triggers{1},  p.generate());
                 else
                     disp('no stim time trigger device found')
