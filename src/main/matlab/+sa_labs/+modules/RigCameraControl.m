@@ -5,7 +5,15 @@ classdef RigCameraControl < symphonyui.ui.Module
         nrows = 3
         ncols = 3
         overlap = .1
-        mag = '60X'
+    end
+
+    properties (Dependent)
+        mag
+    end
+
+    properties (Hidden)
+        mags = {'10X','60X'}
+        mag_ind = 1
     end
 
     methods
@@ -59,8 +67,8 @@ classdef RigCameraControl < symphonyui.ui.Module
             uicontrol(...
                 'parent',menu,...
                 'style','listbox',...
-                'string',{'10X', '60X'},...
-                'value',self.mag,...
+                'string',self.mags,...
+                'value',self.mag_ind,...
                 'Callback',@onSetNCols);   
 
             uicontrol(...
@@ -85,6 +93,10 @@ classdef RigCameraControl < symphonyui.ui.Module
         
         function self = onSetNCols(self, e, ~)
             self.ncols = str2double(e.Value);
+        end
+
+        function mag = get.mag(self)
+            mag = self.mags(self.mag_ind);
         end
 
     end
