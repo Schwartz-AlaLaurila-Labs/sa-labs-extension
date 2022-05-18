@@ -9,11 +9,11 @@ properties
     intensity = 0.5;
     
     spotSize = 200; % um
-    numberOfEpochs = 500;
 end
 
 properties (Hidden)
     version = 4
+    numberOfEpochs = 256*3;
     
     responsePlotMode = false;
 end
@@ -37,34 +37,54 @@ methods
     function prepareEpoch(obj, epoch)
 
         %alter the LED values, PWM, NDF, intensity....
-        r = rand;
-        if r < .5
-        %     i = ceil(r*5); %5 equally likely options
-        %     v = setdiff(1:6,obj.NDF); % exclude the current set point
-        %     obj.NDF = v(i); % select a new value
+        % r = rand;
+        % if r < .5
+        % %     i = ceil(r*5); %5 equally likely options
+        % %     v = setdiff(1:6,obj.NDF); % exclude the current set point
+        % %     obj.NDF = v(i); % select a new value
 
-        %     obj.rig.getDevice('neutralDensityFilterWheel').setNdfValue(obj.NDF);
-        %     %hangs to completion (3sec)
-        %     %TODO: if we make an async method on the NDF class we can adjust simultaneously...
-        % elseif r < .66
-            r = randi(255,4,1);
-            obj.redPWM = r(1)/255;
-            obj.bluePWM = r(2)/255;
-            obj.greenPWM = r(3)/255;
-            obj.uvPWM = r(4)/255;            
+        % %     obj.rig.getDevice('neutralDensityFilterWheel').setNdfValue(obj.NDF);
+        % %     %hangs to completion (3sec)
+        % %     %TODO: if we make an async method on the NDF class we can adjust simultaneously...
+        % % elseif r < .66
+        %     r = randi(255,4,1);
+        %     obj.redPWM = r(1)/255;
+        %     obj.bluePWM = r(2)/255;
+        %     obj.greenPWM = r(3)/255;
+        %     obj.uvPWM = r(4)/255;            
 
-            obj.setPWM({'red','blue','green','uv'}, [obj.redPWM, obj.bluePWM, obj.greenPWM, obj.uvPWM]);
-            %TODO: make an async method on the blanking circuit class
-        else
-            r = randi(255,4,1);            
-            obj.redLED = r(1);
-            obj.blueLED = r(2);
-            obj.greenLED = r(3);
-            obj.uvLED = r(4);
+        %     obj.setPWM({'red','blue','green','uv'}, [obj.redPWM, obj.bluePWM, obj.greenPWM, obj.uvPWM]);
+        %     %TODO: make an async method on the blanking circuit class
+        % else
+        %     r = randi(255,4,1);            
+        %     obj.redLED = r(1);
+        %     obj.blueLED = r(2);
+        %     obj.greenLED = r(3);
+        %     obj.uvLED = r(4);
 
-            obj.rig.getDevice('LightCrafter').setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
-            pause(0.2);
+        %     obj.rig.getDevice('LightCrafter').setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
+        %     pause(0.2);
+        % end
+
+        if obj.numEpochsPrepared < 256
+            obj.rig.getDevice('LightCrafter').setLedCurrents(0, 0, obj.numEpochsPrepared, 0);
+            obj.setBlanking('blue', obj.numEpochsPrepared == 0);
+            obj.setBlanking('green', 1);
+            obj.setBlanking('uv', 1);
+        elseif obj.numEpochsPrepared < 256*2
+            obj.rig.getDevice('LightCrafter').setLedCurrents(0, obj.numEpochsPrepared - 256, 0, 0);
+            obj.setBlanking('blue', 1);
+            obj.setBlanking('green', obj.numEpochsPrepared == 256);
+            obj.setBlanking('uv', 1);
+        elseif obj.numEpochsPrepared < 256*3
+            obj.rig.getDevice('LightCrafter').setLedCurrents(0, 0, 0, obj.numEpochsPrepared - 256*2);
+            obj.setBlanking('blue', 1);
+            obj.setBlanking('green', 1);
+            obj.setBlanking('uv',  obj.numEpochsPrepared == 256*2);
         end
+        pause(0.2);
+
+
 
         % obj.intensity = randi(127)/127; %no time cost here as long as we're inheriting from stage protocol
         
@@ -74,10 +94,10 @@ methods
         epoch.addParameter('greenLED',obj.greenLED);
         epoch.addParameter('uvLED',obj.uvLED);
         epoch.addParameter('redLED',obj.redLED);
-        epoch.addParameter('bluePWM',obj.bluePWM * 255);
-        epoch.addParameter('greenPWM',obj.greenPWM * 255);
-        epoch.addParameter('uvPWM',obj.uvPWM * 255);
-        epoch.addParameter('redPWM',obj.redPWM * 255);
+        % epoch.addParameter('bluePWM',obj.bluePWM * 255);
+        % epoch.addParameter('greenPWM',obj.greenPWM * 255);
+        % epoch.addParameter('uvPWM',obj.uvPWM * 255);
+        % epoch.addParameter('redPWM',obj.redPWM * 255);
         % Call the base method.
         prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);        
     end
