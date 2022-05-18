@@ -108,7 +108,7 @@ classdef RigCameraControl < symphonyui.ui.Module
             
             scale = (1-self.overlap) * self.pix2um([self.width, self.height], self.mag);
 
-            [x,y] = meshgrid( - (ncols/2 - (cols_even + 1) / 2) :  (ncols/2 - (cols_even + 1) / 2), - (nrows/2 - (rows_even + 1) / 2) :  (nrows/2 - (rows_even + 1) / 2));
+            [x,y] = meshgrid( - (self.ncols/2 - (cols_even + 1) / 2) :  (self.ncols/2 - (cols_even + 1) / 2), - (self.nrows/2 - (rows_even + 1) / 2) :  (self.nrows/2 - (rows_even + 1) / 2));
             
             x = x .* scale + offset;
             y = y .* scale + offset;
