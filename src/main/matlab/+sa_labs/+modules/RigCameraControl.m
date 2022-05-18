@@ -99,22 +99,16 @@ classdef RigCameraControl < symphonyui.ui.Module
             mag = self.mags(self.mag_ind);
         end
 
-        function start(self, ~, ~)
+        function start(self, ~, ~)            
+            scale = (1-self.overlap) .* self.pix2um(self.mag) .* [self.width, self.height];
+            [x,y] = meshgrid( - (self.ncols/2 - .5) :  (self.ncols/2 - .5), - (self.nrows/2 - .5) :  (self.nrows/2 - .5));
             
-            rows_even = 1 - mod(self.nrows,2);
-            cols_even = 1 - mod(self.ncols,2);
-
-            offset = [rows_even, cols_even] .* (.5 - self.overlap/2);
-            
-            scale = (1-self.overlap) * self.pix2um([self.width, self.height], self.mag);
-
-            [x,y] = meshgrid( - (self.ncols/2 - (cols_even + 1) / 2) :  (self.ncols/2 - (cols_even + 1) / 2), - (self.nrows/2 - (rows_even + 1) / 2) :  (self.nrows/2 - (rows_even + 1) / 2));
-            
-            x = x .* scale(1) + offset(1);
-            y = y .* scale(2) + offset(2);
+            x = x .* scale(1);
+            y = y .* scale(2);
 
             for n = 1:numel(x)
-                %%   take image @ x,y
+                %%      move to (x,y)
+                %%   take image
                 %%   stitch?
                 %%   display image
             end
