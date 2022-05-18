@@ -5,6 +5,8 @@ classdef RigCameraControl < symphonyui.ui.Module
         nrows = 3
         ncols = 3
         overlap = .1
+        width = 720
+        height = 480
     end
 
     properties (Dependent)
@@ -77,30 +79,47 @@ classdef RigCameraControl < symphonyui.ui.Module
             set(layout, 'Heights', [50, -1]);
         end
 
-        function start(self, ~, ~) 
-            disp('Pressed start');
-        end
-
         function self = onSetNRows(self, e, ~)
-            self.nrows = str2double(e.Value);
+            self.nrows = str2double(e.String);
         end
         
         function self = onSetNCols(self, e, ~)
-            self.ncols = str2double(e.Value);
+            self.ncols = str2double(e.String);
         end
 
         function self = onSetOverlap(self, e, ~) 
-            self.overlap = str2double(e.Value);
+            self.overlap = str2double(e.String);
         end
         
         function self = onSetMag(self, e, ~) 
-            self.mag_ind = str2double(e.Value);
+            self.mag_ind = e.Value;
         end        
 
         function mag = get.mag(self)
             mag = self.mags(self.mag_ind);
         end
 
+        function start(self, ~, ~)
+            
+            rows_even = 1 - mod(self.nrows,2);
+            cols_even = 1 - mod(self.ncols,2);
+
+            offset = [rows_even, cols_even] .* (.5 - self.overlap/2);
+            
+            scale = (1-self.overlap) * self.pix2um([self.width, self.height], self.mag);
+
+            [x,y] = meshgrid( - (ncols/2 - (cols_even + 1) / 2) :  (ncols/2 - (cols_even + 1) / 2), - (nrows/2 - (rows_even + 1) / 2) :  (nrows/2 - (rows_even + 1) / 2));
+            
+            x = x .* scale + offset;
+            y = y .* scale + offset;
+
+            for n = 1:numel(x)
+                %%   take image @ x,y
+                %%   stitch?
+                %%   display image
+            end
+
+        end
     end
 
 end
