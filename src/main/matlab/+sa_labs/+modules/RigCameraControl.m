@@ -2,6 +2,8 @@ classdef RigCameraControl < symphonyui.ui.Module
 
     properties
         display
+        nrows
+        ncols
     end
 
     methods
@@ -22,17 +24,43 @@ classdef RigCameraControl < symphonyui.ui.Module
                 'parent',menu,...
                 'style','pushbutton',...
                 'string','Start',...
-                'Callback',@self.onStart);
+                'Callback',@self.start);
+
+            uicontrol(...
+                'parent',menu,...
+                'style','edit',...
+                'string','3',...
+                'Callback', @(obj, e, ~) set.nrows(obj, e));
+
+            uicontrol(...
+                'parent',menu,...
+                'style','text',...
+                'string','-by-');
+            
+            uicontrol(...
+                'parent',menu,...
+                'style','edit',...
+                'string','3',...
+                'Callback',@(obj, e, ~) set.ncols(obj, e));
             
             self.display = axes(...
                 'parent',layout);
 
-            set(layout, 'Heights', [30, -1]);
+            set(layout, 'Heights', [50, -1]);
         end
 
         function start(self, ~, ~) 
             disp('Pressed start');
         end
+
+        function self = set.nrows(self, e)
+            self.nrows = str2double(e.Value);
+        end
+        
+        function self = set.ncols(self, e)
+            self.ncols = str2double(e.Value);
+        end
+
     end
 
 end
