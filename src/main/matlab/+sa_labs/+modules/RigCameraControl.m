@@ -110,8 +110,8 @@ classdef RigCameraControl < symphonyui.ui.Module
 
             [x,y] = meshgrid( - (self.ncols/2 - (cols_even + 1) / 2) :  (self.ncols/2 - (cols_even + 1) / 2), - (self.nrows/2 - (rows_even + 1) / 2) :  (self.nrows/2 - (rows_even + 1) / 2));
             
-            x = x .* scale + offset;
-            y = y .* scale + offset;
+            x = x .* scale(1) + offset(1);
+            y = y .* scale(2) + offset(2);
 
             for n = 1:numel(x)
                 %%   take image @ x,y
