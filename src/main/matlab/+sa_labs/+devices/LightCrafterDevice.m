@@ -3,6 +3,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
     properties (Access = private, Transient)
         stageClient
         lightCrafter
+        orientation
     end
     
     methods
@@ -51,16 +52,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
             
             %% Set up Lightcrafter
-            orientation = settings('orientation');
+            obj.orientation = settings('orientation');
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
             fprintf('init proj color %s\n', settings('projectorColorMode'))
             
             obj.lightCrafter = lcr(monitorRefreshRate, settings('projectorColorMode'));
-            obj.lightCrafter.connect();
-            obj.lightCrafter.setMode('pattern');
-            obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
+            obj.connect();
             
             
             %% Save Settings
@@ -82,7 +81,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('laserCorrectionSize', [0,0]); %central region to remove background, for imaging
             obj.addConfigurationSetting('laserCorrectionIntensity', 0);
             obj.addConfigurationSetting('laserCorrectionIntensity2', 0);
-            obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
+            obj.addConfigurationSetting('imageOrientation',obj.orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', settings('angleOffset'));
             
             obj.addResource('fitBlue', settings('fitBlue'));
@@ -311,7 +310,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function setPatternAttributes(obj, bitDepth, color, numPatterns)
             % configure the lightcrafter
-            obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            try
+                obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            catch
+                obj.connect();
+                obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            end
             obj.setConfigurationSetting('numberOfPatterns', numPatterns)
             
             % configure the stage renderer
@@ -333,6 +337,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             p = round(um / micronsPerPixel);
         end
         
+        function obj = connect(obj)
+            obj.lightCrafter.connect();
+            obj.lightCrafter.setMode('pattern');
+            obj.lightCrafter.setImageOrientation(obj.orientation(1),obj.orientation(2));
+        end
     end
     
 end
