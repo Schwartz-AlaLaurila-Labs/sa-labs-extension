@@ -60,6 +60,8 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             
             oldValue = obj.getValue();
             if newValue ~= oldValue
+                % TODO: move wheel to avoid passing through NDF 0
+                % TODO: instead of waiting 3 seconds, can we just query for a done signal from the wheel??
                 newPosition = find(valuesByPosition == newValue, 1);
                 fopen(obj.serialPortObject);
                 fprintf(obj.serialPortObject, 'pos=%s\n', num2str(newPosition));

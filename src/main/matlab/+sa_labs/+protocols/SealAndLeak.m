@@ -19,6 +19,7 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
         modeType = symphonyui.core.PropertyType('char', 'row', {'seal', 'leak'})
         modeFigure
         responsePlotMode = false;
+        totalNumEpochs = Inf;
     end
     
     methods

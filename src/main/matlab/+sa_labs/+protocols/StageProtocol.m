@@ -22,11 +22,35 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         secondaryObjectPattern = 1
         backgroundPattern = 2
         colorCombinationMode = 'contrast'
+
+        imaging = false % declare whether this is an imaging trial        
+        doSubtraction = true %opt to remove a section from the background corresponding to imaging field
+        imagingSubtraction = 0 %how much to reduce intensity/mean by in the imaging field
+        imagingSubtraction1 = 0 %how much to reduce intensity/mean by in the imaging field
+        imagingSubtraction2 = 0 %how much to reduce intensity/mean by in the imaging field
+        imagingFieldWidth = 125
+        imagingFieldHeight = 125
+
+        %which LED(s) will be modulated by the laser's line clock
+        %only applies when imaging is true
+        blueBlanking = false;
+        greenBlanking = false;
+        redBlanking = false;
+        uvBlanking = false;
+
+        %% PWM
+        doPWM = false; %if false, LEDs will be on all the time (or blanked)
+
     end
     
     properties (Dependent)
         numberOfPatterns = 1        
         RstarMean
+        SstarMean
+        MstarMean
+        RstarSubtraction % the r* difference in the imaging window
+        RstarSubtraction1 % the r* difference in the imaging window
+        RstarSubtraction2 % the r* difference in the imaging window
         RstarIntensity1
         MstarIntensity1
         SstarIntensity1
@@ -36,6 +60,13 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         bitDepth = 8
         prerender = false
         frameRate = 60; % changing this isn't implemented
+        
+        
+        %value indicates relative on time for each LED
+        bluePWM
+        greenPWM
+        redPWM
+        uvPWM
     end
     
     properties % again, for ordering
@@ -55,6 +86,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         filterWheelAttenuationValues_Green
         filterWheelAttenuationValues_UV
         lightCrafterParams
+        
+        bluePWM_ = 1
+        redPWM_ = 1
+        greenPWM_ = 1
+        uvPWM_ = 1
+
     end
        
     methods (Abstract)
@@ -117,8 +154,119 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                         d.isHidden = true;
                     end
                     
-                case {'RstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
+                case {'RstarMean','MstarMean','SstarMean','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                     d.category = '6 Isomerizations';
+                case 'RstarSubtraction'
+                    d.category = '6 Isomerizations';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
+                case {'RstarSubtraction1', 'RstarSubtraction2'}
+                    d.category = '6 Isomerizations';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
+                    if obj.numberOfPatterns == 1
+                        d.isHidden = true;
+                    end
+                case {'imagingSubtraction'}
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
+                    if obj.numberOfPatterns > 1
+                        if strcmp(obj.colorCombinationMode, 'contrast')
+                            d.isHidden = true;
+                        end
+                    end
+                case {'imagingSubtraction1', 'imagingSubtraction2'}
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
+                    if obj.numberOfPatterns == 1 || ~strcmp(obj.colorCombinationMode, 'contrast')
+                        d.isHidden = true;
+                    end
+                case {'imagingFieldWidth', 'imagingFieldHeight'}
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || ~obj.doSubtraction
+                        d.isHidden = true;
+                    end
+                case 'doSubtraction'
+                    d.category = '3 Imaging';
+                    if ~obj.imaging
+                        d.isHidden = true;
+                    end
+                case 'imaging'
+                    d.category = '1 Basic';
+                case {'frequency'}
+                    if obj.sineWave
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end
+                case {'numberOfPulses'}
+                    if obj.sineWave
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end                
+                case {'blueBlanking','greenBlanking'}
+                    d.category = '3 Imaging';
+                    if obj.imaging
+                        d.isHidden = false;
+                    else
+                        d.isHidden = true;
+                    end
+                
+                case 'redBlanking'
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || (strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2'))
+                        d.isHidden = true;
+                    else
+                        d.isHidden = false;
+                    end
+                case 'uvBlanking'
+                    d.category = '3 Imaging';
+                    if ~obj.imaging || (~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2'))
+                        d.isHidden = true;
+                    else
+                        d.isHidden = false;
+                    end
+        
+                %% PWM
+                case 'doPWM'
+                    d.category = '7 Projector';
+        
+                %value indicates relative on time for each LED
+                case 'bluePWM'
+                    d.category = '7 Projector';
+                    if obj.blueBlanking || ~obj.doPWM
+                        d.isHidden = true;
+                    else
+                        d.isHidden = false;
+                    end
+                case 'greenPWM'
+                    d.category = '7 Projector';
+                    if obj.greenBlanking || ~obj.doPWM
+                        d.isHidden = true;
+                    else
+                        d.isHidden = false;
+                    end
+                case 'redPWM'
+                    d.category = '7 Projector';
+                    if ~obj.doPWM || obj.redBlanking || strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2')
+                        d.isHidden = true;
+                    else
+                        d.isHidden = false;
+                    end
+                case 'uvPWM'
+                    d.category = '7 Projector';
+                    if ~obj.doPWM || obj.uvBlanking || (~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2'))
+                        d.isHidden = true;
+                    else
+                        d.isHidden = false;
+                    end
             end
             
         end
@@ -137,6 +285,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.lightCrafterParams.spectralOverlap_Blue = lightCrafter.getResource('spectralOverlap_Blue');
                 obj.lightCrafterParams.spectralOverlap_Green = lightCrafter.getResource('spectralOverlap_Green');
                 obj.lightCrafterParams.spectralOverlap_UV = lightCrafter.getResource('spectralOverlap_UV');
+                obj.lightCrafterParams.blankingFactor = lightCrafter.getResource('blankingFactor');
                 
                 obj.lightCrafterParams.micronsPerPixel = lightCrafter.getConfigurationSetting('micronsPerPixel');
                 obj.lightCrafterParams.angleOffset = lightCrafter.getConfigurationSetting('angleOffset');
@@ -213,7 +362,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     filterWheel.setNdfValue(obj.NDF);
                 end
             end
-                        
+            
+            %%set leds... blanking...
+            for color = {'red','green','blue','uv'}
+                if obj.(cell2mat(strcat(color,'Blanking')))
+                    obj.setBlanking(color, true);
+                else
+                    obj.setPWM(color, obj.(cell2mat(strcat(color,'PWM'))));
+                end
+            end
             if ~isempty(obj.rig.getDevices('LightCrafter'))
                 % Set the projector configuration
                 lightCrafter = obj.rig.getDevice('LightCrafter');
@@ -226,6 +383,16 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 else
                     lightCrafter.setBackgroundConfiguration('noPattern', obj.meanLevel);
                 end
+                if obj.imaging && obj.doSubtraction
+                    if obj.numberOfPatterns > 1
+                        lightCrafter.setLaserCorrection(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingSubtraction1, obj.imagingSubtraction2);
+                    else
+                        lightCrafter.setLaserCorrection(obj.um2pix(obj.imagingFieldWidth), obj.um2pix(obj.imagingFieldHeight), obj.imagingSubtraction, 0);
+                    end
+                else
+                    lightCrafter.setLaserCorrection(0, 0, 0, 0);
+                end
+
                 lightCrafter.setPrerender(obj.prerender);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
@@ -348,6 +515,38 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 [RstarMean, ~, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
             end
         end
+
+        function MstarMean = get.MstarMean(obj)
+            props = {'meanLevel'};
+            pattern = 1;
+            if obj.numberOfPatterns == 1
+                [~, MstarMean, ~] = obj.getIsomerizations(props, pattern);
+            else
+                [~, MstarMean, ~] = obj.getIsomerizations(props, obj.backgroundPattern);
+            end
+        end
+
+        function SstarMean = get.SstarMean(obj)
+            props = {'meanLevel'};
+            pattern = 1;
+            if obj.numberOfPatterns == 1
+                [~, ~, SstarMean] = obj.getIsomerizations(props, pattern);
+            else
+                [~, ~, SstarMean] = obj.getIsomerizations(props, obj.backgroundPattern);
+            end
+        end
+
+        function RstarSubtraction = get.RstarSubtraction(obj)
+            RstarSubtraction = obj.getIsomerizations({'imagingSubtraction'}, 1);
+        end
+
+        function RstarSubtraction = get.RstarSubtraction1(obj)
+            RstarSubtraction = obj.getIsomerizations({'imagingSubtraction1'}, 1);
+        end
+
+        function RstarSubtraction = get.RstarSubtraction2(obj)
+            RstarSubtraction = obj.getIsomerizations({'imagingSubtraction1'}, 2);
+        end
     
         function RstarIntensity = get.RstarIntensity1(obj)
             props = {'intensity','baseIntensity1','intensity1','meanLevel1'};
@@ -457,14 +656,28 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             rstar = round(R * intensity / parameters.numberOfPatterns, 1);
             mstar = round(M * intensity / parameters.numberOfPatterns, 1);
             sstar = round(S * intensity / parameters.numberOfPatterns, 1);
+
+            %TODO: adjust for PWM, color of blanked LEDs
+            if obj.imaging 
+                rstar = rstar * obj.lightCrafterParams.blankingFactor;
+                mstar = mstar * obj.lightCrafterParams.blankingFactor;
+                sstar = sstar * obj.lightCrafterParams.blankingFactor;
+                
+            end
         end
              
         
         function bitDepth = get.bitDepth(obj)
-            if obj.numberOfPatterns == 1
+            % if obj.numberOfPatterns == 1
+            %     bitDepth = 8;
+            % else
+            %     bitDepth = 6;
+            % end
+            %above code seems to be wrong for the Lightcrafter4500
+            if obj.numberOfPatterns < 3
                 bitDepth = 8;
             else
-                bitDepth = 6;
+                bitDepth = 7;
             end
         end
         
@@ -495,6 +708,111 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 numberOfPatterns = 1;
             end
         end
+
+        function set.blueBlanking(obj, level)
+            obj.blueBlanking = level;
+        end
+
+        function set.redBlanking(obj, level)
+            obj.redBlanking = level;
+        end
+
+        function set.greenBlanking(obj, level)
+            obj.greenBlanking = level;
+        end
+
+        function set.uvBlanking(obj, level)
+            obj.uvBlanking = level;
+        end
+
+        function set.bluePWM(obj, level)
+            obj.blueBlanking = false;
+            obj.bluePWM_ = level;
+        end
+
+        function set.redPWM(obj, level)
+            obj.redBlanking = false;
+            obj.redPWM_ = level;
+        end
+
+        function set.greenPWM(obj, level)
+            obj.greenBlanking = false;
+            obj.greenPWM_ = level;
+        end
+
+        function set.uvPWM(obj, level)
+            obj.uvBlanking = false;
+            obj.uvPWM_ = level;
+        end
+        
+        function level = get.bluePWM(obj)
+            level = ~obj.blueBlanking * obj.bluePWM_;
+        end
+        
+        function level = get.redPWM(obj)
+            level = ~obj.redBlanking * obj.redPWM_;
+        end
+        
+        function level = get.greenPWM(obj)
+            level = ~obj.greenBlanking * obj.greenPWM_;
+        end
+        
+        function level = get.uvPWM(obj)
+            level = ~obj.uvBlanking * obj.uvPWM_;
+        end
+        
+        function set.doPWM(obj, level)
+            if ~level
+                obj.bluePWM = 1;
+                obj.redPWM = 1;
+                obj.greenPWM = 1;
+                obj.uvPWM = 1;
+            end
+            obj.doPWM = level;
+        end
+
+        function setBlanking(obj, colors, levels)
+            obj.rig.getDevice('BlankingCircuit').blank(obj.getLEDNumber(colors), levels);
+        end
+        
+        function setPWM(obj, colors, levels)
+            obj.rig.getDevice('BlankingCircuit').setLevel(obj.getLEDNumber(colors), levels*256);
+        end
+
+        function ids = getLEDNumber(obj, colors)
+            ids = zeros(size(colors));
+            for i = 1:numel(colors)
+                color = colors{i};
+                switch color
+                case 'red'
+                    if strcmp(obj.colorMode(), 'standard')
+                        ids(i) = 1;
+                    else
+                        ids(i) = -1;
+                    end
+                case 'uv'
+                    if strcmp(obj.colorMode(), 'standard')
+                        ids(i) = -1;
+                    else
+                        ids(i) = 2;
+                    end
+                case 'green'
+                    if strcmp(obj.colorMode(), 'standard')
+                        ids(i) = 2;
+                    elseif strcmp(obj.colorMode(), 'uv')
+                        ids(i) = 1;
+                    else
+                        ids(i) = 3;
+                    end
+                case 'blue'
+                    if strcmp(obj.colorMode(), 'uv2')
+                        ids(i) = 1;
+                    else
+                        ids(i) = 3;
+                    end
+                end
+            end
+        end
     end
     
     
@@ -507,7 +825,15 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             pround = round(p);
         end
         
+        function um = pix2um(obj, pix)
+            stage = obj.rig.getDevice('Stage');
+            micronsPerPixel = stage.getConfigurationSetting('micronsPerPixel');
+            um = pix * micronsPerPixel;
+        end
+
     end
     
+
+
 end
 

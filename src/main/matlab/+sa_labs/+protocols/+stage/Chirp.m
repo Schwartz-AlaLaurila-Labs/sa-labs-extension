@@ -88,12 +88,8 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             
            
             function i = getIntensityFromPattern(obj, state)
-                frame=state.frame;
-                if frame<=0 %pre frames. frame 0 starts stimPts
-                    frame = 1;
-                else
-                    frame = state.frame;
-                end
+                %clip the time axis to [1, T]
+                frame=max(1, min(state.frame, numel(obj.chirpPattern)));
                 i = obj.chirpPattern(frame);
             end
             

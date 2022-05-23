@@ -17,6 +17,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         colorNoiseMode = '1 pattern';
 
         numberOfEpochs = uint16(30) % number of epochs to queue
+
+        offsetDelta = 0 %um
+        maxOffset = 100 %um 
     end
 
     properties (Hidden)
@@ -28,6 +31,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         
         noiseSeed
         noiseStream
+
+        offsetSeed
+        offsetStream
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
@@ -75,12 +81,14 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             end
                                     
             obj.noiseSeed = seed;
+            obj.offsetSeed = 2^32 - seed;
             fprintf('Using seed %g\n', obj.noiseSeed);
 
             %at start of epoch, set random streams using this cycle's seeds
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
-
+            obj.offsetStream = RandStream('mt19937ar', 'Seed', obj.offsetSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
+            epoch.addParameter('offsetSeed', obj.offsetSeed);
         end
 
         function p = createPresentation(obj)
@@ -109,8 +117,29 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     @(state)getImageMatrix2Pattern(obj, state.frame - preFrames, state.pattern, [obj.resolutionY, obj.resolutionX]));
             end
             p.addController(checkerboardImageController);
+
+            offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
+                @(state) getPosition(obj, state.frame - preFrames));
+            p.addController(offsetController);
+            
             
             obj.setOnDuringStimController(p, checkerboard);
+
+            ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
+            
+            function p = getPosition(obj,frame)
+                persistent position;
+                if frame<0 %pre frames. frame 0 starts stimPts
+                    position = canvasSize/2;
+                else %in stim frames
+                    if mod(frame, obj.frameDwell) == 0 %noise update
+                        position = canvasSize/2 + ppm*...
+                            (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,1,2) - obj.maxOffset)...
+                            ;
+                    end
+                end
+                p = position;
+            end
             
             % TODO: verify X vs Y in matrix
             

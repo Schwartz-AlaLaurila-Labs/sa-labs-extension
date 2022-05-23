@@ -3,6 +3,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
     properties (Access = private, Transient)
         stageClient
         lightCrafter
+        orientation
     end
     
     methods
@@ -24,6 +25,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             settings('spectralOverlap_Blue') = 0;
             settings('spectralOverlap_Green') = 0;
             settings('spectralOverlap_UV') = 0;
+            settings('blankingFactor') = 1;
             
             %% Overwrite default values with values from RigConfig if present
             RigProperties = properties(RigConfig);
@@ -50,16 +52,14 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
             
             %% Set up Lightcrafter
-            orientation = settings('orientation');
+            obj.orientation = settings('orientation');
             
             monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
             
             fprintf('init proj color %s\n', settings('projectorColorMode'))
             
             obj.lightCrafter = lcr(monitorRefreshRate, settings('projectorColorMode'));
-            obj.lightCrafter.connect();
-            obj.lightCrafter.setMode('pattern');
-            obj.lightCrafter.setImageOrientation(orientation(1),orientation(2));
+            obj.connect();
             
             
             %% Save Settings
@@ -78,7 +78,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('backgroundIntensity', 0); % also pattern 1 if contrast mode
             obj.addConfigurationSetting('backgroundIntensity2', 0)
             obj.addConfigurationSetting('backgroundPattern', 1);
-            obj.addConfigurationSetting('imageOrientation',orientation, 'isReadOnly', true);
+            obj.addConfigurationSetting('laserCorrectionSize', [0,0]); %central region to remove background, for imaging
+            obj.addConfigurationSetting('laserCorrectionIntensity', 0);
+            obj.addConfigurationSetting('laserCorrectionIntensity2', 0);
+            obj.addConfigurationSetting('imageOrientation',obj.orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', settings('angleOffset'));
             
             obj.addResource('fitBlue', settings('fitBlue'));
@@ -87,6 +90,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addResource('spectralOverlap_Blue', settings('spectralOverlap_Blue'));
             obj.addResource('spectralOverlap_Green', settings('spectralOverlap_Green'));
             obj.addResource('spectralOverlap_UV', settings('spectralOverlap_UV'));
+            obj.addResource('blankingFactor', settings('blankingFactor'));
 
                         
         end
@@ -166,6 +170,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             end
             
         end
+
+        function setLaserCorrection(obj, width, height, intensity1, intensity2)
+            obj.setConfigurationSetting('laserCorrectionSize',[width, height]);
+            obj.setConfigurationSetting('laserCorrectionIntensity', intensity1);
+            obj.setConfigurationSetting('laserCorrectionIntensity2',intensity2)
+        end
         
         function tf = getPrerender(obj)
             tf = obj.getConfigurationSetting('prerender');
@@ -189,6 +199,17 @@ classdef LightCrafterDevice < symphonyui.core.Device
             background.position = canvasSize/2 - canvasTranslation;
             background.opacity = 1;
             
+            
+            %TODO: change this to correct contrast
+
+            laserCorrection = sa_labs.util.SubtractiveRectangle();
+            laserCorrection.size = obj.getConfigurationSetting('laserCorrectionSize');
+            laserCorrection.position = canvasSize/2 - canvasTranslation;
+            laserCorrection.opacity = 1;
+            laserCorrectionIntensity = obj.getConfigurationSetting('laserCorrectionIntensity');
+            laserCorrectionIntensity2 = obj.getConfigurationSetting('laserCorrectionIntensity2');
+            
+
             mode = obj.getConfigurationSetting('backgroundPatternMode');
             intensity1 = obj.getConfigurationSetting('backgroundIntensity');
             intensity2 = obj.getConfigurationSetting('backgroundIntensity2');
@@ -197,19 +218,36 @@ classdef LightCrafterDevice < symphonyui.core.Device
             switch mode
                 case 'noPattern'
                     background.color = intensity1;
+                    laserCorrection.color = laserCorrectionIntensity;
                     
                 case 'singlePattern'
                     background.color = intensity1;
                     backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'opacity',...
                         @(state)(1 * (state.pattern == backgroundPattern - 1)));
                     presentation.addController(backgroundPatternController);
-                    
+
+                    if any(laserCorrection.size)
+                        laserCorrection.color = laserCorrectionIntensity;
+                        laserCorrectionPatternController = stage.builtin.controllers.PropertyController(laserCorrection, 'opacity',...
+                        @(state)(1 * (state.pattern == backgroundPattern - 1)));
+                        presentation.addController(laserCorrectionPatternController);
+                    end
+
                 case 'twoPattern'
                     backgroundPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
                         @(state)(intensity1 * (state.pattern == 0) + intensity2 * (state.pattern == 1)));
                     presentation.addController(backgroundPatternController);
+                    
+                    if any(laserCorrection.size)
+                        laserCorrectionPatternController = stage.builtin.controllers.PropertyController(background, 'color',...
+                            @(state)(laserCorrectionIntensity1 * (state.pattern == 0) + laserCorrectionIntensity2 * (state.pattern == 1)));
+                        presentation.addController(laserCorrectionPatternController);
+                    end
+
             end
-            
+            if any(laserCorrection.size)
+            presentation.addStimulus(laserCorrection); %insert the laserCorrection in front of the stimulus
+            end
             presentation.insertStimulus(1, background);
             
             % FRAME TRACKER
@@ -272,7 +310,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function setPatternAttributes(obj, bitDepth, color, numPatterns)
             % configure the lightcrafter
-            obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            try
+                obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            catch
+                obj.connect();
+                obj.lightCrafter.setPatternAttributes(bitDepth, color, numPatterns)
+            end
             obj.setConfigurationSetting('numberOfPatterns', numPatterns)
             
             % configure the stage renderer
@@ -294,6 +337,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             p = round(um / micronsPerPixel);
         end
         
+        function obj = connect(obj)
+            obj.lightCrafter.connect();
+            obj.lightCrafter.setMode('pattern');
+            obj.lightCrafter.setImageOrientation(obj.orientation(1),obj.orientation(2));
+        end
     end
     
 end

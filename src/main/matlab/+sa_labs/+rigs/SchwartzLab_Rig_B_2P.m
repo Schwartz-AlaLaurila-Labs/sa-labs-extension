@@ -14,7 +14,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_Green = [0,0,0,0,0,0];%Only use blue LED when bluepass filter is in place. - David
         filterWheelAttenuationValues_UV = [0,0,0,0,0,0]; %Only use blue LED when bluepass filter is in place. - David
         
-        fitBlue = [5.01054711270044e-18	-2.21188541610487e-15	5.27272199418043e-13	-1.20400470830141e-11];%updated 9/16/21 - David
+        fitBlue = [5.01054711270044e-18	-2.21188541610487e-15	5.27272199418043e-13	-1.20400470830141e-11];%updated 10/05/21 - David
         
         fitGreen = 0;%Only use blue LED when bluepass filter is in place. - David
         fitUV = 0;%Only use blue LED when bluepass filter is in place. - David
@@ -25,6 +25,8 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
 
         frameTrackerSize = [100,100];%updated 02/23/21 -David
        
+        blankingFactor = .4 %assumes line rate > 600 Hz. updated 09/09/21 - David and Zach
+
         filterWheelComPort = 'COM5';
         orientation = [false, true]; %[flip Y, flip X]
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
@@ -39,6 +41,10 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
+
+        video_path = 'D:\Movies\'
+        
+        blankingCircuitComPort = 'COM3';
     end
     
     methods

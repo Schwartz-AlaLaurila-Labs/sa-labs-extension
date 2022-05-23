@@ -1,19 +1,25 @@
 classdef ContrastResponse < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 250                  % Spot leading duration (ms)
+        preTime = 250                   % Spot leading duration (ms)
         stimTime = 500                  % Spot duration (ms)
         tailTime = 1000                 % Spot trailing duration (ms)
         numberOfContrastSteps = 5       % Number of contrast steps (doubled for 'both' directions)
         minContrast = 0.02              % Minimum contrast (0-1)
         maxContrast = 1                 % Maximum contrast (0-1)
         contrastDirection = 'positive'  % Direction of contrast
+        shape = 'ellipse'               % The shape of the stimulus (circle or square)
+        uniformXY = true                % Should the X and Y size be uniform (eg. circle or ellipse)
         spotDiameter = 200              % Spot diameter (um)
-        numberOfCycles = 2               % Number of cycles through all contrasts
+        sizeY = 200                     % Length of Y (um)
+        sizeX = 200                     % Length of Y (um)
+        numberOfCycles = 2              % Number of cycles through all contrasts
+        
     end
     
     properties (Hidden)
         contrastDirectionType = symphonyui.core.PropertyType('char', 'row', {'both', 'positive', 'negative'})
+        shapeType = symphonyui.core.PropertyType('char', 'row', {'ellipse', 'rectangle'})
         contrastValues                  % Linspace range between min and max contrast for given contrast steps
         intensityValues                 % Spot meanLevel * (1 + contrast Values)
         contrast                        % Spot contrast value for current epoch @see prepareEpoch
@@ -35,7 +41,26 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
         
 %         function set.realNumberOfContrastSteps(obj,k)
 %             obj.realNumberOfContrastSteps = k;
-%         end        
+%         end    
+
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case 'spotDiameter'
+                    if ~obj.uniformXY
+                        d.isHidden = true;
+                    end
+                case 'sizeY'
+                    if obj.uniformXY
+                        d.isHidden = true;
+                    end
+                case 'sizeX'
+                    if obj.uniformXY
+                        d.isHidden = true;
+                    end
+            end
+        end
         
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
@@ -79,14 +104,32 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             
-            spotDiameterPix = obj.um2pix(obj.spotDiameter);
+            
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
-            spot = stage.builtin.stimuli.Ellipse();
+            if obj.uniformXY
+                numXPixels = round(obj.um2pix(obj.spotDiameter));
+                numYPixels = numXPixels;
+            else
+                numXPixels = round(obj.um2pix(obj.sizeX));
+                numYPixels = round(obj.um2pix(obj.sizeY));
+            end
+            
+            if strcmp(obj.shape, 'ellipse')
+                spot = stage.builtin.stimuli.Ellipse();
+                spot.radiusX = numXPixels/2;
+                spot.radiusY = numYPixels/2;
+                
+            elseif strcmp(obj.shape, 'rectangle')
+                spot = stage.builtin.stimuli.Rectangle();
+                spot.size = [numXPixels,numYPixels];
+            else
+                error('Did not recognize shape')
+            end
+
             spot.color = obj.intensity;
-            spot.radiusX = spotDiameterPix/2;
-            spot.radiusY = spotDiameterPix/2;
+            
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
