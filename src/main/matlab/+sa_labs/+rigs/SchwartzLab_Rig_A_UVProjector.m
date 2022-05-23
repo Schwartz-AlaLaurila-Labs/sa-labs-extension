@@ -46,7 +46,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
             % Comment out if you don't want to use.
      
             obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
-            %obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
+            obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
             %obj.daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
 %             obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
 %             obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
