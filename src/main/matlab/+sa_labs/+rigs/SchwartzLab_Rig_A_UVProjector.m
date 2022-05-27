@@ -4,31 +4,29 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         % properties not accessible here; have to be fed into a device to work
         rigName = 'Schwartz Lab Rig A UV Projector';
         testMode = false;
-        filterWheelNdfValues = [1, 2, 3, 4, 5, 22];
+        filterWheelNdfValues = [1, 2, 3, 4, 5, 0];
         filterWheelDefaultValue = 5;
         
-        filterWheelAttenuationValues_Blue = [.1, .00702, .000551, .0000477, .00000523, .001];%updated 11/21/2019 -David
-        filterWheelAttenuationValues_Green = [1,1,1,1,1,1];%Green projector broken 
-        filterWheelAttenuationValues_UV = [.1, .00172, .0000807, .00000652, .0000027, .00172];%updated 11/21/2019 -David
+        filterWheelAttenuationValues_Blue = [1e-1, 7.1e-3, 5.7e-4, 5.2e-5, 4.4e-6, 1];%updated 5/26/2022 -David
+        filterWheelAttenuationValues_Green = [1e-1, 1e-2 , 1e-3 , 1.1e-4 , 1.1e-5, 1];%updated 5/26/2022 -David
+        filterWheelAttenuationValues_UV = [5.9e-2, 1.8e-3, 9e-5,  4e-6  , 1.8e-7, 1];%updated 5/26/2022 -David
         
-        fitBlue = [4.71e-18, -7.68e-15, 2.84e-12, -1.19e-11];%updated 11/21/2019 -David
-        fitGreen =[-6.80e-19, -4.58e-17, 1.56e-13, 1.49e-11];%Green projector broken
-        fitUV = [-6.80e-19, -4.58e-17, 1.56e-11, 1.49e-11];%updated 11/21/2019 -David
+        fitBlue = [9.10317387691189e-18	-1.18865973635156e-14	3.85486264901338e-12	-1.66847157811571e-11];%updated 5/26/2022 -David
+        fitGreen =[1.21309650979622e-18	-4.08598841738357e-16	3.78474579983637e-14	-4.17594216385694e-14];%updated 5/26/2022 -David (Green projector not modulating current and is dim)
+        fitUV =   [-6.43306730876448e-19	-7.07334042010358e-16	3.80733863973558e-13	3.30917142769153e-11];%updated 5/26/2022 -David
         
-        micronsPerPixel = 1.3;%updated 11/2/2021 -David and Sophia (and a little Zach)
-        
-        frameTrackerPosition = [0,-150];
-        
-        frameTrackerSize = [550,550];
+        micronsPerPixel = 1.18; %updated 5/26/2022 -David
+        frameTrackerPosition = [1724,50]; %updated 5/26/2022 -David
+        frameTrackerSize = [200,100]; %updated 5/26/2022 -David
         
         filterWheelComPort = 'COM7';
         orientation = [false, true];%[flip Y, flip X]
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
-        spectralOverlap_Blue = [4.73506311955843e+18,4.35096443208340e+15,3.77614022065689e+18];%updated 11/21/2019 -David
-        spectralOverlap_Green = [3.23202384601926e+18,470157632364029,4.54479333609599e+18];%Green projector broken
-        spectralOverlap_UV = [9.35392735238728e+17,1.45353301827043e+18,1.11745334749763e+18];%updated 11/21/2019 -David
+        spectralOverlap_Blue = [4.76558684709051e+18	6.55091000309801e+15	3.81318946776386e+18];%updated 5/26/2022 -David
+        spectralOverlap_Green = [2.66406358405798e+18	1.10188075264679e+15	3.77493986028575e+18];%updated 5/26/2022 -David
+        spectralOverlap_UV = [9.68180413015343e+17	1.31761176294673e+18	1.12668172298288e+18];%updated 5/26/2022 -David
         
         projectorColorMode = 'uv2'; % Rig A has MkII projector
         numberOfAmplifiers = 2;
