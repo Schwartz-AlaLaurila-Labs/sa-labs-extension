@@ -7,15 +7,15 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelNdfValues = [1, 2, 3, 4, 5, 0];
         filterWheelDefaultValue = 5;
         
-        filterWheelAttenuationValues_Blue = [1e-1, 7.1e-3, 5.7e-4, 5.2e-5, 4.4e-6, 1];%updated 5/26/2022 -David
+        filterWheelAttenuationValues_Blue = [1.58e-1, 11.2e-3, 9.01e-4, 8.23e-5, 6.96e-6, 1.582];%updated 6/1/2022 -David
         filterWheelAttenuationValues_Green = [1e-1, 1e-2 , 1e-3 , 1.1e-4 , 1.1e-5, 1];%updated 5/26/2022 -David
-        filterWheelAttenuationValues_UV = [5.9e-2, 1.8e-3, 9e-5,  4e-6  , 1.8e-7, 1];%updated 5/26/2022 -David
+        filterWheelAttenuationValues_UV = [7.51e-2, 2.291e-3, 11.45e-5,  5.092e-6  , 2.291e-7, 1.2730];%updated 6/1/2022 -David
         
         fitBlue = [9.10317387691189e-18	-1.18865973635156e-14	3.85486264901338e-12	-1.66847157811571e-11];%updated 5/26/2022 -David
         fitGreen =[1.21309650979622e-18	-4.08598841738357e-16	3.78474579983637e-14	-4.17594216385694e-14];%updated 5/26/2022 -David (Green projector not modulating current and is dim)
         fitUV =   [-6.43306730876448e-19	-7.07334042010358e-16	3.80733863973558e-13	3.30917142769153e-11];%updated 5/26/2022 -David
         
-        micronsPerPixel = 1.18; %updated 5/26/2022 -David
+        micronsPerPixel = 1.3; %updated 6/1/2022 -David
         frameTrackerPosition = [1724,50]; %updated 5/26/2022 -David
         frameTrackerSize = [200,100]; %updated 5/26/2022 -David
         
