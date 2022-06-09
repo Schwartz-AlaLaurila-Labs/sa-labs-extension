@@ -19,7 +19,7 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
     end
     
     properties (Hidden)
-        conductancesFolderName = 'C:\Users\Greg\Documents\DynamicClampConductances\';
+        conductancesFolderName = 'C:\Users\SchwartzLab\Documents\DynamicClampConductances\';
         excConductanceData
         inhConductanceData
         
@@ -124,8 +124,8 @@ classdef DynamicClampConductanceScalingSpikeRate < sa_labs.protocols.BaseProtoco
                 obj.createConductanceStimulus(inhConductance, 'inh'));
             
             epoch.addParameter('conductanceMatrixRowIndex', obj.traceInd);
-            str = ['exc ' obj.excConductanceData.labels{obj.traceInd} ' inh ' obj.inhConductanceData.labels{obj.traceInd}];
-            epoch.addParameter('trialLabel', str);
+            %str = ['exc ' obj.excConductanceData.labels{obj.traceInd} ' inh ' obj.inhConductanceData.labels{obj.traceInd}];
+            %epoch.addParameter('trialLabel', str);
         end
         
         
