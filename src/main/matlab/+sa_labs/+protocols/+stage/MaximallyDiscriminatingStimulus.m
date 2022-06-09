@@ -8,6 +8,8 @@ classdef MaximallyDiscriminatingStimulus < sa_labs.protocols.StageProtocol
 
     properties
         tailTime = 500
+
+        moviePath = 'C:\stage_movies\recon_group_mdi_24_over_28.avi';
         
         numberOfEpochs = 24;
 
@@ -42,6 +44,12 @@ classdef MaximallyDiscriminatingStimulus < sa_labs.protocols.StageProtocol
             obj.colorPattern2 = 'uv';
         end
 
+        function didSetRig(obj)
+            didSetRig@sa_labs.protocols.StageProtocol(obj);
+            obj.colorPattern1 = 'green';
+            obj.colorPattern2 = 'uv';
+        end
+
         function d = getPropertyDescriptor(obj, name)
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
             
@@ -56,7 +64,7 @@ classdef MaximallyDiscriminatingStimulus < sa_labs.protocols.StageProtocol
 
         function p = createPresentation(obj)
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime)*1e-3);
-            mov = stage.builtin.stimuli.Movie('C:\stage_movies\recon_group_mdi_24_over_28.avi');
+            mov = stage.builtin.stimuli.Movie(obj.moviePath);
             mov.setWrapModeS(GL.CLAMP_TO_EDGE);
             mov.setWrapModeT(GL.CLAMP_TO_EDGE);
             mov.position = obj.rig.getDevice('Stage').getCanvasSize() / 2;
