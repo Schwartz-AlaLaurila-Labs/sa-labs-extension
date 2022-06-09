@@ -8,18 +8,20 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelDefaultValue = 5;
         
         filterWheelAttenuationValues_Blue = [0.087209302	0.00744186	0.000612403	6.77132E-05	6.47287E-06 1];%updated 7/1/21 - David
-        filterWheelAttenuationValues_Green = [0.089974684	0.008658228	0.000759494	7.06621E-05	6.48122E-06 1];%updated 02/25/21 -David - NDF 4 & 5 were predicted from lower NDF values
-        filterWheelAttenuationValues_UV = [0.035217391	0.002063241	8.60316E-05	3.90679E-06	1.77411E-07 1]; %updated 02/25/21 -David - NDF 3, 4, & 5 were predicted from lower NDF values
+        filterWheelAttenuationValues_Green = [0.09207	.0093037    .00079884	.000094391  .000015358   1];%updated 6/9/22 - Zach
+        filterWheelAttenuationValues_UV = [0.0475419    0.0027989  .000168156	.00003419	.00002337 1]; %updated 6/9/22 - Zach
         
-        fitBlue = [5.01054711270044e-18	-2.21188541610487e-15	5.27272199418043e-13	-1.20400470830141e-11];%updated 10/05/21 - David
-        fitGreen = [4.49248176839518e-18,-4.34318771541836e-15,1.82493374651640e-12,-4.51382977537234e-11];%updated 7/1/21 - David
-        fitUV = [1.26531855824211e-19,-1.62979438916323e-16,1.00928035139656e-13,4.87488460073430e-12];%updated 7/1/21 - David
+        fitBlue = [0 0 0 0];%updated 6/9/22 - Zach
+        fitGreen = [-8.62553683766411e-19	9.00409267334123e-17	4.48952373801151e-13	-6.21950483723736e-13];%updated 6/9/22 - Zach
+        fitUV = [5.40225772115919e-20	-8.87043276941359e-17	1.63063380544607e-13	-2.84698148649299e-13];%updated 6/9/22 - Zach
         
-        micronsPerPixel = 1.45 %updated 9/10/21 -Davide.
+        micronsPerPixel = 1.2 %updated 6/9/22 Zach
 
-        frameTrackerPosition = [0,1280];%updated 02/23/21 -David
+        frameTrackerPosition = [160, 640]; %updated 5/26/22 Zach
+        frameTrackerDuration = 3.0; %updated 5/26/22 Zach
 
-        frameTrackerSize = [100,100];%updated 02/23/21 -David
+        frameTrackerSize = [320, 1280]; %updated 5/26/22 Zach
+        canvasTranslation = [117, 0]; %updated 6/9/22 Zach
        
         filterWheelComPort = 'COM5';
         orientation = [false, true]; %[flip Y, flip X]
@@ -27,8 +29,8 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
         spectralOverlap_Blue = [4.73e+18,2.85e+15,3.76e+18];%updated 7/1/21 - David
-        spectralOverlap_Green = [3.41e+18,1730000000000,4.56e+18];%updated 7/1/21 - David
-        spectralOverlap_UV = [1.09e+18,1.15e+18,1.17e+18];%updated 7/1/21 - David
+        spectralOverlap_Green = [2.50272617664986e+18	1.47464420795067e+15	4.03261286137103e+18];%updated 6/9/22 - Zach
+        spectralOverlap_UV = [1.18974879467848e+18	6.55496793103621e+17	1.17668333802297e+18];%updated 6/9/22 - Zach
         
         projectorColorMode = 'uv';
         numberOfAmplifiers = 2;

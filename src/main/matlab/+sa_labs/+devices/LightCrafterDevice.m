@@ -4,6 +4,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         stageClient
         lightCrafter
         orientation
+        baseTranslation = [0,0]
     end
     
     methods
@@ -16,9 +17,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             settings('projectorColorMode') = 'standard';
             settings('orientation') = [0,0];
             settings('micronsPerPixel') = 1;
+            settings('canvasTranslation') = [0,0];
             settings('angleOffset') = 0;
             settings('frameTrackerPosition') = [40,40];
             settings('frameTrackerSize') = [80,80];
+            settings('frameTrackerDuration') = .1;
             settings('fitBlue') = 0;
             settings('fitGreen') = 0;
             settings('fitUV') = 0;
@@ -59,6 +62,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             fprintf('init proj color %s\n', settings('projectorColorMode'))
             
             obj.lightCrafter = lcr(monitorRefreshRate, settings('projectorColorMode'));
+            obj.baseTranslation = settings('canvasTranslation');
+            %TODO: oncleanup, lcr.disconnect()
             obj.connect();
             
             
@@ -70,8 +75,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false);
             obj.addConfigurationSetting('micronsPerPixel', settings('micronsPerPixel'));
-            obj.addConfigurationSetting('canvasTranslation', [0,0]);
-            obj.addConfigurationSetting('frameTrackerDuration', .1);
+            obj.addConfigurationSetting('canvasTranslation', settings('canvasTranslation'));
+            obj.addConfigurationSetting('frameTrackerDuration', settings('frameTrackerDuration'));
             obj.addConfigurationSetting('colorMode', settings('projectorColorMode'), 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundPatternMode', 'noPattern');
@@ -145,7 +150,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         end     
         
         function setCanvasTranslation(obj, t)
-            obj.setConfigurationSetting('canvasTranslation', t);
+            obj.setConfigurationSetting('canvasTranslation', t + obj.baseTranslation);
         end
         
         function r = getMonitorRefreshRate(obj)
@@ -184,7 +189,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         function setPrerender(obj, tf)
             obj.setConfigurationSetting('prerender', tf);
         end
-                
+
         function play(obj, presentation)
             canvasSize = obj.getCanvasSize();
             canvasTranslation = obj.getConfigurationSetting('canvasTranslation');
@@ -339,6 +344,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         
         function obj = connect(obj)
             obj.lightCrafter.connect();
+            %TODO: set parallel RGB, 24bit?
             obj.lightCrafter.setMode('pattern');
             obj.lightCrafter.setImageOrientation(obj.orientation(1),obj.orientation(2));
         end
