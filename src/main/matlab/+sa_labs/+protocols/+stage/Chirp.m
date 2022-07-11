@@ -11,7 +11,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         
         %        
         spotSize = 200; % um
-        intensity = 0; % this doesn't do anything
+        intensity = 1; % only used if mean = 0
         
         % chirp params
         freqTotalTime = 10000; % msec of frequency modulation
@@ -43,28 +43,44 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            if obj.meanLevel == 0
-                warning('Mean Level must be greater than 0 for this to work');
+            if obj.meanLevel > 0
+                contrastBaseline = obj.meanLevel;
+            elseif obj.meanLevel == 0
+                warning('mean level = 0, contrast will be determined by spot intensity');
+                if obj.intensity == 0
+                    error('intensity must be greater than 0 when mean = 0')
+                else
+                    contrastBaseline = obj.intensity;
+                end
+            end
+            
+
+            if obj.contrastMax > 1
+                error('cannot use max contrast greater than 1')
+            elseif contrastBaseline+obj.contrastMax/2 > 1
+                error('mean/intensity + (max contrast/2) must be less than 1')
+            elseif obj.contrastMax < 0 || obj.contrastMax > 1
+                error('max contrast must be in the range of 0-1')
             end
             
             dt = 1/obj.frameRate; % assume frame rate in Hz
             
             % *0.001 is to make in terms of seconds
-            prePattern = ones(1, ceil(obj.preTime*0.001*obj.frameRate))*obj.meanLevel;
-            interPattern = ones(1, ceil(obj.interTime*0.001*obj.frameRate))*obj.meanLevel;
-            tailPattern = ones(1, ceil(obj.tailTime*0.001*obj.frameRate))*obj.meanLevel;
-            posStepPattern = ones(1, ceil(obj.stepTime*0.001*obj.frameRate))*(obj.meanLevel+obj.meanLevel);
-            negStepPattern = ones(1, ceil(obj.stepTime*0.001*obj.frameRate))*(obj.meanLevel-obj.meanLevel);
+            prePattern = ones(1, round(obj.preTime*0.001*obj.frameRate))*obj.meanLevel;
+            interPattern = ones(1, round(obj.interTime*0.001*obj.frameRate))*contrastBaseline;
+            tailPattern = ones(1, round(obj.tailTime*0.001*obj.frameRate))*obj.meanLevel;
+            posStepPattern = ones(1, round(obj.stepTime*0.001*obj.frameRate))*(contrastBaseline+(contrastBaseline*obj.contrastMax));
+            negStepPattern = ones(1, round(obj.stepTime*0.001*obj.frameRate))*(contrastBaseline-(contrastBaseline*obj.contrastMax));
             
             freqT = 0:dt:obj.freqTotalTime*0.001;
             freqChange = linspace(obj.freqMin, obj.freqMax, length(freqT));
             freqPhase = cumsum(freqChange*dt);
-            freqPattern = obj.meanLevel*-sin(2*pi*freqPhase + pi) + obj.meanLevel;
+            freqPattern = obj.contrastMax*contrastBaseline*-sin(2*pi*freqPhase + pi) + contrastBaseline;
             
             contrastT = 0:dt:obj.contrastTotalTime*0.001;
             contrastChange = linspace(obj.contrastMin, obj.contrastMax, length(contrastT));
-            contrastPattern = contrastChange.*obj.meanLevel.*-sin(2*pi*obj.contrastFreq.*contrastT + pi) + obj.meanLevel;
-            
+            contrastPattern = contrastChange.*contrastBaseline.*-sin(2*pi*obj.contrastFreq.*contrastT + pi) + contrastBaseline;
+
             obj.chirpPattern = [prePattern, posStepPattern, interPattern, negStepPattern, interPattern...
                 freqPattern, interPattern, contrastPattern, tailPattern];
         end
