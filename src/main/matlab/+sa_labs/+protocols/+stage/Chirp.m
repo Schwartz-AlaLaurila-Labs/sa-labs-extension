@@ -1,25 +1,25 @@
 classdef Chirp < sa_labs.protocols.StageProtocol
 
     properties
-        preTime = 500; % ms
-        tailTime = 500; % ms
+        preTime = 3000; % ms
+        tailTime = 3000; % ms
         numberOfEpochs = 10;
         
         %times in ms
-        interTime = 1000; % ms, time before, between, or after stimuli in sec
-        stepTime = 500; % ms, time of the step stimulus
-        
+        interTime = 2000; % ms, time before, between, or after stimuli in sec
+        ONstepTime = 3000; % ms, time of the step stimulus
+        OFFstepTime = 2000;
         %        
         spotSize = 200; % um
         intensity = 1; % only used if mean = 0
         
         % chirp params
-        freqTotalTime = 10000; % msec of frequency modulation
-        freqMin = 0.5; % minimum frequency
-        freqMax = 20; % maximum frequency
-        contrastTotalTime = 10000; % msec of contrast modulation
+        freqTotalTime = 8000; % msec of frequency modulation
+        freqMin = 0; % minimum frequency
+        freqMax = 8; % maximum frequency
+        contrastTotalTime = 8000; % msec of contrast modulation
         contrastFreq = 2;
-        contrastMin = 0.02; % minimum contrast
+        contrastMin = 0; % minimum contrast
         contrastMax = 1; % maximum contrast
     end
     
@@ -69,8 +69,8 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             prePattern = ones(1, round(obj.preTime*0.001*obj.frameRate))*obj.meanLevel;
             interPattern = ones(1, round(obj.interTime*0.001*obj.frameRate))*contrastBaseline;
             tailPattern = ones(1, round(obj.tailTime*0.001*obj.frameRate))*obj.meanLevel;
-            posStepPattern = ones(1, round(obj.stepTime*0.001*obj.frameRate))*(contrastBaseline+(contrastBaseline*obj.contrastMax));
-            negStepPattern = ones(1, round(obj.stepTime*0.001*obj.frameRate))*(contrastBaseline-(contrastBaseline*obj.contrastMax));
+            posStepPattern = ones(1, round(obj.ONstepTime*0.001*obj.frameRate))*(contrastBaseline+(contrastBaseline*obj.contrastMax));
+            negStepPattern = ones(1, round(obj.OFFstepTime*0.001*obj.frameRate))*(contrastBaseline-(contrastBaseline*obj.contrastMax));
             
             freqT = 0:dt:obj.freqTotalTime*0.001;
             freqChange = linspace(obj.freqMin, obj.freqMax, length(freqT));
@@ -81,8 +81,10 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             contrastChange = linspace(obj.contrastMin, obj.contrastMax, length(contrastT));
             contrastPattern = contrastChange.*contrastBaseline.*-sin(2*pi*obj.contrastFreq.*contrastT + pi) + contrastBaseline;
 
-            obj.chirpPattern = [prePattern, posStepPattern, interPattern, negStepPattern, interPattern...
-                freqPattern, interPattern, contrastPattern, tailPattern];
+            obj.chirpPattern = [prePattern, posStepPattern, negStepPattern, interPattern...
+                freqPattern, interPattern, contrastPattern, interPattern, tailPattern];
+        figure
+        plot(linspace(0,dt*length(obj.chirpPattern),length(obj.chirpPattern)), obj.chirpPattern)
         end
         
         function prepareEpoch(obj, epoch)
@@ -115,7 +117,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         end
         
         function stimTime = get.stimTime(obj)
-            stimTime = obj.interTime*3 + obj.stepTime*2 + obj.freqTotalTime + obj.contrastTotalTime;
+            stimTime = obj.interTime*3 + obj.ONstepTime + obj.OFFstepTime + obj.freqTotalTime + obj.contrastTotalTime;
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
