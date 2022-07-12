@@ -83,8 +83,8 @@ classdef Chirp < sa_labs.protocols.StageProtocol
 
             obj.chirpPattern = [prePattern, posStepPattern, negStepPattern, interPattern...
                 freqPattern, interPattern, contrastPattern, interPattern, tailPattern];
-        figure
-        plot(linspace(0,dt*length(obj.chirpPattern),length(obj.chirpPattern)), obj.chirpPattern)
+%         figure
+%         plot(linspace(0,dt*length(obj.chirpPattern),length(obj.chirpPattern)), obj.chirpPattern)
         end
         
         function prepareEpoch(obj, epoch)
