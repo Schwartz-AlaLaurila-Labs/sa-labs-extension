@@ -89,7 +89,7 @@ classdef ColorOpponentCheckerboard < sa_labs.protocols.StageProtocol
             minIntensity1 = 2*obj.meanLevel1 - obj.maxIntensity1;
             minIntensity2 = 2*obj.meanLevel2 - obj.maxIntensity2;
 
-            Im = rand(obj.numberOfPixels,obj.numberOfPixels,3,'single');
+            Im = single(rand(obj.numberOfPixels,obj.numberOfPixels,3,'single') > .5);
 
             Im(:,:,1) = Im(:,:,1)*(obj.maxIntensity1 - minIntensity1) + minIntensity1;
             Im(:,:,2) = Im(:,:,2)*(obj.maxIntensity2 - minIntensity2) + minIntensity2;
