@@ -8,14 +8,14 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelDefaultValue = 5;
         
         filterWheelAttenuationValues_Blue = [0.087209302	0.00744186	0.000612403	6.77132E-05	6.47287E-06 1];%updated 7/1/21 - David
-        filterWheelAttenuationValues_Green = [0.09207	.0093037    .00079884	.000094391  .000015358   1];%updated 6/9/22 - Zach
-        filterWheelAttenuationValues_UV = [0.0475419    0.0027989  .000168156	.00003419	.00002337 1]; %updated 6/9/22 - Zach
+        filterWheelAttenuationValues_Green = [0.09226100152 0.009301972686 0.0007905918058 0.00008679817906 0.000007738998483 1];%updated 7/18/22 - Zach
+        filterWheelAttenuationValues_UV = [0.05594405594 0.003496503497 0.000201048951 0.0000166958042 0.000001001748252 1]; %updated 7/18/22 - Zach
         
         fitBlue = [0 0 0 0];%updated 6/9/22 - Zach
-        fitGreen = [-8.62553683766411e-19	9.00409267334123e-17	4.48952373801151e-13	-6.21950483723736e-13];%updated 6/9/22 - Zach
-        fitUV = [5.40225772115919e-20	-8.87043276941359e-17	1.63063380544607e-13	-2.84698148649299e-13];%updated 6/9/22 - Zach
+        fitGreen = 1.0e-12 * [-0.000000018455569  -0.000260203052805   0.595905840155059  -0.983189229429732];%updated 7/18/22 - Zach
+        fitUV = 1.0e-12 *[-0.000000596498897  -0.000174381013588   0.546352794922400  -0.575820192838955];%updated 7/18/22 - Zach
         
-        micronsPerPixel = 1.2 %updated 6/9/22 Zach
+        micronsPerPixel = 1.3 %updated 7/18/22 Zach
 
         frameTrackerPosition = [160, 640]; %updated 5/26/22 Zach
         frameTrackerDuration = 3.0; %updated 5/26/22 Zach
@@ -25,7 +25,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
        
         filterWheelComPort = 'COM5';
         orientation = [false, true]; %[flip Y, flip X]
-        angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
+        angleOffset = 180; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
         spectralOverlap_Blue = [4.73e+18,2.85e+15,3.76e+18];%updated 7/1/21 - David
@@ -33,7 +33,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         spectralOverlap_UV = [1.18974879467848e+18	6.55496793103621e+17	1.17668333802297e+18];%updated 6/9/22 - Zach
         
         projectorColorMode = 'uv';
-        numberOfAmplifiers = 2;
+        numberOfAmplifiers = 1;
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
