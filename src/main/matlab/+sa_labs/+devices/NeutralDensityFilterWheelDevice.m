@@ -59,15 +59,44 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             end
             
             oldValue = obj.getValue();
-            if newValue ~= oldValue
-                % TODO: move wheel to avoid passing through NDF 0
-                % TODO: instead of waiting 3 seconds, can we just query for a done signal from the wheel??
-                newPosition = find(valuesByPosition == newValue, 1);
+            if newValue ~= oldValue                
+                [auto, red, green, blue] = lcrGetLedEnables();
+                lcrSetLedEnables(0,0,0,0);
+                
                 fopen(obj.serialPortObject);
-                fprintf(obj.serialPortObject, 'pos=%s\n', num2str(newPosition));
-                pause(3);
+
+                newPosition = find(valuesByPosition == newValue, 1);
+                oldPosition = find(valuesByPosition == oldValue, 1);
+
+                %only move in order of increasing NDF due to hardware issue on rig B
+                if oldPosition ~= newPosition
+                    if oldPosition > newPosition
+                        positions = [oldPosition + 1 : length(valuesByPosition), 1:newPosition];
+                    else
+                        positions = oldPosition + 1 : newPosition;
+                    end
+                    for pos = positions
+                        fprintf(obj.serialPortObject, 'pos=%s\n', num2str(pos));
+                    end
+                end 
                 fclose(obj.serialPortObject);
             end
+
+            landed = -1;
+            while landed == -1
+                landed = obj.getValue();
+            end
+            
+            if newValue ~= landed
+                error('Failed to change filter wheel to desired position. LEDs have been turned off to prevent bleaching.\n\nAttempted to move from position %d (NDF %d) to position %d (NDF %d), but landed at position %d (NDF %d).\n', oldPosition, oldValue, newPosition, newValue, landed, find(valuesByPosition == landed, 1));
+            end
+            
+            
+            if newValue ~= oldValue
+                lcrSetLedEnables(auto,red,green,blue);
+            end
+            
+            
         end
         
         function delete(obj)
