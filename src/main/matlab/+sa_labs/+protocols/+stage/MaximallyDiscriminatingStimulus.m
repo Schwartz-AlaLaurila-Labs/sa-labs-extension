@@ -55,8 +55,8 @@ classdef MaximallyDiscriminatingStimulus < sa_labs.protocols.StageProtocol
             
             switch name
                 case {'preTime','stimTime','meanLevel1','meanLevel2','colorCombinationMode', 'contrast1', 'contrast2', 'colorPattern1','colorPattern2','colorPattern3','primaryObjectPattern','secondaryObjectPattern','backgroundPattern','numberOfPatterns'}
-                    d.isHidden = true;
-                case {'RstarIntensity1', 'RstarIntensity2', 'MstarIntensity1', 'MstarIntensity2', 'SstarIntensity1', 'SstarIntensity2'}
+                    d.isReadOnly = true;
+                case {'RstarIntenssity1', 'RstarIntensity2', 'MstarIntensity1', 'MstarIntensity2', 'SstarIntensity1', 'SstarIntensity2'}
                     d.isHidden = false;
                     d.displayName = [d.displayName(1), '* mean ', d.displayName(end)];
             end
@@ -70,7 +70,7 @@ classdef MaximallyDiscriminatingStimulus < sa_labs.protocols.StageProtocol
             mov.position = obj.rig.getDevice('Stage').getCanvasSize() / 2;
             mov.setPreloading(true); %the movies are tiny
 
-            mov.size = [obj.um2pix(50*16), obj.um2pix(50*18)*(obj.ventralUp*2-1)];
+            mov.size = [-obj.um2pix(50*16), obj.um2pix(50*18)*(obj.ventralUp*2-1)];
             %TODO: if n/t doesn't matter, we should just rotate it...
 
             % mov.color = [obj.UVIntensity, obj.greenIntensity, 0];
@@ -86,6 +86,9 @@ classdef MaximallyDiscriminatingStimulus < sa_labs.protocols.StageProtocol
 
 
             % intensity range from ~.5 * 10³ to 20 * 10³ P*
+            %mean is ~ 14.1% of max
+            %range is 19.5e3 P*
+            %so mean is 3.25e3 P*
 
             preFrames = round(obj.frameRate * (obj.preTime/1e3));
 
