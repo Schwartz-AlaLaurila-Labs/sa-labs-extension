@@ -17,10 +17,10 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         
         micronsPerPixel = 1.3 %updated 7/18/22 Zach
 
-        frameTrackerPosition = [160, 640]; %updated 5/26/22 Zach
-        frameTrackerDuration = 3.0; %updated 5/26/22 Zach
-
-        frameTrackerSize = [320, 1280]; %updated 5/26/22 Zach
+        frameTrackerPosition = [160, 1280]; %updated 7/25/22 Zach
+        frameTrackerDuration = 1.0; %updated 5/26/22 Zach
+        frameTrackerBackgroundSize = [360, 2560]; %updated 7/25/22 Zach
+        frameTrackerSize = [240, 640]; %updated 7/25/22 Zach
         canvasTranslation = [117, 0]; %updated 6/9/22 Zach
        
         filterWheelComPort = 'COM5';
