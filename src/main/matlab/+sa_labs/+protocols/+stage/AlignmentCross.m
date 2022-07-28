@@ -24,8 +24,7 @@ classdef AlignmentCross < sa_labs.protocols.StageProtocol
         function didSetRig(obj)
             didSetRig@sa_labs.protocols.StageProtocol(obj);
             
-            obj.NDF = 2;
-            obj.blueLED = 100;
+            obj.NDF = 1;
         end
                 
         function p = createPresentation(obj)

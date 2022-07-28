@@ -10,12 +10,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         offsetX = 0         % um
         offsetY = 0         % um
         
-        NDF = 5             % Filter NDF value
-        blueLED = 24        % 0-255
+        NDF = 3             % Filter NDF value
+        blueLED = 0        % 0-255
         greenLED = 0   % 0-255
         redLED = 0   % 0-255 
-        uvLED = 0
-        colorPattern1 = 'blue';
+        uvLED = 10
+        colorPattern1 = 'uv';
         colorPattern2 = 'none';
         colorPattern3 = 'none';
         primaryObjectPattern = 1
