@@ -18,6 +18,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         micronsPerPixel = 1.3; %updated 6/1/2022 -David
         frameTrackerPosition = [1724,50]; %updated 5/26/2022 -David
         frameTrackerSize = [200,100]; %updated 5/26/2022 -David
+        frameTrackerBackgroundSize = [200, 100]; %updated 7/28/2022 - Zach
         
         filterWheelComPort = 'COM7';
         orientation = [false, true];%[flip Y, flip X]
