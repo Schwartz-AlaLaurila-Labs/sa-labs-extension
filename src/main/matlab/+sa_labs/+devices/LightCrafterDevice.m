@@ -21,7 +21,6 @@ classdef LightCrafterDevice < symphonyui.core.Device
             settings('angleOffset') = 0;
             settings('frameTrackerPosition') = [40,40];
             settings('frameTrackerSize') = [80,80];
-            settings('frameTrackerBackgroundSize') = [80,80];
             settings('frameTrackerDuration') = .1;
             settings('fitBlue') = 0;
             settings('fitGreen') = 0;
@@ -72,7 +71,6 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('canvasSize', canvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('trueCanvasSize', trueCanvasSize, 'isReadOnly', true);
             obj.addConfigurationSetting('frameTrackerSize', settings('frameTrackerSize'));
-            obj.addConfigurationSetting('frameTrackerBackgroundSize', settings('frameTrackerBackgroundSize'));
             obj.addConfigurationSetting('frameTrackerPosition', settings('frameTrackerPosition'));
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false);
@@ -258,22 +256,15 @@ classdef LightCrafterDevice < symphonyui.core.Device
             presentation.insertStimulus(1, background);
             
             % FRAME TRACKER
-            % tracker = stage.builtin.stimuli.Rectangle();
-            frameTrackerBackgroundSize = obj.getConfigurationSetting('frameTrackerBackgroundSize');
-            frameTrackerSize = obj.getFrameTrackerSize();
-            tracker = stage.builtin.stimuli.Image(uint8(zeros(frameTrackerBackgroundSize([2,1]))));
-
-            rt = round([frameTrackerBackgroundSize + 1 - frameTrackerSize; frameTrackerBackgroundSize + frameTrackerSize]/2);
-            tracker.imageMatrix(rt(1,2):rt(2,2), rt(1,1):rt(2,1)) = 255; 
-            % tracker.size = obj.getFrameTrackerSize();
-            tracker.size = frameTrackerBackgroundSize;
+            tracker = stage.builtin.stimuli.Rectangle();
+            tracker.size = obj.getFrameTrackerSize();
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             presentation.addStimulus(tracker);
             % appears on all patterns
             trackerDuration = obj.getFrameTrackerDuration();
             frameRate = obj.getFrameRate();
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                @(s) s.time < trackerDuration);% && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
+                @(s) s.time < trackerDuration && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
             presentation.addController(trackerColor);
             
             % RENDER
