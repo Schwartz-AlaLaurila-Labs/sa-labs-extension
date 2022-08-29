@@ -132,9 +132,6 @@ classdef MaximallyExcitatoryInputs < sa_labs.protocols.StageProtocol
             channelController = stage.builtin.controllers.PropertyController(mov,'channel',...
                 @(state) state.pattern + 2);
 
-            disp(preFrames);
-            disp(relSpeed);
-
             %movies are at 
             frameController = stage.builtin.controllers.PropertyController(mov,'nextFrame',...
                 @(state) min(max((state.frame - preFrames) / relSpeed, 1), 50));
