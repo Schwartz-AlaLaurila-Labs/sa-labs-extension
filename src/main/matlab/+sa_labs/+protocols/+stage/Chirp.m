@@ -1,14 +1,14 @@
 classdef Chirp < sa_labs.protocols.StageProtocol
 
     properties
-        preTime = 3000; % ms
-        tailTime = 3000; % ms
+        preTime = 2000; % ms
+        tailTime = 2000; % ms
         numberOfEpochs = 10;
         
         %times in ms
         interTime = 2000; % ms, time before, between, or after stimuli in sec
         ONstepTime = 3000; % ms, time of the step stimulus
-        OFFstepTime = 2000;
+        OFFstepTime = 3000;
         %        
         spotSize = 200; % um
         intensity = 1; % only used if mean = 0

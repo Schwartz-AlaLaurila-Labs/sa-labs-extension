@@ -117,7 +117,7 @@ classdef MaximallyExcitatoryInputs < sa_labs.protocols.StageProtocol
             preTime = obj.preTime;
             stimTime = obj.stimTime;
             maskController = stage.builtin.controllers.PropertyController(mask,'opacity',...
-                @(state)  - 1 * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3)) + 1);
+                @(state)  ((-1.0) * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3))) + 1.0);
             
             maskControllerC = stage.builtin.controllers.PropertyController(mask, 'color',...
                 @(state) (state.pattern==0) * 70/255 + (state.pattern==1) * 94/255);
@@ -136,7 +136,7 @@ classdef MaximallyExcitatoryInputs < sa_labs.protocols.StageProtocol
             frameController = stage.builtin.controllers.PropertyController(mov,'nextFrame',...
                 @(state) min(max((state.frame - preFrames) / relSpeed, 1), 50));
             stimController = stage.builtin.controllers.PropertyController(mask,'opacity',...
-            @(state)  1 * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3)));
+            @(state)  1.0 * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3)));
         
             p.addController(maskController);
             p.addController(maskControllerC);
