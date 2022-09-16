@@ -12,15 +12,15 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_UV = [0.05594405594 0.003496503497 0.000201048951 0.0000166958042 0.000001001748252 1]; %updated 7/18/22 - Zach
         
         fitBlue = [0 0 0 0];%updated 6/9/22 - Zach
-        fitGreen = 1.0e-12 * [-0.000000018455569  -0.000260203052805   0.595905840155059  -0.983189229429732];%updated 7/18/22 - Zach
-        fitUV = 1.0e-12 *[-0.000000596498897  -0.000174381013588   0.546352794922400  -0.575820192838955];%updated 7/18/22 - Zach
+        fitGreen = 1.0e-11 * [ -0.000000004724626  -0.000066611981518   0.152551895079695  -0.251696442734011];%updated 8/29/22 - Zach
+        fitUV = 1.0e-11 * [-0.000000152703718  -0.000044641539479   0.139866315500134  -0.147409969366771];%updated 8/29/22 - Zach
         
         micronsPerPixel = 1.3 %updated 7/18/22 Zach
 
-        frameTrackerPosition = [160, 1280]; %updated 7/25/22 Zach
-        frameTrackerDuration = 1.0; %updated 5/26/22 Zach
-        frameTrackerBackgroundSize = [360, 2560]; %updated 7/25/22 Zach
-        frameTrackerSize = [240, 640]; %updated 7/25/22 Zach
+        frameTrackerPosition = [0, 300]; %updated 9/1/22 David
+        frameTrackerDuration = 0.05; %updated 9/1/22 David
+        frameTrackerBackgroundSize = [800, 2000]; %updated 9/1/22 David
+        frameTrackerSize = [80, 400]; %updated 9/1/22 David
         canvasTranslation = [117, 0]; %updated 6/9/22 Zach
        
         filterWheelComPort = 'COM5';

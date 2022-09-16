@@ -17,7 +17,7 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         maxSize = 1200
 
         numberOfSizeSteps = 12
-        numberOfCycles = 2;
+        numberOfCycles = 3;
         
         logScaling = true % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true;

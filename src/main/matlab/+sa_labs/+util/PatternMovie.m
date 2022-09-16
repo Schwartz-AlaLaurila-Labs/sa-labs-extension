@@ -133,6 +133,10 @@ end
 
 methods (Access = protected)
     function performDraw(obj)
+        
+        if ~obj.player.isPlaying
+            obj.player.play();
+        end
         while obj.frameInd < obj.nextFrame
             %only advance the frame if necessary
             obj.frame = obj.player.getImage();
@@ -143,9 +147,6 @@ methods (Access = protected)
             obj.texture.setSubImage(glImage);
         end
 
-        if ~obj.player.isPlaying
-            obj.player.play();
-        end
 
         modelView = obj.canvas.modelView;
         modelView.push();
