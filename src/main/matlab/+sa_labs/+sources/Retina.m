@@ -6,7 +6,8 @@ classdef Retina < symphonyui.core.persistent.descriptions.SourceDescription
             import symphonyui.core.*;
             
             users = sl.User().fetchn('user_name');
-            mice = fetchn(sl.AnimalEventDeceased() & sprintf('date=%s',datestr(datetime,'YYYYmmDD')),'animal_id');
+            % mice = fetchn(sl.AnimalEventDeceased() & sprintf('date=%s',datestr(datetime,'YYYYmmDD')),'animal_id');
+            mice = fetchn((sln_animal.AnimalEvent * sln_animal.Deceased) & sprintf('date=%s',datestr(datetime,'YYYYmmDD')),'animal_id');
             
 %             obj.addProperty('genotype', 'WT',...
 %                 'type', PropertyType('char', 'row'));
