@@ -66,7 +66,9 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
-            obj.daqStreams('LED_blanking_signal') = {'ai3', -1, 'V'}; %
+%             obj.daqStreams('LED_blanking_signal') = {'ai3', -1, 'V'}; %
+            
+            obj.daqStreams('Test DI') = {'diport0', 0, 0};
             
             if nargin < 1
                 delayInit = false;

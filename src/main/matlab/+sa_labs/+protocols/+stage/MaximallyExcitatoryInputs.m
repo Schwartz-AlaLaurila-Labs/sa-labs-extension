@@ -116,11 +116,18 @@ classdef MaximallyExcitatoryInputs < sa_labs.protocols.StageProtocol
             % end
             preTime = obj.preTime;
             stimTime = obj.stimTime;
+
             maskController = stage.builtin.controllers.PropertyController(mask,'opacity',...
-                @(state)  ((-1.0) * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3))) + 1.0);
+                @(state)  ((-1.0) * (state.time>preTime*1e-3 && state.time<(preTime+stimTime)*1e-3)) + 1.0);
             
+            % maskController = stage.builtin.controllers.PropertyController(mask,'opacity',...
+            %     @(state) 1);
+
             maskControllerC = stage.builtin.controllers.PropertyController(mask, 'color',...
                 @(state) (state.pattern==0) * 70/255 + (state.pattern==1) * 94/255);
+
+            % maskControllerC = stage.builtin.controllers.PropertyController(mask, 'color',...
+            % @(state) 0.0);
             
             % intensity range from ~.5 * 10³ to 20 * 10³ P*
             %mean is ~ 14.1% of max
@@ -135,15 +142,15 @@ classdef MaximallyExcitatoryInputs < sa_labs.protocols.StageProtocol
             %movies are at 
             frameController = stage.builtin.controllers.PropertyController(mov,'nextFrame',...
                 @(state) min(max((state.frame - preFrames) / relSpeed, 1), 50));
-            stimController = stage.builtin.controllers.PropertyController(mask,'opacity',...
-            @(state)  1.0 * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3)));
+            % stimController = stage.builtin.controllers.PropertyController(mask,'opacity',...
+            % @(state)  1.0 * (state.time>ceil(preTime*1e-3) && state.time<floor((preTime+stimTime)*1e-3)));
         
             p.addController(maskController);
             p.addController(maskControllerC);
 
             p.addController(channelController);
             p.addController(frameController);
-            p.addController(stimController);
+            % p.addController(stimController);
 
             p.addStimulus(mov);
             p.addStimulus(mask);
