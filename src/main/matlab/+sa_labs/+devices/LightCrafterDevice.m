@@ -261,20 +261,49 @@ classdef LightCrafterDevice < symphonyui.core.Device
             % tracker = stage.builtin.stimuli.Rectangle();
             frameTrackerBackgroundSize = obj.getConfigurationSetting('frameTrackerBackgroundSize');
             frameTrackerSize = obj.getFrameTrackerSize();
-            tracker = stage.builtin.stimuli.Image(uint8(zeros(frameTrackerBackgroundSize([2,1]))));
+            frameTrackerArea = frameTrackerSize(1) * frameTrackerSize(2);
 
-            rt = round([frameTrackerBackgroundSize + 1 - frameTrackerSize; frameTrackerBackgroundSize + frameTrackerSize]/2);
-            tracker.imageMatrix(rt(1,2):rt(2,2), rt(1,1):rt(2,1)) = 255; 
-            % tracker.size = obj.getFrameTrackerSize();
-            tracker.size = frameTrackerBackgroundSize;
+            trackerBackground = stage.builtin.stimuli.Rectangle();
+            trackerBackground.size = frameTrackerBackgroundSize;
+            trackerBackground.position = obj.getFrameTrackerPosition() - canvasTranslation;
+            trackerBackground.color = 0;
+
+            tracker = stage.builtin.stimuli.Rectangle();
+            tracker.size = frameTrackerSize;
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
+            tracker.color = 255;
+            
+            presentation.addStimulus(trackerBackground);
             presentation.addStimulus(tracker);
             % appears on all patterns
-            trackerDuration = obj.getFrameTrackerDuration();
-            frameRate = obj.getFrameRate();
+
+            % trackerDuration = obj.getFrameTrackerDuration();
+            % frameRate = obj.getFrameRate();
+
+            % trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
+            %     @(s) s.time < trackerDuration);% && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
+            % presentation.addController(trackerColor);
+
             trackerColor = stage.builtin.controllers.PropertyController(tracker, 'color', ...
-                @(s) s.time < trackerDuration);% && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
+                @(s) s.time < (presentation.duration - (1/frameRate)));
             presentation.addController(trackerColor);
+            
+            % trackerIntensity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
+            %     @(s) (s.frame == 0)*.75 + (mod(s.frame,4)==0)*.25 + (mod(s.frame,4)==3)*.125 + (mod(s.frame,4)==3)*.375);
+            
+            xy_yx = [frameTrackerSize(1)/frameTrackerSize(2) frameTrackerSize(2)/frameTrackerSize(1)];
+            function sz = resizeFrameTracker(s)
+                if s.frame == 0
+                    sz = frameTrackerSize;
+                    return;
+                end
+                framei = mod(s.frame, 4);
+                A = (framei==0) .* .25 + (framei==2) * .375 + (framei==3) * .125;
+                sz = sqrt(A* xy_yx);
+            end
+            trackerIntensity = stage.builtin.controllers.PropertyController(tracker, 'size', ...
+                @(s) resizeFrameTracker(s));
+            presentation.addController(trackerIntensity);
             
             % RENDER
             if obj.getPrerender()
