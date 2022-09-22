@@ -296,7 +296,6 @@ classdef LightCrafterDevice < symphonyui.core.Device
             function sz = resizeFrameTracker(s)
                 if s.frame == 0
                     sz = frameTrackerSize;
-                    return;
                 elseif mod(s.frame, 2)
                     sz = frameTrackerSize .* [1, .5];
                 else
