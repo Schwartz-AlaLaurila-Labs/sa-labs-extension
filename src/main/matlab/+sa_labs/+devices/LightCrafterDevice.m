@@ -269,7 +269,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             trackerBackground.color = 0;
 
             tracker = stage.builtin.stimuli.Rectangle();
-            tracker.size = frameTrackerSize;
+            % tracker.size = frameTrackerSize;
+            tracker.size = [0,0];
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             tracker.color = 1.0;
             
