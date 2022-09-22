@@ -298,7 +298,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
                     return;
                 end
                 framei = mod(s.frame, 4);
-                A = (framei==0) .* .2 + (framei==2) * .3 + (framei==3) * .1;
+                A = (framei==0) .* .5 + (framei==2) * .375 + (framei==3) * .125;
                 sz = sqrt(A* xy_yx);
             end
             trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...
