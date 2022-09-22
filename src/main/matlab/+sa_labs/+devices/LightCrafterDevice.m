@@ -261,7 +261,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             % tracker = stage.builtin.stimuli.Rectangle();
             frameTrackerBackgroundSize = obj.getConfigurationSetting('frameTrackerBackgroundSize');
             frameTrackerSize = obj.getFrameTrackerSize();
-%             frameTrackerArea = frameTrackerSize(1) * frameTrackerSize(2);
+            frameTrackerArea = frameTrackerSize(1) * frameTrackerSize(2);
 
             trackerBackground = stage.builtin.stimuli.Rectangle();
             trackerBackground.size = frameTrackerBackgroundSize;
@@ -299,7 +299,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
                 end
                 framei = mod(s.frame, 4);
                 A = (framei==0) .* .5 + (framei==2) * .375 + (framei==3) * .125;
-                sz = sqrt(A* xy_yx) * frameTrackerSize;
+                sz = sqrt(A* xy_yx * frameTrackerArea) ;
             end
             trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...
                 @(s) resizeFrameTracker(s));
