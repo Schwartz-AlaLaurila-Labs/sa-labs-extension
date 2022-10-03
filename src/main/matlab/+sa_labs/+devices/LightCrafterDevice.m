@@ -297,8 +297,9 @@ classdef LightCrafterDevice < symphonyui.core.Device
                 if s.frame == 0
                     sz = frameTrackerSize;
                 elseif mod(s.frame, 2)
-                    sz = [0, 0];                else
-                    sz = frameTrackerSize .* [1, .5];
+                    sz = [0, 0];                
+                else
+                    sz = frameTrackerSize .* sqrt(2);
                 end
             end
             trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...

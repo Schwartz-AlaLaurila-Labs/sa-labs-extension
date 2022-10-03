@@ -300,7 +300,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.greenLED = 10;
                 obj.redLED = 0;
                 obj.uvLED = 50;
-                obj.colorPattern1 = 'blue';
+                obj.colorPattern1 = 'uv';
             elseif strcmp(obj.colorMode, 'standard')
                 obj.blueLED = 20;
                 obj.greenLED = 0;

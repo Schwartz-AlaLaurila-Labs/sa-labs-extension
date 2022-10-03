@@ -36,6 +36,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         numberOfAmplifiers = 1;
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
+        % host = 'localhost';
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
 
         blankingCircuitComPort = 'COM3';
@@ -52,11 +53,15 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
      
             obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
             obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
+            obj.daqStreams('Frame timing') = {'ai3',-1, 'V'};
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
             %daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
+%             obj.daqStreams('LED_blanking_signal') = {'ai3', -1, 'V'}; %
+            
+            % obj.daqStreams('Test DI') = {'diport0', 31, 0};
             
             if nargin < 1
                 delayInit = false;

@@ -184,6 +184,11 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
                 epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
             end
+
+            if any(strcmp(obj.rig.getDeviceNames, 'Frame timing'))
+                epoch.addResponse(obj.rig.getDevice('Frame timing'));
+            end
+
             
             %scanhead trigger for function imaging, added by Greg 3/5/18
             if obj.scanHeadTrigger
