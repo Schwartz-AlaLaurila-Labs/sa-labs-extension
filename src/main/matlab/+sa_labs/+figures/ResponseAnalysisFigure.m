@@ -349,10 +349,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     end
 
                     % regenerate the independent axis variables
-                    paramByEpoch = [];
+                    paramByEpoch = cell(length(obj.epochData),1);
                     for ei = 1:length(obj.epochData)
                         epoch = obj.epochData{ei}{ci};
-                        paramByEpoch(ei) = epoch.splitParameter;
+                        paramByEpoch{ei} = epoch.splitParameter;
                     end
                     X = sort(unique(paramByEpoch));
 
