@@ -111,24 +111,11 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             end
 
             function xy = getSpotPosition(obj, state)
-                fprintf('Got to grid pos\n');
-                disp(state.frame);
-                disp(obj.spotPreFrames);
-                disp(obj.spotStimFrames);
-                disp(obj.spotTailFrames);
-                disp(obj.cx);
-                disp(obj.cy);
-                
                 i = min(floor(state.frame / (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames)) + 1, length(obj.cx));
                 % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
-                disp(i);
-                disp(canvasSize);
                 
                 % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
                 xy = canvasSize/2 + [obj.cx(i); obj.cy(i)];
-                
-                fprintf('Position: %f %f\n',xy(1), xy(2));
-                disp(xy);
             end
             
             function c = getSpotIntensity(obj, state)
@@ -139,14 +126,11 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 else
                     c = obj.spotIntensity;
                 end
-                
-                fprintf('Intensity: %f\n',c);
             end
 
             spot = stage.builtin.stimuli.Ellipse();
 
             if obj.trialType % grid
-                disp('Running grid');
                 p = stage.core.Presentation(obj.stimTime*1e-3);
                 spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
                 spot.radiusY = spot.radiusX;
@@ -163,7 +147,6 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 p.addController(spotIntensity_);
                 p.addController(spotPosition);
             else %chirp
-                disp('Running chirp');
                 p = stage.core.Presentation(32);
                 spot.radiusX = round(obj.um2pix(obj.chirpSize / 2));
                 spot.radiusY = spot.radiusX;
