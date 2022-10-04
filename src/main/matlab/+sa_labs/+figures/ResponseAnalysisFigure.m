@@ -525,7 +525,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 %                     sa_labs.util.shadedErrorBar(thisAxis, t', plotval', plotstd')
                     xlim(thisAxis, [t(1), t(end)])
                     if ~isempty(obj.epochSplitParameter)
-                        if ischar(obj.epochSplitParameter)
+                        if ischar(epoch.splitParameter)
                             titl = title(thisAxis, sprintf('%s: %s, %g repeats', obj.epochSplitParameter, lX{paramValueIndex},numSignalsCombined));
                         else
                             titl = title(thisAxis, sprintf('%s: %g, %g repeats', obj.epochSplitParameter,paramValue,numSignalsCombined));
