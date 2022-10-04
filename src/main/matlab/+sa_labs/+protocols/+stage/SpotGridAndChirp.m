@@ -14,7 +14,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
         spotTailFrames = 60
 
         spotIntensity = .5
-        chirpInensity = .5
+        chirpIntensity = .5
 
         numberOfChirps = 8
         numberOfGrids = 20
@@ -52,17 +52,17 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             prePattern = zeros(1, round(2*obj.frameRate));
             interPattern = ones(1, round(2*obj.frameRate))*obj.chirpIntensity;
             tailPattern = zeros(1, round(2*obj.frameRate));
-            posStepPattern = ones(1, round(3*obj.frameRate))*(obj.chirpIntensity+(obj.chirpIntensity*obj.contrastMax));
-            negStepPattern = ones(1, round(3*obj.frameRate))*(obj.chirpIntensity-(obj.chirpIntensity*obj.contrastMax));
+            posStepPattern = ones(1, round(3*obj.frameRate))*2*obj.chirpIntensity;
+            negStepPattern = zeros(1, round(3*obj.frameRate));
             
             freqT = 0:dt:8;
             freqChange = linspace(0, 8, length(freqT));
             freqPhase = cumsum(freqChange*dt);
-            freqPattern = obj.contrastMax*obj.chirpIntensity*-sin(2*pi*freqPhase + pi) + obj.chirpIntensity;
+            freqPattern = obj.chirpIntensity*-sin(2*pi*freqPhase + pi) + obj.chirpIntensity;
             
             contrastT = 0:dt:8;
             contrastChange = linspace(0, 1, length(contrastT));
-            contrastPattern = contrastChange.*obj.chirpIntensity.*-sin(4*pi.*contrastT + pi) + cobj.chirpIntensity;
+            contrastPattern = contrastChange.*obj.chirpIntensity.*-sin(4*pi.*contrastT + pi) + obj.chirpIntensity;
 
             obj.chirpPattern = [prePattern, posStepPattern, negStepPattern, interPattern...
                 freqPattern, interPattern, contrastPattern, interPattern, tailPattern];
@@ -76,11 +76,11 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             obj.cy = obj.cy(:);
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfGrids,1));
-            obj.trialTypes = obj.TrialTypes(randperm(length(obj.trialTypes)));
+            obj.trialTypes = obj.trialTypes(randperm(length(obj.trialTypes)));
         end
         
         function prepareEpoch(obj, epoch)
-            index = self.numEpochsPrepared + 1;
+            index = obj.numEpochsPrepared + 1;
             obj.trialType = obj.trialTypes(index);
             if obj.trialType
                 epoch.addParameter('trialType', 'grid');
@@ -102,7 +102,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
         
         function p = createPresentation(obj)
             
-            canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+            canvasSize = reshape(obj.rig.getDevice('Stage').getCanvasSize(),2,1);
                        
             function i = getChirpIntensity(obj, state)
                 %clip the time axis to [1, T]
@@ -115,7 +115,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
 
                 % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
-                xy = canvasSize/2 + self.um2pix([obj.cx(i), obj.cy(i)]);
+                xy = canvasSize/2 + self.um2pix([obj.cx(i); obj.cy(i)]);
             end
             
             function c = getSpotIntensity(obj, state)
@@ -128,7 +128,6 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 end
             end
 
-            
             spot = stage.builtin.stimuli.Ellipse();
 
             if obj.trialType % grid
@@ -141,6 +140,8 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                     @(state)getSpotIntensity(obj, state));
                 spotPosition = stage.builtin.controllers.PropertyController(spot, 'position',...
                     @(state)getSpotPosition(obj, state));
+                
+                p.addStimulus(spot);
 
                 p.addController(spotIntensity);
                 p.addController(spotPosition);
@@ -152,11 +153,11 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 spot.position = canvasSize/2;
                 spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
                     @(state)getChirpIntensity(obj, state));                    
-            
+                
+                p.addStimulus(spot);
                 p.addController(spotIntensity);
             end
 
-            p.addStimulus(spot);
         end
 
         function preTime = get.preTime(obj)
