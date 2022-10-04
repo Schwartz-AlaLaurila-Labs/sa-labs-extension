@@ -349,18 +349,34 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     end
 
                     % regenerate the independent axis variables
-                    paramByEpoch = [];
-                    for ei = 1:length(obj.epochData)
-                        epoch = obj.epochData{ei}{ci};
-                        paramByEpoch(ei) = epoch.splitParameter;
+                    if ischar(epoch.splitParameter)
+                        paramByEpoch = cell(length(obj.epochData),1);
+                        for ei = 1:length(obj.epochData)
+                            epoch = obj.epochData{ei}{ci};
+                            paramByEpoch{ei} = epoch.splitParameter;
+                        end
+                        [lX,X] = sort(unique(paramByEpoch));
+                    else
+                        paramByEpoch = zeros(length(obj.epochData),1);
+                        
+                        for ei = 1:length(obj.epochData)
+                            epoch = obj.epochData{ei}{ci};
+                            paramByEpoch(ei) = epoch.splitParameter;
+                        end
+                        X = sort(unique(paramByEpoch));
                     end
-                    X = sort(unique(paramByEpoch));
 
                     allMeasurementsByX = {};
                     allMeasurementsByEpoch = [];
                     for ei = 1:length(obj.epochData)
                         epoch = obj.epochData{ei}{ci};
-                        whichXIndex = find(X == epoch.splitParameter);
+                        if ischar(epoch.splitParameter)
+                            %TODO: this is just the 3rd output of unique
+                            %above...
+                            whichXIndex = find(strcmp(lX,epoch.splitParameter));
+                        else
+                            whichXIndex = find(X == epoch.splitParameter);
+                        end
                         thisMeas = epoch.measurements(funcName);
                         allMeasurementsByEpoch(ei) = thisMeas;
                         if length(allMeasurementsByX) < whichXIndex
@@ -387,6 +403,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         plot(thisAxis, X, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
                         plot(thisAxis, X, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
                         hold(thisAxis, 'off');
+                        if ischar(epoch.splitParameter)
+                            set(thisAxis,'xtick',X);
+                            set(thisAxis,'xticklabel',lX);
+                        end
                     else
                         %                     axes(obj.axesHandlesAnalysis(measi));
                         
