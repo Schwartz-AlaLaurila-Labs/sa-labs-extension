@@ -83,7 +83,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             index = obj.numEpochsPrepared + 1;
             obj.trialType = obj.trialTypes(index);
             if obj.trialType
-                epoch.addParameter('trialType', 'grid');
+                epoch.addParameter('trialType', "grid");
                 
                 i = randperm(length(obj.cx));
                 obj.cx = obj.cx(i);
@@ -93,7 +93,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 epoch.addParameter('cy', obj.cy);
                 
             else
-                epoch.addParameter('trialType', 'chirp');
+                epoch.addParameter('trialType', "chirp");
             end
 
             % Call the base method.
