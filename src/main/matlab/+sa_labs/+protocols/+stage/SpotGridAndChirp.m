@@ -90,7 +90,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 obj.cy = obj.cy(i);
                 
                 epoch.addParameter('cx', obj.cx);
-                epoch.addParameter('cy', obj.cx);
+                epoch.addParameter('cy', obj.cy);
                 
             else
                 epoch.addParameter('trialType', 'chirp');
