@@ -682,7 +682,8 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function frameRate = get.frameRate(obj)
-            frameRate = 60; % changing this isn't implemented
+            lightCrafter = obj.rig.getDevice('LightCrafter');
+            frameRate = lightCrafter.getFrameRate();
         end        
         
         function prerender = get.prerender(obj)

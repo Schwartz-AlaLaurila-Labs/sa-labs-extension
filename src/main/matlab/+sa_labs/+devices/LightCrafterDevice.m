@@ -294,12 +294,17 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             xy_yx = [frameTrackerSize(1)/frameTrackerSize(2) frameTrackerSize(2)/frameTrackerSize(1)];
             function sz = resizeFrameTracker(s)
-                if s.frame < 3 %<3
+                if s.frame < 4 %<3
                     sz = frameTrackerSize;
-                elseif mod(s.frame, 2)
-                    sz = frameTrackerSize .* [.5, .1];
                 else
-                    sz = [0, 0];                
+                    m = mod(s.frame, 4);
+                    % if mod(s.frame, 2)
+                    %     sz = frameTrackerSize .* [.5, .1];
+                    % else
+                    %     sz = [0, 0];                
+                    % end
+                    sc = (m==1) * .5 + (m==2) * .1 + (m==3) * .4;
+                    sz = [frameTrackerSize(1), frameTrackerSize(2) * (m==1)];
                 end
             end
             trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...
