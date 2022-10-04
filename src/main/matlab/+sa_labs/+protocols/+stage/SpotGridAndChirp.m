@@ -23,7 +23,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
     properties (Hidden)
         chirpPattern = [];
         trialTypes = [];
-        trialType = '';
+        trialType = 'grid';
         cx = [];
         cy = [];
         
@@ -71,9 +71,14 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 
             cx_ = linspace(0,obj.gridX, obj.spotCountInX) - obj.gridX/2;
             cy_ = linspace(0,obj.gridY, obj.spotCountInY) - obj.gridY/2;
-            [obj.cx,obj.cy] = meshgrid(cx_,cy_);
-            obj.cx = obj.um2pix(obj.cx(:));
-            obj.cy = obj.um2pix(obj.cy(:));
+            [cx_,cy_] = meshgrid(cx_,cy_);
+            cx_ = obj.um2pix(cx_(:));
+            cy_ = obj.um2pix(cy_(:));
+            while length(obj.cx_)*(obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate < 35
+                % we have some extra frames to spare
+                obj.cx = [obj.cx; cx_];
+                obj.cy = [obj.cx; cy_];
+            end
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfGrids,1));
             obj.trialTypes = obj.trialTypes(randperm(length(obj.trialTypes)));
@@ -129,9 +134,9 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             end
 
             spot = stage.builtin.stimuli.Ellipse();
+            p = stage.core.Presentation(35);
 
             if obj.trialType % grid
-                p = stage.core.Presentation(obj.stimTime*1e-3);
                 spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
@@ -147,7 +152,6 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 p.addController(spotIntensity_);
                 p.addController(spotPosition);
             else %chirp
-                p = stage.core.Presentation(32);
                 spot.radiusX = round(obj.um2pix(obj.chirpSize / 2));
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
@@ -163,15 +167,28 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
         end
 
         function preTime = get.preTime(obj)
-            preTime = 0;
+            % if strcmp(obj.trialType,'chirp')
+            %     preTime = 2000;
+            % else
+                preTime = 0;
+            % end
         end
         
         function tailTime = get.tailTime(obj)
-            tailTime = 0;
+            % if strcmp(obj.trialType,'chirp')
+            %     tailTime = 2000;
+            % else
+                tailTime = 0;
+            % end
         end
 
         function stimTime = get.stimTime(obj)
-            stimTime = obj.spotCountInX * obj.spotCountInY * (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) / obj.frameRate * 1e3;
+            
+            % if strcmp(obj.trialType,'chirp')
+                stimTime = 35000;
+            % else
+            %     stimTime = obj.spotCountInX * obj.spotCountInY * (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) / obj.frameRate * 1e3;
+            % end
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
