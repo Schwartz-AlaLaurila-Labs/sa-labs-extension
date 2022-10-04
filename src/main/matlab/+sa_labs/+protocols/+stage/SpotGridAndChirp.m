@@ -69,9 +69,9 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
 
 
                 
-            cx = linspace(0,obj.gridX, obj.spotCountInX) - obj.gridX/2;
-            cy = linspace(0,obj.gridY, obj.spotCountInY) - obj.gridY/2;
-            [obj.cx,obj.cy] = meshgrid(cx,cy);
+            cx_ = linspace(0,obj.gridX, obj.spotCountInX) - obj.gridX/2;
+            cy_ = linspace(0,obj.gridY, obj.spotCountInY) - obj.gridY/2;
+            [obj.cx,obj.cy] = meshgrid(cx_,cy_);
             obj.cx = obj.cx(:);
             obj.cy = obj.cy(:);
 
@@ -116,6 +116,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
 
                 % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
                 xy = canvasSize/2 + self.um2pix([obj.cx(i); obj.cy(i)]);
+                fprintf('Position: %f %f\n',xy(1), xy(2));
             end
             
             function c = getSpotIntensity(obj, state)
@@ -126,36 +127,42 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 else
                     c = obj.spotIntensity;
                 end
+                
+                fprintf('Intensity: %f\n',c);
             end
 
             spot = stage.builtin.stimuli.Ellipse();
 
             if obj.trialType % grid
-                p = stage.core.Presentation(obj.stimTime);
+                disp('Running grid');
+                p = stage.core.Presentation(obj.stimTime*1e-3);
                 spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
+                spot.color = 0;
                 
-                spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
+                spotIntensity_ = stage.builtin.controllers.PropertyController(spot, 'color',...
                     @(state)getSpotIntensity(obj, state));
                 spotPosition = stage.builtin.controllers.PropertyController(spot, 'position',...
                     @(state)getSpotPosition(obj, state));
                 
                 p.addStimulus(spot);
 
-                p.addController(spotIntensity);
+                p.addController(spotIntensity_);
                 p.addController(spotPosition);
             else %chirp
+                disp('Running chirp');
                 p = stage.core.Presentation(32);
                 spot.radiusX = round(obj.um2pix(obj.chirpSize / 2));
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
+                spot.color = 0;
                 spot.position = canvasSize/2;
-                spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
+                spotIntensity_ = stage.builtin.controllers.PropertyController(spot, 'color',...
                     @(state)getChirpIntensity(obj, state));                    
                 
                 p.addStimulus(spot);
-                p.addController(spotIntensity);
+                p.addController(spotIntensity_);
             end
 
         end
@@ -169,7 +176,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
         end
 
         function stimTime = get.stimTime(obj)
-            stimTime = obj.spotCountInX * obj.spotCountInY * (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) / obj.frameRate;
+            stimTime = obj.spotCountInX * obj.spotCountInY * (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) / obj.frameRate * 1e3;
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
