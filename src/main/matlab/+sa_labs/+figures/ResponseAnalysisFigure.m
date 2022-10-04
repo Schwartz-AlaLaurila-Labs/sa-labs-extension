@@ -352,7 +352,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     paramByEpoch = [];
                     for ei = 1:length(obj.epochData)
                         epoch = obj.epochData{ei}{ci};
-                        paramByEpoch[ei] = epoch.splitParameter;
+                        paramByEpoch(ei) = epoch.splitParameter;
                     end
                     X = sort(unique(paramByEpoch));
 
