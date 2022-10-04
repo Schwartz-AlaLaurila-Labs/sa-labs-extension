@@ -294,12 +294,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             xy_yx = [frameTrackerSize(1)/frameTrackerSize(2) frameTrackerSize(2)/frameTrackerSize(1)];
             function sz = resizeFrameTracker(s)
-                if s.frame == 0
+                if s.frame < 3 %<3
                     sz = frameTrackerSize;
                 elseif mod(s.frame, 2)
-                    sz = [0, 0];                
+                    sz = frameTrackerSize .* [.5, .1];
                 else
-                    sz = frameTrackerSize .* [1, .2];
+                    sz = [0, 0];                
                 end
             end
             trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...
@@ -346,6 +346,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             elseif strcmp(obj.getColorMode(), 'uv2')
                 obj.lightCrafter.setLedCurrents(blue, uv, green);
             end
+
+            % TODO: we should test the frame tracker when changing the currents to make sure it works
+            % create a dummy presentation with only a frame tracker
+            % return an error if we don't trigger within a certain time period...
+            % 
+            % sweep through different resizings of the frame tracker, make sure we're not saturating for frames other than the first
         end        
         
         function [auto, red, green, blue] = getLedEnables(obj)
