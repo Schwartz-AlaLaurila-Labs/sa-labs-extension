@@ -115,7 +115,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
 
                 % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
-                xy = canvasSize/2 + self.um2pix([obj.cx(i); obj.cy(i)]);
+                xy = canvasSize/2 + obj.um2pix([obj.cx(i); obj.cy(i)]);
                 fprintf('Position: %f %f\n',xy(1), xy(2));
             end
             
