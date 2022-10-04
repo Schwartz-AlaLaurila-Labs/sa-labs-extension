@@ -469,22 +469,33 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             % right side, where mean signal is plotted over time for each parameter
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ci = 1;
-            paramByEpoch = [];
-            for ei = 1:length(obj.epochData)
-                epoch = obj.epochData{ei}{ci};
-                paramByEpoch(ei) = epoch.splitParameter; %#ok<AGROW>
+            if ischar(epoch.splitParameter)
+                paramByEpoch = cell(length(obj.epochData),1);
+                for ei = 1:length(obj.epochData)
+                    epoch = obj.epochData{ei}{ci};
+                    paramByEpoch{ei} = epoch.splitParameter;
+                end
+                [lX,X] = sort(unique(paramByEpoch));
+            else
+                paramByEpoch = zeros(length(obj.epochData),1);
+
+                for ei = 1:length(obj.epochData)
+                    epoch = obj.epochData{ei}{ci};
+                    paramByEpoch(ei) = epoch.splitParameter;
+                end
+                X = sort(unique(paramByEpoch));
             end
-            paramValues = sort(unique(paramByEpoch));
+
 
             % add a new plot to the end if we need one
-            while length(obj.signalAxes) < length(paramValues)
+            while length(obj.signalAxes) < length(X)
                 newAxis = axes('Parent', obj.rightBox);
-                obj.signalAxes(length(paramValues)) = newAxis;
+                obj.signalAxes(end+1) = newAxis;
             end
 
             range = [inf, -inf];
-            for paramValueIndex = 1:length(paramValues)
-                paramValue = paramValues(paramValueIndex);
+            for paramValueIndex = 1:length(X)
+                paramValue = X(paramValueIndex);
                 thisAxis = obj.signalAxes(paramValueIndex);
                 if thisAxis > 0
                     hold(thisAxis, 'off');
@@ -494,7 +505,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     signals = [];
                     for ei = 1:length(obj.epochData)
                         epoch = obj.epochData{ei}{ci};
-                        if paramValue == epoch.splitParameter
+                        if (ischar(epoch.splitParameter) && strcmp(lX(paramValue), epoch.splitParameter)) || (~ischar(epoch.splitParameter) && paramValue == epoch.splitParameter)
                             signals(end+1, :) = epoch.signal;
                             t = epoch.t;
                         end
@@ -514,10 +525,13 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 %                     sa_labs.util.shadedErrorBar(thisAxis, t', plotval', plotstd')
                     xlim(thisAxis, [t(1), t(end)])
                     if ~isempty(obj.epochSplitParameter)
-                        titl = title(thisAxis, sprintf('%s: %g, %g repeats', obj.epochSplitParameter,paramValue,numSignalsCombined));
-%                         text(thisAxis, 0.5, .5, 0, 'test')
+                        if ischar(obj.epochSplitParameter)
+                            titl = title(thisAxis, sprintf('%s: %s, %g repeats', obj.epochSplitParameter, lX{paramValueIndex},numSignalsCombined));
+                        else
+                            titl = title(thisAxis, sprintf('%s: %g, %g repeats', obj.epochSplitParameter,paramValue,numSignalsCombined));
+                        end
                     end
-                    if paramValueIndex < length(paramValues)
+                    if paramValueIndex < length(X)
                         set(thisAxis, 'XTickLabel', '');
                     end
                     set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
@@ -535,7 +549,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 range(1) = 0;
             end        
             if abs(diff(range)) > 0
-                for i = 1:length(paramValues)
+                for i = 1:length(X)
                     ylim(obj.signalAxes(i), range);
                 end
             end
