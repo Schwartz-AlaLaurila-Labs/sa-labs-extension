@@ -72,8 +72,8 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             cx_ = linspace(0,obj.gridX, obj.spotCountInX) - obj.gridX/2;
             cy_ = linspace(0,obj.gridY, obj.spotCountInY) - obj.gridY/2;
             [obj.cx,obj.cy] = meshgrid(cx_,cy_);
-            obj.cx = obj.cx(:);
-            obj.cy = obj.cy(:);
+            obj.cx = obj.um2pix(obj.cx(:));
+            obj.cy = obj.um2pix(obj.cy(:));
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfGrids,1));
             obj.trialTypes = obj.trialTypes(randperm(length(obj.trialTypes)));
@@ -125,7 +125,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 disp(canvasSize);
                 
                 % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
-                xy = canvasSize/2 + obj.um2pix([obj.cx(i); obj.cy(i)]);
+                xy = canvasSize/2 + [obj.cx(i); obj.cy(i)];
                 
                 fprintf('Position: %f %f\n',xy(1), xy(2));
                 disp(xy);
