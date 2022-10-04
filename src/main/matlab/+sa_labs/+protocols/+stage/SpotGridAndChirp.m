@@ -51,7 +51,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             % *0.001 is to make in terms of seconds
             prePattern = zeros(1, round(2*obj.frameRate));
             interPattern = ones(1, round(2*obj.frameRate))*obj.chirpIntensity;
-            tailPattern = zeros(1, round(2*obj.frameRate));
+            tailPattern = zeros(1, round(5*obj.frameRate));
             posStepPattern = ones(1, round(3*obj.frameRate))*2*obj.chirpIntensity;
             negStepPattern = zeros(1, round(3*obj.frameRate));
             
