@@ -74,7 +74,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             [cx_,cy_] = meshgrid(cx_,cy_);
             cx_ = obj.um2pix(cx_(:));
             cy_ = obj.um2pix(cy_(:));
-            while length(obj.cx_)*(obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate < 35
+            while length(obj.cx)*(obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate < 35
                 % we have some extra frames to spare
                 obj.cx = [obj.cx; cx_];
                 obj.cy = [obj.cx; cy_];
@@ -124,6 +124,11 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             end
             
             function c = getSpotIntensity(obj, state)
+                if state.frame >= numel(obj.chirpPattern) - 1
+                    c = 0;
+                    return
+                end
+                
                 i = mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames);
 
                 if i < obj.spotPreFrames || i >=(obj.spotPreFrames + obj.spotStimFrames)
