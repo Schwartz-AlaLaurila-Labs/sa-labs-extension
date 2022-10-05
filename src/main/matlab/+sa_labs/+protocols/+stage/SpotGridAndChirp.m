@@ -72,8 +72,8 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             cx_ = linspace(0,obj.gridX, obj.spotCountInX) - obj.gridX/2;
             cy_ = linspace(0,obj.gridY, obj.spotCountInY) - obj.gridY/2;
             [cx_,cy_] = meshgrid(cx_,cy_);
-            cx_ = obj.um2pix(cx_(:));
-            cy_ = obj.um2pix(cy_(:));
+            cx_ = cx_(:);
+            cy_ = cy_(:);
             while length(obj.cx)*(obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate < 35
                 % we have some extra frames to spare
                 obj.cx = [obj.cx; cx_];
@@ -93,7 +93,6 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 i = randperm(length(obj.cx));
                 obj.cx = obj.cx(i);
                 obj.cy = obj.cy(i);
-                
                 epoch.addParameter('cx', obj.cx);
                 epoch.addParameter('cy', obj.cy);
                 
@@ -108,6 +107,9 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
         function p = createPresentation(obj)
             
             canvasSize = reshape(obj.rig.getDevice('Stage').getCanvasSize(),2,1);
+            [~,cx_] = obj.um2pix(obj.cx);
+            [~,cy_] = obj.um2pix(obj.cy);
+            
                        
             function i = getChirpIntensity(obj, state)
                 %clip the time axis to [1, T]
@@ -142,7 +144,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             p = stage.core.Presentation(35);
 
             if obj.trialType % grid
-                spot.radiusX = round(obj.um2pix(obj.spotSize / 2));
+                [~,spot.radiusX] = obj.um2pix(obj.spotSize / 2);
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
                 spot.color = 0;
@@ -157,7 +159,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 p.addController(spotIntensity_);
                 p.addController(spotPosition);
             else %chirp
-                spot.radiusX = round(obj.um2pix(obj.chirpSize / 2));
+                [~,spot.radiusX] = obj.um2pix(obj.chirpSize / 2);
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
                 spot.color = 0;
