@@ -72,12 +72,12 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             posStepPattern = ones(1, round(obj.ONstepTime*0.001*obj.frameRate))*(contrastBaseline+(contrastBaseline*obj.contrastMax));
             negStepPattern = ones(1, round(obj.OFFstepTime*0.001*obj.frameRate))*(contrastBaseline-(contrastBaseline*obj.contrastMax));
             
-            freqT = 0:dt:obj.freqTotalTime*0.001;
+            freqT = dt:dt:obj.freqTotalTime*0.001;
             freqChange = linspace(obj.freqMin, obj.freqMax, length(freqT));
             freqPhase = cumsum(freqChange*dt);
             freqPattern = obj.contrastMax*contrastBaseline*-sin(2*pi*freqPhase + pi) + contrastBaseline;
             
-            contrastT = 0:dt:obj.contrastTotalTime*0.001;
+            contrastT = dt:dt:obj.contrastTotalTime*0.001;
             contrastChange = linspace(obj.contrastMin, obj.contrastMax, length(contrastT));
             contrastPattern = contrastChange.*contrastBaseline.*-sin(2*pi*obj.contrastFreq.*contrastT + pi) + contrastBaseline;
 

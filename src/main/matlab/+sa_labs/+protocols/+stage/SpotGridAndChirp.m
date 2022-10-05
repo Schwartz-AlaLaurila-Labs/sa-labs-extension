@@ -55,12 +55,12 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             posStepPattern = ones(1, round(3*obj.frameRate))*2*obj.chirpIntensity;
             negStepPattern = zeros(1, round(3*obj.frameRate));
             
-            freqT = 0:dt:8;
+            freqT = dt:dt:8;
             freqChange = linspace(0, 8, length(freqT));
             freqPhase = cumsum(freqChange*dt);
             freqPattern = obj.chirpIntensity*-sin(2*pi*freqPhase + pi) + obj.chirpIntensity;
             
-            contrastT = 0:dt:8;
+            contrastT = dt:dt:8;
             contrastChange = linspace(0, 1, length(contrastT));
             contrastPattern = contrastChange.*obj.chirpIntensity.*-sin(4*pi.*contrastT + pi) + obj.chirpIntensity;
 
