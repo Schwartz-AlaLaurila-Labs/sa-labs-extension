@@ -77,7 +77,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             while length(obj.cx)*(obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate < 35
                 % we have some extra frames to spare
                 obj.cx = [obj.cx; cx_];
-                obj.cy = [obj.cx; cy_];
+                obj.cy = [obj.cy; cy_];
             end
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfGrids,1));
