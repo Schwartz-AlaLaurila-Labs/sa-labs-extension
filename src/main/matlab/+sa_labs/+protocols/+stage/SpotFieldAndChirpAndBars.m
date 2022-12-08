@@ -92,7 +92,8 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             %     obj.cy = [obj.cy; cy_];
             % end
             
-            obj.numSpotsPerEpoch = floor((obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate/35);
+%             obj.numSpotsPerEpoch = floor((obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate/35);
+            obj.numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfFields,1), 2*ones(obj.numberOfBars,1));
             obj.trialTypes = obj.trialTypes(randperm(length(obj.trialTypes)));
