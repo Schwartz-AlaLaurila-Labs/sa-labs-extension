@@ -205,7 +205,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                 end
             end
             
-            theta_ = obj.theta;
+            theta_ = rad2deg(obj.theta);
             function th = getBarOrientation(state)
                 t = floor(state.frame / 210) + 1;
                 th = theta_(t);
