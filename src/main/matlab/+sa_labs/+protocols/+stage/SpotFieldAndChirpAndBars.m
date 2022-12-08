@@ -198,7 +198,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                 xy = [NaN, NaN];
 
                 i = mod(state.frame, 210); % TODO: this assumes frame rate of 60 / bar speed 1mm/s
-                t = floor(state.frame, 210) + 1;
+                t = floor(state.frame / 210) + 1;
 
                 if i >= 15 && i < 195
                     xy = [xStartPos(t) + (i-15) * xStep(t), yStartPos(t) + (i-15) * yStep(t)];
@@ -207,7 +207,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             
             theta_ = obj.theta;
             function th = getBarOrientation(state)
-                t = floor(state.frame, 210) + 1;
+                t = floor(state.frame / 210) + 1;
                 th = theta_(t);
             end
 
@@ -295,7 +295,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfChirps + obj.numberOfFields;
+            totalNumEpochs = obj.numberOfChirps + obj.numberOfFields + obj.numberOfBars;
         end
         
     end
