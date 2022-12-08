@@ -6,6 +6,9 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
         extentX = 60 %um
         extentY = 60 %um
+        
+        barLength = 600                 % Bar length size (um)
+        barWidth = 200                  % Bar Width size (um)
 
         spotStimFrames = 15
         spotPreFrames = 15
@@ -174,7 +177,8 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
             end
 
-            [~, pixelSpeed] = obj.um2pix(obj.barSpeed) / obj.frameRate;
+            [~, pixelSpeed] = obj.um2pix(obj.barSpeed);
+            pixelSpeed = pixelSpeed / obj.frameRate;
             [~, pixelDistance] = obj.um2pix(obj.barDistance);
             xStep = pixelSpeed * cos(obj.theta);
             yStep = pixelSpeed * sin(obj.theta);
@@ -283,7 +287,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfChirps + obj.numberOfGrids;
+            totalNumEpochs = obj.numberOfChirps + obj.numberOfFields;
         end
         
     end
