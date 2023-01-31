@@ -274,7 +274,7 @@ classdef RigCameraControl < symphonyui.ui.Module
         
         function save(self, ~, ~)
             %mkdir
-            [fname, path] = uiputfile('*.tif','Select location for stitched image',sprintf('%s_stitched.tif',datestr(datetime('today'), 'mmddyyB')));
+            [fname, path] = uiputfile('D:\StitchedImages\*.tif','Select location for stitched image',sprintf('%s_stitched.tif',datestr(datetime('today'), 'mmddyyB')));
             [~,fname_noext,~] = fileparts(fname);
             
             tif = Tiff(sprintf('%s%s%s',path,filesep,fname), 'w');
