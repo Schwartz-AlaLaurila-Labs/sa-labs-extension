@@ -13,9 +13,15 @@ classdef BlankingCircuit < symphonyui.core.Device
             obj.cobj.MeasurementConversionTarget = symphonyui.core.Measurement.UNITLESS;
             
             if comPort > 0
-                % obj.serialPortObject = serialport(comPort, 9600);
-                obj.serialPortObject = serial(comPort, 'baudrate', 9600);
-                fopen(obj.serialPortObject);
+                devs = instrfind('port',comPort);
+                if isempty(devs)
+                    obj.serialPortObject = serial(comPort, 'baudrate', 9600);
+                else
+                    obj.serialPortObject = devs(1);
+                end
+                if strcmp(obj.serialPortObject.status, 'closed')
+                    fopen(obj.serialPortObject);
+                end
             else
                 obj.serialPortObject = [];
             end
@@ -24,23 +30,30 @@ classdef BlankingCircuit < symphonyui.core.Device
         end
         
         function status = isBlanking(obj, LEDs)
-            status = false(numel(LEDs),1);
-            for i = 1:numel(LEDs)
-                if LEDs(i) < 0
-                    status(i) = -1;
-                else
-                    status(i) = obj.write(LEDs(i),'uint8', 'uint8');
-                end
-            end
+            % status = false(numel(LEDs),1);
+            % for i = 1:numel(LEDs)
+            %     if LEDs(i) < 0
+            %         status(i) = -1;
+            %     else
+            %         status(i) = obj.write(LEDs(i));%,'uint8', 'uint8');
+            %     end
+            % end
+            self.writeline('1\n');
+            status = ones(size(LEDs)) * self.readline('%d\n');
         end
 
         function blank(obj, LEDs, levels)
-            for i = 1:numel(LEDs) 
-                if LEDs(i) < 0
-                    continue;
-                else
-                    obj.write([LEDs(i) + 3, levels(i)],'uint8'); %something like this...
-                end
+            % for i = 1:numel(LEDs) 
+            %     if LEDs(i) < 0
+            %         continue;
+            %     else
+            %         obj.write([LEDs(i) + 3, levels(i)],'uint8'); %something like this...
+            %     end
+            % end
+            if all(levels == 1) || all(levels == 0)
+                obj.writeline('2,%d\n',levels(1));
+            else
+                error('All leds msut be blanked at the same time in current implementation.')
             end
         end
 
@@ -49,36 +62,38 @@ classdef BlankingCircuit < symphonyui.core.Device
         %     obj.serialPortObject.write([LEDs(i) + 3, 0],'uint8'); %something like this...
         % end
 
-        function status = getLevel(obj, LEDs)
-            status = zeros(numel(LEDs),1);
-            for i = 1:numel(LEDs)
-                if LEDs(i) < 0
-                    status(i) = -1;
-                else
-                    status(i) = obj.write(LEDs(i)+6,'uint8', 'uint16');
-                end     
-            end
-        end
+        % function status = getLevel(obj, LEDs)
+        %     status = zeros(numel(LEDs),1);
+        %     for i = 1:numel(LEDs)
+        %         if LEDs(i) < 0
+        %             status(i) = -1;
+        %         else
+        %             status(i) = obj.write(LEDs(i)+6,'uint8', 'uint16');
+        %         end     
+        %     end
+        % end
             
-        function setLevel(obj, LEDs, levels)
-            for i = 1:numel(LEDs)
-                if LEDs(i) < 0
-                    continue
-                else
-                    obj.write([LEDs(i) + 9, levels(i)],'uint8'); %something like this...
-                end
-            end
-        end
-        function reset(obj)
-            obj.write(0,'uint8');
+        % function setLevel(obj, LEDs, levels)
+        %     for i = 1:numel(LEDs)
+        %         if LEDs(i) < 0
+        %             continue
+        %         else
+        %             obj.write([LEDs(i) + 9, levels(i)],'uint8'); %something like this...
+        %         end
+        %     end
+        % end
+
+        function writeline(self, varargin)
+            fprintf(self.serialPortObject, varargin{:});
         end
 
-        function status = write(obj, data, wtype, rtype)
-            fwrite(obj.serialPortObject, data, wtype);
-            if nargin > 3 && nargout == 1
-                while ~obj.serialPortObject.BytesAvailable
-                end
-                status = fread(obj.serialPortObject, 1, rtype);
+        function data = readline(self, varargin)
+            tstart = tic;
+            data = [];
+            while toc(tstart)<0.1 && ~get(self.serialPortObject, 'BytesAvailable')
+            end
+            if get(self.serialPortObject, 'BytesAvailable')
+                data = fscanf(self.serialPortObject, varargin{:});
             end
         end
 

@@ -30,6 +30,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             settings('spectralOverlap_Green') = 0;
             settings('spectralOverlap_UV') = 0;
             settings('blankingFactor') = 1;
+            settings('antialias') = 1;
             
             %% Overwrite default values with values from RigConfig if present
             RigProperties = properties(RigConfig);
@@ -98,6 +99,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addResource('spectralOverlap_Green', settings('spectralOverlap_Green'));
             obj.addResource('spectralOverlap_UV', settings('spectralOverlap_UV'));
             obj.addResource('blankingFactor', settings('blankingFactor'));
+            obj.addResource('antialias', settings('antialias'));           
 
                         
         end
@@ -191,6 +193,15 @@ classdef LightCrafterDevice < symphonyui.core.Device
         function setPrerender(obj, tf)
             obj.setConfigurationSetting('prerender', tf);
         end
+
+        function tf = getAntiAlias(obj)
+            tf = obj.getConfigurationSetting('antialias');
+        end
+
+        function setAntiAlias(obj, tf)
+            obj.setConfigurationSetting('antialias', tf);
+        end
+
 
         function play(obj, presentation)
             canvasSize = obj.getCanvasSize();
@@ -317,7 +328,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             else
                 player = stage.builtin.players.RealtimePlayer(presentation);
             end
-            player.setCompositor(stage.builtin.compositors.PatternCompositor());
+            if obj.getConfigurationSetting('antialias')
+                player.setCompositor(stage.builtin.compositors.PatternCompositor());
+            else
+                player.setCompositor(util.ExactPatternCompositor());
+            end
             obj.stageClient.play(player);
         end
         

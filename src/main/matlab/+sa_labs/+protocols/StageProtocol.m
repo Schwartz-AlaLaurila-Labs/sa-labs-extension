@@ -38,9 +38,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         redBlanking = false;
         uvBlanking = false;
 
-        %% PWM
-        doPWM = false; %if false, LEDs will be on all the time (or blanked)
-
+        antialias = true
     end
     
     properties (Dependent)
@@ -60,13 +58,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         bitDepth = 8
         prerender = false
         frameRate = 60; % changing this isn't implemented
-        
-        
-        %value indicates relative on time for each LED
-        bluePWM
-        greenPWM
-        redPWM
-        uvPWM
     end
     
     properties % again, for ordering
@@ -86,11 +77,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         filterWheelAttenuationValues_Green
         filterWheelAttenuationValues_UV
         lightCrafterParams
-        
-        bluePWM_ = 1
-        redPWM_ = 1
-        greenPWM_ = 1
-        uvPWM_ = 1
 
     end
        
@@ -128,7 +114,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     
                 case {'numberOfPatterns','frameRate','bitDepth',...
                         'colorPattern1','colorPattern2','colorPattern3',...
-                        'prerender','forcePrerender'}
+                        'prerender','forcePrerender','antialias'}
                     d.category = '8 Color';
                 
                 case {'meanLevel1','meanLevel2','contrast1','contrast2'}
@@ -233,40 +219,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     else
                         d.isHidden = false;
                     end
-        
-                %% PWM
-                case 'doPWM'
-                    d.category = '7 Projector';
-        
-                %value indicates relative on time for each LED
-                case 'bluePWM'
-                    d.category = '7 Projector';
-                    if obj.blueBlanking || ~obj.doPWM
-                        d.isHidden = true;
-                    else
-                        d.isHidden = false;
-                    end
-                case 'greenPWM'
-                    d.category = '7 Projector';
-                    if obj.greenBlanking || ~obj.doPWM
-                        d.isHidden = true;
-                    else
-                        d.isHidden = false;
-                    end
-                case 'redPWM'
-                    d.category = '7 Projector';
-                    if ~obj.doPWM || obj.redBlanking || strcmp(obj.colorMode, 'uv') || strcmp(obj.colorMode, 'uv2')
-                        d.isHidden = true;
-                    else
-                        d.isHidden = false;
-                    end
-                case 'uvPWM'
-                    d.category = '7 Projector';
-                    if ~obj.doPWM || obj.uvBlanking || (~strcmp(obj.colorMode, 'uv') && ~strcmp(obj.colorMode, 'uv2'))
-                        d.isHidden = true;
-                    else
-                        d.isHidden = false;
-                    end
             end
             
         end
@@ -367,8 +319,6 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
             for color = {'red','green','blue','uv'}
                 if obj.(cell2mat(strcat(color,'Blanking')))
                     obj.setBlanking(color, true);
-                else
-                    obj.setPWM(color, obj.(cell2mat(strcat(color,'PWM'))));
                 end
             end
             if ~isempty(obj.rig.getDevices('LightCrafter'))
@@ -394,6 +344,7 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 end
 
                 lightCrafter.setPrerender(obj.prerender);
+                lightCrafter.setAntiAlias(obj.antialias);
                 lightCrafter.setPatternAttributes(obj.bitDepth, {obj.colorPattern1,obj.colorPattern2,obj.colorPattern3}, obj.numberOfPatterns);
                 lightCrafter.setLedCurrents(obj.redLED, obj.greenLED, obj.blueLED, obj.uvLED);
                 lightCrafter.setLedEnables(true, 0, 0, 0, 0); % auto mode, should be set from pattern
@@ -725,59 +676,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function set.uvBlanking(obj, level)
             obj.uvBlanking = level;
         end
-
-        function set.bluePWM(obj, level)
-            obj.blueBlanking = false;
-            obj.bluePWM_ = level;
-        end
-
-        function set.redPWM(obj, level)
-            obj.redBlanking = false;
-            obj.redPWM_ = level;
-        end
-
-        function set.greenPWM(obj, level)
-            obj.greenBlanking = false;
-            obj.greenPWM_ = level;
-        end
-
-        function set.uvPWM(obj, level)
-            obj.uvBlanking = false;
-            obj.uvPWM_ = level;
-        end
         
-        function level = get.bluePWM(obj)
-            level = ~obj.blueBlanking * obj.bluePWM_;
-        end
-        
-        function level = get.redPWM(obj)
-            level = ~obj.redBlanking * obj.redPWM_;
-        end
-        
-        function level = get.greenPWM(obj)
-            level = ~obj.greenBlanking * obj.greenPWM_;
-        end
-        
-        function level = get.uvPWM(obj)
-            level = ~obj.uvBlanking * obj.uvPWM_;
-        end
-        
-        function set.doPWM(obj, level)
-            if ~level
-                obj.bluePWM = 1;
-                obj.redPWM = 1;
-                obj.greenPWM = 1;
-                obj.uvPWM = 1;
-            end
-            obj.doPWM = level;
-        end
-
         function setBlanking(obj, colors, levels)
             obj.rig.getDevice('BlankingCircuit').blank(obj.getLEDNumber(colors), levels);
-        end
-        
-        function setPWM(obj, colors, levels)
-            obj.rig.getDevice('BlankingCircuit').setLevel(obj.getLEDNumber(colors), levels*256);
         end
 
         function ids = getLEDNumber(obj, colors)
