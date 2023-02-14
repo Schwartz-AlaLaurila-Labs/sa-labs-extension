@@ -30,7 +30,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             settings('spectralOverlap_Green') = 0;
             settings('spectralOverlap_UV') = 0;
             settings('blankingFactor') = 1;
-            settings('antialias') = 1;
+            settings('antialias') = true;
             
             %% Overwrite default values with values from RigConfig if present
             RigProperties = properties(RigConfig);
@@ -331,7 +331,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             if obj.getConfigurationSetting('antialias')
                 player.setCompositor(stage.builtin.compositors.PatternCompositor());
             else
-                player.setCompositor(util.ExactPatternCompositor());
+                player.setCompositor(sa_labs.util.ExactPatternCompositor());
             end
             obj.stageClient.play(player);
         end
