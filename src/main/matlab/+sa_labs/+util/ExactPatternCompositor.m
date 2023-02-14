@@ -6,7 +6,7 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             ls = glIsEnabled(GL.LINE_SMOOTH);
             ps = glIsEnabled(GL.POLYGON_SMOOTH);
             d = glIsEnabled(GL.DITHER);
-            f = glIsEnabled(GL.FOG);
+            % f = glIsEnabled(GL.FOG);
             
 
             sm = glGetInteger64v(GL.SHADE_MODEL);
@@ -15,7 +15,7 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             glDisable(GL.LINE_SMOOTH);
             glDisable(GL.POLYGON_SMOOTH);
             glDisable(GL.DITHER);
-            glDisable(GL.FOG);
+            % glDisable(GL.FOG);
             glShadeModel(GL.FLAT);
 
             drawFrame@stage.builtin.compositors.PatternCompositor(obj, stimuli, controllers, state);
@@ -32,9 +32,9 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             if d
                 glEnable(GL.DITHER);
             end
-            if f
-                glEnable(GL.FOG);
-            end
+            % if f
+            %     glEnable(GL.FOG);
+            % end
 
             glShadeModel(sm);
         end
