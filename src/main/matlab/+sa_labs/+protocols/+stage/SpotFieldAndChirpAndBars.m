@@ -18,9 +18,13 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         chirpIntensity = .5
         barIntensity = .5
 
-        numberOfChirps = 8
         numberOfFields = 20
+        numberOfChirps = 8
         numberOfBars = 2
+
+        spotLED
+        chirpLED
+        barLED
     end
     
     properties (Hidden)
@@ -45,6 +49,19 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         stimTime
         preTime
         tailTime
+
+        RstarIntensitySpot
+        MstarIntensitySpot
+        SstarIntensitySpot
+        
+        RstarIntensityChirp
+        MstarIntensityChirp
+        SstarIntensityChirp
+        
+        RstarIntensityBar
+        MstarIntensityBar
+        SstarIntensityBar
+
     end
     
     properties (Hidden, Dependent)
@@ -52,6 +69,30 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
     end
     
     methods
+        function obj = SpotFieldAndChirpAndBars(obj)
+            obj@sa_labs.protocols.StageProtocol();
+            obj.colorPattern1 = 'uv';
+            obj.colorPattern2 = 'none';
+            obj.spotLED = obj.uvLED;
+            obj.chirpLED = obj.uvLED;
+            obj.barLED = obj.uvLED;
+        end
+
+
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            switch name
+            case {'spotLED','chirpLED','barLED'}
+                d.category = '7 Projector';
+            case {'uvLED','redLED','greenLED','blueLED','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
+                d.isHidden = true;
+            case {'RstarIntensitySpot','MstarIntensitySpot','SstarIntensitySpot',
+                'RstarIntensityChirp','MstarIntensityChirp','SstarIntensityChirp',
+                'RstarIntensityBar','MstarIntensityBar','SstarIntensityBar'}
+                d.category = '6 Isomerizations';
+            end
+
+        end
         
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
@@ -80,19 +121,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
             obj.theta = linspace(0,2*pi,11);
             obj.theta(end) = [];
-                   
-            % cx_ = linspace(0,obj.gridX, obj.spotCountInX) - obj.gridX/2;
-            % cy_ = linspace(0,obj.gridY, obj.spotCountInY) - obj.gridY/2;
-            % [cx_,cy_] = meshgrid(cx_,cy_);
-            % cx_ = cx_(:);
-            % cy_ = cy_(:);
-            % while length(obj.cx)*(obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate < 35
-            %     % we have some extra frames to spare
-            %     obj.cx = [obj.cx; cx_];
-            %     obj.cy = [obj.cy; cy_];
-            % end
             
-%             obj.numSpotsPerEpoch = floor((obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames)/obj.frameRate/35);
             obj.numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfFields,1), 2*ones(obj.numberOfBars,1));
@@ -127,6 +156,27 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
+        function controllerDidStartHardware(obj)
+            
+            lightCrafter = obj.rig.getDevice('LightCrafter');
+            LED = 0;
+            if obj.trialType == 1
+                LED = obj.spotLED;
+            elseif obj.trialType == 2
+                LED = obj.barLED;
+            else
+                LED = obj.chirpLED;
+            end
+            lightCrafter.setLedCurrents(0, 0, 0, LED);
+            controllerDidStartHardware@sa_labs.protocols.StageProtocol(obj);
+        end
+
+        function completeRun(obj)
+            lightCrafter = obj.rig.getDevice('LightCrafter');
+            lightCrafter.setLedCurrents(0, 0, 0, obj.spotLED); %final level is deterministic
+            completeRun@sa_labs.protocols.StageProtocol(obj);
+        end
+
         function p = createPresentation(obj)
             
             canvasSize = reshape(obj.rig.getDevice('Stage').getCanvasSize(),2,1);
@@ -298,6 +348,61 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             totalNumEpochs = obj.numberOfChirps + obj.numberOfFields + obj.numberOfBars;
         end
         
+
+        function RstarIntensity = get.RstarIntensitySpot(obj)
+            props = {'spotIntensity'};
+            pattern = 1;
+            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function MstarIntensity = get.MstarIntensitySpot(obj)
+            props = {'spotIntensity'};
+            pattern = 1;
+            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function SstarIntensity = get.SstarIntensitySpot(obj)
+            props = {'spotIntensity'};
+            pattern = 1;
+            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+        end
+
+        function RstarIntensity = get.RstarIntensityChirp(obj)
+            props = {'chirpIntensity'};
+            pattern = 1;
+            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function MstarIntensity = get.MstarIntensityChirp(obj)
+            props = {'chirpIntensity'};
+            pattern = 1;
+            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function SstarIntensity = get.SstarIntensityChirp(obj)
+            props = {'chirpIntensity'};
+            pattern = 1;
+            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+        end
+
+        function RstarIntensity = get.RstarIntensityBar(obj)
+            props = {'barIntensity'};
+            pattern = 1;
+            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function MstarIntensity = get.MstarIntensityBar(obj)
+            props = {'barIntensity'};
+            pattern = 1;
+            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+        end
+        
+        function SstarIntensity = get.SstarIntensityBar(obj)
+            props = {'barIntensity'};
+            pattern = 1;
+            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+        end
+
     end
     
 end
