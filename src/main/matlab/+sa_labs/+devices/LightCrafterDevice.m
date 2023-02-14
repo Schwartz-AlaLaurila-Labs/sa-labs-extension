@@ -91,6 +91,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('laserCorrectionIntensity2', 0);
             obj.addConfigurationSetting('imageOrientation',obj.orientation, 'isReadOnly', true);
             obj.addConfigurationSetting('angleOffset', settings('angleOffset'));
+            obj.addConfigurationSetting('antialias', settings('antialias'));          
             
             obj.addResource('fitBlue', settings('fitBlue'));
             obj.addResource('fitGreen', settings('fitGreen'));
@@ -98,8 +99,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addResource('spectralOverlap_Blue', settings('spectralOverlap_Blue'));
             obj.addResource('spectralOverlap_Green', settings('spectralOverlap_Green'));
             obj.addResource('spectralOverlap_UV', settings('spectralOverlap_UV'));
-            obj.addResource('blankingFactor', settings('blankingFactor'));
-            obj.addResource('antialias', settings('antialias'));           
+            obj.addResource('blankingFactor', settings('blankingFactor')); 
 
                         
         end
