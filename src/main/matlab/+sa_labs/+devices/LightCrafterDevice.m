@@ -51,7 +51,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.stageClient.setMonitorGamma(1);
             
             trueCanvasSize = obj.stageClient.getCanvasSize();
-            canvasSize = [trueCanvasSize(1) * 2, trueCanvasSize(2)];
+            % canvasSize = [trueCanvasSize(1) * 2, trueCanvasSize(2)]; %no idea why this was here
+            canvasSize = [trueCanvasSize(1), trueCanvasSize(2)];
             
             obj.stageClient.setCanvasProjectionIdentity();
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
