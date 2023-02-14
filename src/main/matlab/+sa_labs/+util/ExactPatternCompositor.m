@@ -17,9 +17,8 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             glShadeModel(GL.FLAT);
             
 
-            glHint(GL.LINE_SMOOTH_HINT, GL_FASTEST);
-            glHint(GL.POLYGON_SMOOTH_HINT, GL_FASTEST);
-            glHint(GL.PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+            glHint(GL.LINE_SMOOTH_HINT, GL.FASTEST);
+            glHint(GL.POLYGON_SMOOTH_HINT, GL.FASTEST);
 
             drawFrame@stage.builtin.compositors.PatternCompositor(obj, stimuli, controllers, state);
             
@@ -28,15 +27,14 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             end
             if ls
                 glEnable(GL.LINE_SMOOTH);
-                glHint(GL.LINE_SMOOTH_HINT, GL_NICEST);
+                glHint(GL.LINE_SMOOTH_HINT, GL.NICEST);
             end
             if ps
                 glEnable(GL.POLYGON_SMOOTH);
-                glHint(GL.POLYGON_SMOOTH_HINT, GL_NICEST);
+                glHint(GL.POLYGON_SMOOTH_HINT, GL.NICEST);
             end
             if d
                 glEnable(GL.DITHER);
-                glHint(GL.PERSPECTIVE_CORRECTION_HINT, GL_NICEST); % ?
             end
             glShadeModel(sm);
         end
