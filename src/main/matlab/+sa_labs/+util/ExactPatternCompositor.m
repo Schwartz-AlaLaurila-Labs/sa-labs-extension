@@ -6,8 +6,6 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             ls = glIsEnabled(GL.LINE_SMOOTH);
             ps = glIsEnabled(GL.POLYGON_SMOOTH);
             d = glIsEnabled(GL.DITHER);
-            % f = glIsEnabled(GL.FOG);
-            % b = glIsEnabled(GL.BLEND); %!!!
             
 
             sm = glGetInteger64v(GL.SHADE_MODEL);
@@ -16,9 +14,12 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             glDisable(GL.LINE_SMOOTH);
             glDisable(GL.POLYGON_SMOOTH);
             glDisable(GL.DITHER);
-            % glDisable(GL.FOG);
-            % glDisable(GL.BLEND); %!!!
             glShadeModel(GL.FLAT);
+            
+
+            glHint(GL.LINE_SMOOTH_HINT, GL_FASTEST);
+            glHint(GL.POLYGON_SMOOTH_HINT, GL_FASTEST);
+            glHint(GL.PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
             drawFrame@stage.builtin.compositors.PatternCompositor(obj, stimuli, controllers, state);
             
@@ -27,19 +28,16 @@ classdef ExactPatternCompositor < stage.builtin.compositors.PatternCompositor
             end
             if ls
                 glEnable(GL.LINE_SMOOTH);
+                glHint(GL.LINE_SMOOTH_HINT, GL_NICEST);
             end
             if ps
                 glEnable(GL.POLYGON_SMOOTH);
+                glHint(GL.POLYGON_SMOOTH_HINT, GL_NICEST);
             end
             if d
                 glEnable(GL.DITHER);
+                glHint(GL.PERSPECTIVE_CORRECTION_HINT, GL_NICEST); % ?
             end
-            % if f
-            %     glEnable(GL.FOG);
-            % end
-            % if b
-            %     glEnable(GL.BLEND);
-            % end
             glShadeModel(sm);
         end
     end
