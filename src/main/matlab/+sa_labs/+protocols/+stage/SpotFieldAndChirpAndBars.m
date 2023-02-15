@@ -350,57 +350,57 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         
 
         function RstarIntensity = get.RstarIntensitySpot(obj)
-            props = {'spotIntensity'};
-            pattern = 1;
-            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.spotLED;
+            [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.spotIntensity, 'uv', params);
         end
         
         function MstarIntensity = get.MstarIntensitySpot(obj)
-            props = {'spotIntensity'};
-            pattern = 1;
-            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.spotLED;
+            [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.spotIntensity, 'uv', params);
         end
         
         function SstarIntensity = get.SstarIntensitySpot(obj)
-            props = {'spotIntensity'};
-            pattern = 1;
-            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.spotLED;
+            [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.spotIntensity, 'uv', params);
         end
 
         function RstarIntensity = get.RstarIntensityChirp(obj)
-            props = {'chirpIntensity'};
-            pattern = 1;
-            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.chirpLED;
+            [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.chirpIntensity, 'uv', params);
         end
         
         function MstarIntensity = get.MstarIntensityChirp(obj)
-            props = {'chirpIntensity'};
-            pattern = 1;
-            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.chirpLED;
+            [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.chirpIntensity, 'uv', params);
         end
         
         function SstarIntensity = get.SstarIntensityChirp(obj)
-            props = {'chirpIntensity'};
-            pattern = 1;
-            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.chirpLED;
+            [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.chirpIntensity, 'uv', params);
         end
 
         function RstarIntensity = get.RstarIntensityBar(obj)
-            props = {'barIntensity'};
-            pattern = 1;
-            [RstarIntensity, ~, ~] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.barLED;
+            [RstarIntensity, ~, ~] = obj.convertIntensityToIsomerizations(obj.barIntensity, 'uv', params);
         end
         
         function MstarIntensity = get.MstarIntensityBar(obj)
-            props = {'barIntensity'};
-            pattern = 1;
-            [~, MstarIntensity, ~] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.barLED;
+            [~, MstarIntensity, ~] = obj.convertIntensityToIsomerizations(obj.barIntensity, 'uv', params);
         end
         
         function SstarIntensity = get.SstarIntensityBar(obj)
-            props = {'barIntensity'};
-            pattern = 1;
-            [~, ~, SstarIntensity] = obj.getIsomerizations(props, pattern);
+            params = obj.isomerizationParameters();
+            params.uvLED = obj.barLED;
+            [~, ~, SstarIntensity] = obj.convertIntensityToIsomerizations(obj.barIntensity, 'uv', params);
         end
 
     end
