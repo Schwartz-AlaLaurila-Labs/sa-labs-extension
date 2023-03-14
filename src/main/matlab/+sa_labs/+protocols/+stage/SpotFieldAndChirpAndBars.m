@@ -171,11 +171,22 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                 % - otherwise it must intersect the corner
                 halfGrids = repmat(halfGrids, size(locs,1),1);
                 obj.grid = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= obj.spotSize.^2 , :);
+                
+                if obj.numSpotsPerEpoch > size(obj.grid,1)
+                    obj.grid = repmat(obj.grid, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);
+                end
     
             end
 
+            if obj.seed >= 0
+                obj.randStream = RandStream('mt19937ar','seed',obj.seed);
+            else
+                obj.randStream = RandStream.getGlobalStream();
+                obj.seed = obj.randStream.Seed;
+            end
+
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfFields,1), 2*ones(obj.numberOfBars,1));
-            obj.trialTypes = obj.trialTypes(randperm(length(obj.trialTypes)));
+            obj.trialTypes = obj.trialTypes(randperm(obj.randStream, length(obj.trialTypes)));
 
             devices = {};
             modes = {};
@@ -203,8 +214,8 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             obj.trialType = obj.trialTypes(index);
             if obj.trialType == 1
                 epoch.addParameter('trialType', 'field');
-                if obj.gridMode
                     spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
+                if obj.gridMode
                     obj.cx = obj.grid(spots,1);
                     obj.cy = obj.grid(spots,2);
                 else
