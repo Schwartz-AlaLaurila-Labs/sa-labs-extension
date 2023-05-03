@@ -18,6 +18,11 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         chirpIntensity = .5
         barIntensity = .5
 
+        gridMode = true
+        coverage = .9069
+
+        seed = -1                       % set to negative value to not use a seed, otherwise use a non-negative integer
+
         numberOfFields = 20
         numberOfChirps = 8
         numberOfBars = 2
@@ -35,11 +40,16 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         
         cx = [];
         cy = [];
+        grid = [];
 
         theta = [];
 
-        responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'trialType';
+        % responsePlotMode = 'cartesian';
+        % responsePlotSplitParameter = 'trialType';
+
+        randStream
+
+        responsePlotMode = false;
 
         barSpeed = 1000 % um / s
         barDistance = 3000 % um
@@ -86,6 +96,12 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                 d.category = '7 Projector';
             case {'uvLED','redLED','greenLED','blueLED','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
                 d.isHidden = true;
+            case {'coverage'}
+                if obj.gridMode
+                    d.isHidden = false;
+                else
+                    d.isHidden = true;
+                end
             case {'RstarIntensitySpot','MstarIntensitySpot','SstarIntensitySpot',
                 'RstarIntensityChirp','MstarIntensityChirp','SstarIntensityChirp',
                 'RstarIntensityBar','MstarIntensityBar','SstarIntensityBar'}
@@ -124,32 +140,101 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             
             obj.numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
 
+            if obj.gridMode
+                %space the spots to achieve the desired coverage factor
+                %uses the ratio of the area of a hexagon to that of a circle
+                spaceFactor = sqrt(3*pi/4 / obj.coverage / (3*sqrt(3)/2));
+                spacing = spaceFactor * obj.spotSize;
+    
+                %find the x and y coordinates for the hex grid
+                xa = [0:-spacing:-obj.extentX/2-spacing, spacing:spacing:obj.extentX/2+spacing];
+                xb= [xa - spacing/2, xa(end)+spacing/2];
+                yspacing = cos(pi/6)*spacing;
+                ya = [0:-2*yspacing:-obj.extentY/2-yspacing, 2*yspacing:2*yspacing:obj.extentY/2+yspacing];
+                yb = [ya - yspacing, ya(end) + yspacing];
+    
+                %create the grid
+                [xqa, yqa] = meshgrid(xa,ya);
+                [xqb, yqb] = meshgrid(xb,yb);
+                locs = [xqa(:), yqa(:); xqb(:), yqb(:)];
+    
+                
+                halfGrids = [obj.extentX, obj.extentY]/2;
+                %remove any circles that don't intersect the grid rectangle
+                % 1) the bounding box of the circle must intersect the rectangle
+                locs = locs(all(abs(locs) < repmat(halfGrids, size(locs,1),1) + obj.spotSize/2, 2), :);
+    
+                % 2) circles near the corners might have an intersecting
+                %       bounding box but not actually intersect
+                % - if either of the coordinates is inside the box, it
+                %       definitely intersects
+                % - otherwise it must intersect the corner
+                halfGrids = repmat(halfGrids, size(locs,1),1);
+                obj.grid = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= obj.spotSize.^2 , :);
+                
+                if obj.numSpotsPerEpoch > size(obj.grid,1)
+                    obj.grid = repmat(obj.grid, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);
+                end
+    
+            end
+
+            if obj.seed >= 0
+                obj.randStream = RandStream('mt19937ar','seed',obj.seed);
+            else
+                obj.randStream = RandStream.getGlobalStream();
+                obj.seed = obj.randStream.Seed;
+            end
+
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfFields,1), 2*ones(obj.numberOfBars,1));
-            obj.trialTypes = obj.trialTypes(randperm(length(obj.trialTypes)));
+            obj.trialTypes = obj.trialTypes(randperm(obj.randStream, length(obj.trialTypes)));
+
+            devices = {};
+            modes = {};
+            for ci = 1:4
+                ampName = obj.(['chan' num2str(ci)]);
+                ampMode = obj.(['chan' num2str(ci) 'Mode']);
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
+                    device = obj.rig.getDevice(ampName);
+                    devices{end+1} = device; %#ok<AGROW>
+                    modes{end+1} = ampMode;
+                end
+            end
+
+            obj.responseFigure = obj.showFigure('sa_labs.figures.SpotsMultiLocationFigure', devices, modes, ...
+                    'totalNumEpochs', obj.totalNumEpochs,...
+                    'preTime', obj.spotPreFrames / obj.frameRate,...
+                    'stimTime', obj.spotStimFrames / obj.frameRate,...
+                    'tailTime', obj.spotTailFrames / obj.frameRate,...
+                    'spotsPerEpoch', obj.numSpotsPerEpoch, ...
+                    'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
         end
         
         function prepareEpoch(obj, epoch)
             index = obj.numEpochsPrepared + 1;
             obj.trialType = obj.trialTypes(index);
             if obj.trialType == 1
-                epoch.addParameter('trialType', "field");
-
-                
-                obj.cx = rand(obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
-                obj.cy = rand(obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
+                epoch.addParameter('trialType', 'field');
+                    spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
+                if obj.gridMode
+                    obj.cx = obj.grid(spots,1);
+                    obj.cy = obj.grid(spots,2);
+                else
+                    obj.cx = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
+                    obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
+                end
 
                 epoch.addParameter('cx', obj.cx);
                 epoch.addParameter('cy', obj.cy);
                 
             elseif obj.trialType == 2
-                epoch.addParameter('trialType', "bars");
+                epoch.addParameter('trialType', 'bars');
 
                 obj.theta = obj.theta(randperm(length(obj.theta)));
 
                 epoch.addParameter('theta', obj.theta)
 
             else
-                epoch.addParameter('trialType', "chirp");
+                epoch.addParameter('trialType', 'chirp');
             end
 
             % Call the base method.
