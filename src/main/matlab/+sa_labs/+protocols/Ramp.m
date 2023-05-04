@@ -7,7 +7,7 @@ classdef Ramp < sa_labs.protocols.BaseProtocol
         preTime = 500                    % Pulse leading duration (ms)
         stimTime = 500                  % Pulse duration (ms)
         tailTime = 500                   % Pulse trailing duration (ms)
-        rampSlope = 1 %pA/sec
+        rampSlope = 100 %pA/sec
         numberOfEpochs = 50;
     end
     
@@ -23,10 +23,16 @@ classdef Ramp < sa_labs.protocols.BaseProtocol
     methods
                 
         
-%         function prepareRun(obj)
-%             prepareRun@sa_labs.protocols.BaseProtocol(obj, epoch);
-%             
-%         end
+        function prepareRun(obj)
+            prepareRun@sa_labs.protocols.BaseProtocol(obj);
+            obj.responseFigure = obj.showFigure('sa_labs.figures.RampFigure', obj.devices, ...
+                    'totalNumEpochs',obj.totalNumEpochs,...
+                    'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime],...
+                    'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
+                    'spikeThreshold', obj.spikeThreshold, ...
+                    'spikeDetectorMode', obj.spikeDetectorMode,...
+                    'slope', obj.rampSlope);
+        end
         
         function stim = createAmpStimulus(obj, ampName)
             gen = symphonyui.builtin.stimuli.RampGenerator();
