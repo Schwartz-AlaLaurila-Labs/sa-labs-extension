@@ -26,7 +26,7 @@ properties
     % numberOfBars = 0
 
     gridMode = true
-    coverage =.9069                 % for grid mode, no overlap in spots if .9069 or lower
+    coverage =.9069                 % For grid mode. No overlap in spots if .9069 or lower. Represents the number of spots which intersect the average pixel.
     
     %TODO: calculate spot spacing
 
@@ -75,6 +75,8 @@ properties (Dependent)
     % SstarIntensityBar
     
     numSpotsPerEpoch
+    
+    spotOverlap % For grid mode. The amount of overlap between neighboring spots along the diameter, in um. Adjust the coverage factor or spot size to change.
 
 end
 
@@ -206,7 +208,16 @@ methods
         epoch.addParameter('trialType', 'field');
 
         if obj.gridMode
-            spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
+            gridSize = size(obj.grid,1);
+            if gridSize < obj.numSpotsPerEpoch
+                nPerms = ceil(obj.numSpotsPerEpoch / gridSize);
+                spots = zeros(gridSize * nPerms,1);
+                for n = 1:nPerms
+                    spots((1+gridSize*(n-1)):(gridSize*n)) = randperm(obj.randStream, gridSize);
+                end
+            else
+                spots = randperm(obj.randStream, gridSize, obj.numSpotsPerEpoch);
+            end
             obj.cx = obj.grid(spots,1);
             obj.cy = obj.grid(spots,2);
         else
@@ -261,17 +272,18 @@ methods
         end
         
         sI = obj.intensity;
+        bg = obj.meanLevel;
         nFrames = obj.frameRate * 35;
-        function c = getSpotIntensity(state, spotPre, spotPreStim, spotPreStimPost, intensity_,nFrames_)
+        function c = getSpotIntensity(state, spotPre, spotPreStim, spotPreStimPost, intensity_, bg_, nFrames_)
             if state.frame >= nFrames_ - 1
-                c = 0;
+                c = bg_;
                 return
             end
             
             i = mod(state.frame, spotPreStimPost);
 
-            if i < spotPre || i >= spotPreStim
-                c = 0;
+            if (i < spotPre) || (i >= spotPreStim)
+                c = bg_;
             else
                 c = intensity_;
             end
@@ -333,7 +345,7 @@ methods
         p.addStimulus(spot);
         
         spotIntensity_ = stage.builtin.controllers.PropertyController(spot, 'color',...
-            @(state)getSpotIntensity(state, spotPre, spotPreStim, spotPreStimPost, sI, nFrames));
+            @(state)getSpotIntensity(state, spotPre, spotPreStim, spotPreStimPost, sI, bg, nFrames));
 %         getSpotIntensity(state, spotPre, spotPreStim, spotPreStimPost, intensity)
         spotPosition = stage.builtin.controllers.PropertyController(spot, 'position',...
             @(state)getSpotPosition(state, spotPreStimPost, grid_));
@@ -398,6 +410,13 @@ methods
     
     function numSpotsPerEpoch = get.numSpotsPerEpoch(obj)
         numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
+    end
+    
+    function spotOverlap = get.spotOverlap(obj)
+        spaceFactor = sqrt(3*pi/4 / obj.coverage / (3*sqrt(3)/2));
+        %spot diameter - distance between spot centers in microns
+        spotOverlap = obj.spotSize* (1 - spaceFactor);
+       
     end
 
 end
