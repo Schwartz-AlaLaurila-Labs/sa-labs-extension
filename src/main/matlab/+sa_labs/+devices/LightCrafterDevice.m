@@ -47,8 +47,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('prerender', false);
             obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel);
             obj.addConfigurationSetting('canvasTranslation', [0,0]);
-            obj.addConfigurationSetting('frameTrackerDuration', inf);
-%             obj.addConfigurationSetting('frameTrackerDuration', .1);
+%            obj.addConfigurationSetting('frameTrackerDuration', inf);
+             obj.addConfigurationSetting('frameTrackerDuration', .1);
             obj.addConfigurationSetting('colorMode', colorMode, 'isReadOnly', true);
             obj.addConfigurationSetting('numberOfPatterns', 1);
             obj.addConfigurationSetting('backgroundPatternMode', 'noPattern');
