@@ -206,7 +206,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             for ci = 1:4
                 ampName = obj.(['chan' num2str(ci)]);
                 ampMode = obj.(['chan' num2str(ci) 'Mode']);
-                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'))
                     device = obj.rig.getDevice(ampName);
                     devices{end+1} = device; %#ok<AGROW>
                     modes{end+1} = ampMode;
@@ -258,7 +258,6 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         function controllerDidStartHardware(obj)
             
             lightCrafter = obj.rig.getDevice('LightCrafter');
-            LED = 0;
             if obj.trialType == 1
                 LED = obj.spotLED;
             elseif obj.trialType == 2
@@ -303,14 +302,14 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             
             sI = obj.spotIntensity;
             function c = getSpotIntensity(state)
-                if state.frame >= nFrames - 1
+                if state.frame >= (nFrames - 1)
                     c = 0;
                     return
                 end
                 
                 i = mod(state.frame, spotPreStimPost);
 
-                if i < spotPre || i >= spotPreStim
+                if (i < spotPre) || (i >= spotPreStim)
                     c = 0;
                 else
                     c = sI;
@@ -319,13 +318,13 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             
             bI = obj.barIntensity;
             function c = getBarIntensity(state)
-                if state.frame >= nFrames - 1
+                if state.frame >= (nFrames - 1)
                     c = 0;
                     return
                 end
 
                 i = mod(state.frame, 210); % TODO: this assumes frame rate of 60 / bar speed 1mm/s
-                if i < 15 || i >= 195
+                if (i < 15) || (i >= 195)
                     c = 0;
                 else
                     c = bI;
