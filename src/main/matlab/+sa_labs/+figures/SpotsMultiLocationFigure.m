@@ -144,6 +144,10 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 obj.totalNumEpochs = obj.epochCount;
             end
             
+            if ~strcmp(epoch.parameters('trialType'),'field')
+                return
+            end
+            
             
             % some slower code for the first epoch
             if any(cellfun(@isempty, obj.ampUnits))

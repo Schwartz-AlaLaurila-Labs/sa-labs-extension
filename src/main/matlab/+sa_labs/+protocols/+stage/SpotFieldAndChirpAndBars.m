@@ -52,7 +52,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         responsePlotMode = false;
 
         barSpeed = 500; % um / s
-        barDistance = 3000; % um
+%         barDistance = 1500; % um % derived based on 3s duration
 
         gridModeType = symphonyui.core.PropertyType('char', 'row', {'grid','random','rings'});
         
@@ -323,7 +323,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                     return
                 end
 
-                i = mod(state.frame, 210); % TODO: this assumes frame rate of 60 / bar speed 1mm/s
+                i = mod(state.frame, 210); % TODO: this assumes frame rate of 60
                 if (i < 15) || (i >= 195)
                     c = 0;
                 else
@@ -334,7 +334,8 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
             [~, pixelSpeed] = obj.um2pix(obj.barSpeed); %pix/s
             pixelSpeed = pixelSpeed / obj.frameRate; % pix/frame
-            [~, pixelDistance] = obj.um2pix(obj.barDistance); %pix
+            % [~, pixelDistance] = obj.um2pix(obj.barDistance); %pix
+            [~, pixelDistance] = obj.um2pix(pixelSpeed * 3); %pix, assumes 3 seconds
             xStep = pixelSpeed * cos(obj.theta);
             yStep = pixelSpeed * sin(obj.theta);
 
@@ -345,10 +346,10 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             function xy = getBarPosition(state)
                 xy = [NaN, NaN];
 
-                i = mod(state.frame, 210); % TODO: this assumes frame rate of 60 / bar speed 1mm/s
+                i = mod(state.frame, 210); % TODO: this assumes frame rate of 60
                 t = floor(state.frame / 210) + 1;
 
-                if i >= 15 && i < 195
+                if i >= 15 && i < 195 %i.e., 3sec per bar
                     xy = [xStartPos(t) + (i-15) * xStep(t), yStartPos(t) + (i-15) * yStep(t)];
                 end
             end
@@ -446,7 +447,6 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             totalNumEpochs = obj.numberOfChirps + obj.numberOfFields + obj.numberOfBars;
         end
         
-
         function RstarIntensity = get.RstarIntensitySpot(obj)
             params = obj.isomerizationParameters();
             params.uvLED = obj.spotLED;
