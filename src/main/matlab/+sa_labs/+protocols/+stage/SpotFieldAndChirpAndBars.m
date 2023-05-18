@@ -179,13 +179,13 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                 if obj.numSpotsPerEpoch > size(obj.grid,1)
                     obj.grid = repmat(obj.grid, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);
                 end
-            else if strcmp(obj.gridMode,'rings')
+            elseif strcmp(obj.gridMode,'rings')
                 N = cumsum([6, 10, 14, 8, 16, 30]);
                 R = [8, 9, 12, 22, 24, 28] / 60; % * obj.extentX;
                 obj.grid = [];
                 for i = 1:numel(N)
                     th = linspace(0, 2*pi, N(i) + 1)';
-                    obj.grid = vertcat(obj.grid, R(i)*[cos(th(1:end-1)), sin(th(1:end-1))])
+                    obj.grid = vertcat(obj.grid, R(i)*[cos(th(1:end-1)), sin(th(1:end-1))]);
                 end
                 obj.grid(:,1) = obj.grid(:,1) * obj.extentX;
                 obj.grid(:,2) = obj.grid(:,2) * obj.extentY;
@@ -418,7 +418,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
         end
 
-        function preTime = get.preTime(obj)
+        function preTime = get.preTime(~)
             % if strcmp(obj.trialType,'chirp')
             %     preTime = 2000;
             % else
@@ -426,7 +426,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             % end
         end
         
-        function tailTime = get.tailTime(obj)
+        function tailTime = get.tailTime(~)
             % if strcmp(obj.trialType,'chirp')
             %     tailTime = 2000;
             % else
@@ -434,7 +434,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             % end
         end
 
-        function stimTime = get.stimTime(obj)
+        function stimTime = get.stimTime(~)
             
             % if strcmp(obj.trialType,'chirp')
                 stimTime = 35000;
