@@ -32,7 +32,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
         scatters
         
         bottomAxes
-        rfmaps
+        alignedResp
         
     end
     
@@ -101,7 +101,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             restBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
             
             middleBox = uix.HBox('Parent', restBox, 'Spacing', 10);
-            % bottomBox = uix.HBox('Parent', restBox, 'Spacing', 10);
+            bottomBox = uix.HBox('Parent', restBox, 'Spacing', 10);
             
             
             
@@ -114,21 +114,25 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             obj.topPlots = cell(obj.numChannels,1);
             obj.topRasters = cell(obj.numChannels,1);
             obj.middleAxes = cell(obj.numChannels,1);
-            % obj.bottomAxes = cell(obj.numChannels,1);
+            obj.bottomAxes = cell(obj.numChannels,1);
+            obj.alignedResp = cell(obj.numChannels,1);
             % obj.rfmaps = cell(obj.numChannels,1);
             obj.scatters = cell(obj.numChannels,1);
             for ci = 1:obj.numChannels
                 color = obj.colorOrder(mod(ci - 1, size(obj.colorOrder, 1)) + 1, :);
                 obj.topPlots{ci} = plot(obj.responseAxis, 0, 0, 'color', color);
-                obj.topRasters{ci} = plot([]); %line(0,0, 'color',color);
+                obj.topRasters{ci} = plot(obj.responseAxis,[]); %line(0,0, 'color',color);
                 
                 obj.middleAxes{ci} = axes('Parent', middleBox);
                 obj.scatters{ci} = scatter(obj.middleAxes{ci},0,0,200,0,'filled'); %TODO: check size
                 axis(obj.middleAxes{ci}, 'equal');
                 
-                % obj.bottomAxes{ci} = axes('Parent', bottomBox);
+                obj.bottomAxes{ci} = axes('Parent', bottomBox);
+                set(obj.bottomAxes{ci},'LooseInset',get(obj.bottomAxes{ci},'TightInset'))
+            
                 % obj.rfmaps{ci} = imagesc(obj.bottomAxes{ci},0);
-                % axis(obj.bottomAxes{ci}, 'equal');
+%                 axis(obj.bottomAxes{ci}, 'equal');
+                obj.alignedResp{ci} = plot(obj.bottomAxes{ci},[]);
             end
             
         end
@@ -163,6 +167,8 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                         obj.timebase = mod(obj.rawTimebase, obj.spotDuration); % in seconds
                         obj.timebase = obj.timebase - obj.preTime;
                         
+                        nSpots = round((responseLength / sampleRate) / obj.spotDuration);
+                        obj.timebase = reshape(obj.timebase,[],nSpots);                        
                     end
                     
                     set(obj.topPlots{ci}, 'xdata', obj.rawTimebase,'ydata', obj.epochData(ci, obj.epochCount).rawSignal);
@@ -232,6 +238,14 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 %plot raw responses
                 set(obj.topPlots{ci}, 'ydata', obj.epochData(ci, obj.epochCount).rawSignal);
                 
+                if numel(get(obj.alignedResp{ci},'xdata')) ~= numel(obj.timebase)
+                    delete(obj.alignedResp{ci});
+                    obj.alignedResp{ci} = plot(obj.bottomAxes{ci}, obj.timebase, reshape(obj.epochData(ci, obj.epochCount).rawSignal, size(obj.timebase)));
+                    set(obj.bottomAxes{ci},'xlim',[obj.timebase(1,1), obj.timebase(end,end)]);
+                else
+                    set(obj.alignedResp{ci}, 'ydata', reshape(obj.epochData(ci, obj.epochCount).rawSignal, size(obj.timebase)));
+                end
+                
                 if strcmp(obj.ampModes{ci}, 'Cell attached')
                     delete(obj.topRasters{ci});
                 end
@@ -276,7 +290,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                     [u,~,ui] = unique(grid,'rows');
                     
                     set(obj.scatters{ci}, 'xdata', u(:,1), 'ydata', u(:,2), 'cdata', splitapply(@mean,resp - bl,ui));
-                    
+                    axis(obj.middleAxes{ci}, 'equal');
                     
                     %TODO: plotting the heatmap is a bit more complicated
                     % im = get(obj.rfmaps{ci},'cdata'); %the previous heatmap

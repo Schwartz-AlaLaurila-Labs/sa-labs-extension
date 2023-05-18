@@ -18,7 +18,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         chirpIntensity = .5
         barIntensity = .5
 
-        gridMode = true
+        gridMode = 'rings'
         coverage = .9069
 
         seed = -1                       % set to negative value to not use a seed, otherwise use a non-negative integer
@@ -51,8 +51,12 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
         responsePlotMode = false;
 
-        barSpeed = 1000 % um / s
-        barDistance = 3000 % um
+        barSpeed = 500; % um / s
+        barDistance = 3000; % um
+
+        gridModeType = symphonyui.core.PropertyType('char', 'row', {'grid','random','rings'});
+        
+        % nSpotsPresented = 0;
     end
     
     properties (Dependent) 
@@ -140,7 +144,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             
             obj.numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
 
-            if obj.gridMode
+            if strcmp(obj.gridMode,'grid')
                 %space the spots to achieve the desired coverage factor
                 %uses the ratio of the area of a hexagon to that of a circle
                 spaceFactor = sqrt(3*pi/4 / obj.coverage / (3*sqrt(3)/2));
@@ -175,14 +179,23 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
                 if obj.numSpotsPerEpoch > size(obj.grid,1)
                     obj.grid = repmat(obj.grid, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);
                 end
-    
+            else if strcmp(obj.gridMode,'rings')
+                N = cumsum([6, 10, 14, 8, 16, 30]);
+                R = [8, 9, 12, 22, 24, 28] / 60; % * obj.extentX;
+                obj.grid = [];
+                for i = 1:numel(N)
+                    th = linspace(0, 2*pi, N(i) + 1)';
+                    obj.grid = vertcat(obj.grid, R(i)*[cos(th(1:end-1)), sin(th(1:end-1))])
+                end
+                obj.grid(:,1) = obj.grid(:,1) * obj.extentX;
+                obj.grid(:,2) = obj.grid(:,2) * obj.extentY;
+                
             end
 
             if obj.seed >= 0
                 obj.randStream = RandStream('mt19937ar','seed',obj.seed);
             else
                 obj.randStream = RandStream.getGlobalStream();
-                obj.seed = obj.randStream.Seed;
             end
 
             obj.trialTypes = vertcat(zeros(obj.numberOfChirps,1), ones(obj.numberOfFields,1), 2*ones(obj.numberOfBars,1));
@@ -214,13 +227,14 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             obj.trialType = obj.trialTypes(index);
             if obj.trialType == 1
                 epoch.addParameter('trialType', 'field');
-                    spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
-                if obj.gridMode
-                    obj.cx = obj.grid(spots,1);
-                    obj.cy = obj.grid(spots,2);
-                else
+                if strcmp(obj.gridMode,'random')                    
                     obj.cx = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
                     obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
+                else
+                    spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
+                    %would be better to do a complete permutation...
+                    obj.cx = obj.grid(spots,1);
+                    obj.cy = obj.grid(spots,2);
                 end
 
                 epoch.addParameter('cx', obj.cx);
