@@ -335,7 +335,7 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             [~, pixelSpeed] = obj.um2pix(obj.barSpeed); %pix/s
             pixelSpeed = pixelSpeed / obj.frameRate; % pix/frame
             % [~, pixelDistance] = obj.um2pix(obj.barDistance); %pix
-            [~, pixelDistance] = obj.um2pix(pixelSpeed * 3); %pix, assumes 3 seconds
+            pixelDistance = pixelSpeed * 3; %pix, assumes 3 seconds
             xStep = pixelSpeed * cos(obj.theta);
             yStep = pixelSpeed * sin(obj.theta);
 
