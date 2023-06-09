@@ -91,7 +91,11 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
         function createUi(obj)
             import appbox.*;
             
-            set(obj.figureHandle, 'Name', 'Spots Multi-Location Figure');
+            if length(obj.devices) == 1
+                set(obj.figureHandle, 'Name', sprintf('Spots Multi-Location Figure: %s', obj.devices{1}.name));
+            else
+                set(obj.figureHandle, 'Name', sprintf('Spots Multi-Location Figure', obj.devices{1}.name));
+            end
             set(obj.figureHandle, 'MenuBar', 'none');
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
@@ -238,16 +242,17 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 %plot raw responses
                 set(obj.topPlots{ci}, 'ydata', obj.epochData(ci, obj.epochCount).rawSignal);
                 
-                if numel(get(obj.alignedResp{ci},'xdata')) ~= numel(obj.timebase)
-                    delete(obj.alignedResp{ci});
-                    obj.alignedResp{ci} = plot(obj.bottomAxes{ci}, obj.timebase, reshape(obj.epochData(ci, obj.epochCount).rawSignal, size(obj.timebase)));
-                    set(obj.bottomAxes{ci},'xlim',[obj.timebase(1,1), obj.timebase(end,end)]);
-                else
-                    set(obj.alignedResp{ci}, 'ydata', reshape(obj.epochData(ci, obj.epochCount).rawSignal, size(obj.timebase)));
-                end
+                % if numel(get(obj.alignedResp{ci},'xdata')) ~= numel(obj.timebase)
+                %     delete(obj.alignedResp{ci});
+                %     obj.alignedResp{ci} = plot(obj.bottomAxes{ci}, obj.timebase, reshape(obj.epochData(ci, obj.epochCount).rawSignal, size(obj.timebase)));
+                %     set(obj.bottomAxes{ci},'xlim',[obj.timebase(1,1), obj.timebase(end,end)]);
+                % else
+                %     set(obj.alignedResp{ci}, 'ydata', reshape(obj.epochData(ci, obj.epochCount).rawSignal, size(obj.timebase)));
+                % end
                 
                 if strcmp(obj.ampModes{ci}, 'Cell attached')
                     delete(obj.topRasters{ci});
+                    delete(obj.alignedResp{ci});
                 end
             end
             
@@ -294,6 +299,10 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                     
                     %TODO: plotting the heatmap is a bit more complicated
                     % im = get(obj.rfmaps{ci},'cdata'); %the previous heatmap
+
+                    obj.alignedResp{ci} = line(obj.bottomAxes{ci}, [spikeSpotTime;spikeSpotTime],...
+                        [spikeSpots - 0.5; spikeSpots + 0.5], 'color', color/2); %one line per column
+                    
                 end
             end
             
