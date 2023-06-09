@@ -189,7 +189,6 @@ methods
                 device = obj.rig.getDevice(ampName);
                 devices{end+1} = device; %#ok<AGROW>
                 modes{end+1} = ampMode; %#ok<AGROW>
-            end
 
             obj.showFigure('sa_labs.figures.SpotsMultiLocationFigure', devices(end), modes(end), ...
                 'totalNumEpochs', obj.totalNumEpochs,...
@@ -198,6 +197,8 @@ methods
                 'tailTime', obj.spotTailFrames / obj.frameRate,...
                 'spotsPerEpoch', obj.numSpotsPerEpoch, ...
                 'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode); 
+            
+            end
         end
 
         
