@@ -137,6 +137,14 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 % obj.rfmaps{ci} = imagesc(obj.bottomAxes{ci},0);
 %                 axis(obj.bottomAxes{ci}, 'equal');
                 obj.alignedResp{ci} = plot(obj.bottomAxes{ci},[]);
+
+                ylim(obj.bottomAxes{ci}, [0, obj.spotsPerEpoch + 1]);
+                xlim(obj.bottomAxes{ci}, [-obj.preTime, obj.stimTime + obj.tailTime]);
+                line(obj.bottomAxes{ci}, [0;0], [0;obj.spotsPerEpoch + 1], 'color', 'g');
+                line(obj.bottomAxes{ci}, [obj.stimTime;obj.stimTime], [0;obj.spotsPerEpoch + 1], 'color', 'r');
+                xlim(obj.bottomAxes{ci}, 'manual');
+                ylim(obj.bottomAxes{ci}, 'manual');
+                                
             end
             
         end
@@ -302,6 +310,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
 
                     obj.alignedResp{ci} = line(obj.bottomAxes{ci}, [spikeSpotTime;spikeSpotTime],...
                         [spikeSpots - 0.5; spikeSpots + 0.5], 'color', color/2); %one line per column
+
                     
                 end
             end
