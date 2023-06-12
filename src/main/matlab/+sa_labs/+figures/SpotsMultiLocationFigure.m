@@ -236,7 +236,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             grid = [epoch.parameters('cx'); epoch.parameters('cy')]';
             
             
-            title(obj.responseAxis, sprintf('Epoch %d of %d', length(obj.epochData), obj.totalNumEpochs));
+            title(obj.responseAxis, sprintf('Epoch %d of %d', obj.epochCount, obj.totalNumEpochs));
             
             for ci = 1:obj.numChannels
                 %plot raw responses
