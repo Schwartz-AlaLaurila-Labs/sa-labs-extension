@@ -10,12 +10,18 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         sizeX = 300 % um
         sizeY = 300 % um
         contrast = 1; 
-        frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
+
+        frameDwell = 1 % Frames per noise update
         seedStartValue = 1
-        seedChangeMode = 'repeat only';
+        seedChangeMode = 'increment only';
         colorNoiseMode = '1 pattern';
+        colorNoiseDistribution = 'binary'
+        
 
         numberOfEpochs = uint16(30) % number of epochs to queue
+
+        offsetDelta = 0 %um
+        maxOffset = 100 %um 
     end
 
     properties (Hidden)
@@ -24,10 +30,16 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
         locationModeType = symphonyui.core.PropertyType('char', 'row', {'Center', 'Surround', 'Center-Surround'})
         colorNoiseModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'})
-        
+        colorNoiseDistributionType = symphonyui.core.PropertyType('char', 'row', {'uniform', 'gaussian', 'binary'})
+
         noiseSeed
         noiseStream
-        
+
+        noiseFn
+
+        offsetSeed
+        offsetStream
+                
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
     end
@@ -74,12 +86,23 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             end
                                     
             obj.noiseSeed = seed;
+            obj.offsetSeed = 2^32 - seed;
             fprintf('Using seed %g\n', obj.noiseSeed);
 
             %at start of epoch, set random streams using this cycle's seeds
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
+            obj.offsetStream = RandStream('mt19937ar', 'Seed', obj.offsetSeed);
+            epoch.addParameter('noiseSeed', obj.noiseSeed);            
+            epoch.addParameter('offsetSeed', obj.offsetSeed);
 
-            epoch.addParameter('noiseSeed', obj.noiseSeed);
+            switch obj.colorNoiseDistribution
+                case 'uniform'
+                    obj.noiseFn = @(x) 2 * obj.noiseStream.rand(x) - 1;
+                case 'gaussian'
+                    obj.noiseFn = @(x) obj.noiseStream.randn(x);
+                case 'binary'
+                    obj.noiseFn = @(x) 2 * (obj.noiseStream.rand(x) > .5) - 1;
+            end
         end
 
         function p = createPresentation(obj)
@@ -105,33 +128,59 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             else
                 % 2 pattern controller:
                 checkerboardImageController = stage.builtin.controllers.PropertyController(checkerboard, 'imageMatrix',...
-                    @(state)getImageMatrix2Pattern(obj, state.frame - preFrames, state.pattern, [obj.resolutionY, obj.resolutionX]));
+                @(state)getImageMatrix2Pattern(obj, state.frame - preFrames, state.pattern + 1, [obj.resolutionY, obj.resolutionX]));
             end
             p.addController(checkerboardImageController);
+
+            if obj.offsetDelta ~= 0
+                offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
+                    @(state) getPosition(obj, state.frame - preFrames, state.pattern));
+                p.addController(offsetController);
+            end
             
             obj.setOnDuringStimController(p, checkerboard);
+
+            ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
+            
+            function p = getPosition(obj, frame, pattern)
+                persistent position;
+                if frame<0 %pre frames. frame 0 starts stimPts
+                    position = canvasSize/2;
+                elseif pattern == 0 %only want to move once per update?
+                    if mod(frame, obj.frameDwell) == 0 %noise update
+                        position = canvasSize/2 + ppm*...
+                            (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,1,2) - obj.maxOffset)...
+                            ;
+                    end
+                end
+                p = position;
+            end
             
             % TODO: verify X vs Y in matrix
             
             function i = getImageMatrix(obj, frame, dimensions)
                 persistent intensity;
-                if frame<0 %pre frames. frame 0 starts stimPts
+                if frame < 0 %pre frames. frame 0 starts stimPts
                     intensity = obj.meanLevel;
+                    intensity = clipIntensity(intensity, obj.meanLevel);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
                         intensity = obj.meanLevel + ... 
-                            obj.contrast * obj.meanLevel * obj.noiseStream.randn(dimensions);
+                            obj.contrast * obj.meanLevel * obj.noiseFn(dimensions);
+                        intensity = clipIntensity(intensity, obj.meanLevel);
                     end
                 end
 %                 intensity = imgaussfilt(intensity, 1);
-                intensity = clipIntensity(intensity, obj.meanLevel);
                 i = intensity;
             end
                        
             
             function i = getImageMatrix2Pattern(obj, frame, pattern, dimensions)
                 persistent intensity;
-                if pattern == 0
+                if isempty(intensity)
+                    intensity = cell(2,1);
+                end
+                if pattern == 1
                     mn = obj.meanLevel1;
                     c = obj.contrast1;
                 else
@@ -140,15 +189,16 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                 end
                 
                 if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity = mn;
+                    intensity{pattern} = mn;                    
+                    intensity{pattern} = clipIntensity(intensity{pattern}, mn);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = mn + c * mn * obj.noiseStream.randn(dimensions);
+                        intensity{pattern} = mn + c * mn * obj.noiseFn(dimensions);                        
+                        intensity{pattern} = clipIntensity(intensity{pattern}, mn);
                     end
                 end
           
-                intensity = clipIntensity(intensity, mn);
-                i = intensity;
+                i = intensity{pattern};
             end
 
             
