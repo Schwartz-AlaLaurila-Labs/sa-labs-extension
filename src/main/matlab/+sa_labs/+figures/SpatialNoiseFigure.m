@@ -222,7 +222,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                     % subsample the matrix... 
                     obj.mat(:) = reshape(repmat(reshape(...
                         obj.tmat, [obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [1, obj.spatialSubsample(1), 1, obj.spatialSubsample(2), 1, obj.temporalSubsample]),...
-                        [obj.dimensions(1)*obj.spatialSubsample(1), obj.dimensions(2)*obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);;
+                        [obj.dimensions(1)*obj.spatialSubsample(1), obj.dimensions(2)*obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
                     
                     if (obj.spatialSubsample(1) ~= 1) && (obj.spatialSubsample(2) ~= 1)
                         offsetStream = RandStream('mt19937ar', 'Seed', obj.epochData(obj.epochCount).offsetSeed);
@@ -253,14 +253,14 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                         t = floor(sp / obj.sampleRate * obj.frameRate * obj.temporalSubsample);
                         if (t-obj.memory) < 0
                         else
-                            obj.STA = obj.STA + obj.mat(:,:,(t - obj.memory):t)
+                            obj.STA = obj.STA + obj.mat(:,:,(t - obj.memory):t);
                         end
                     end
 
                     obj.spikeCount = obj.spikeCount + length(obj.epochData(obj.epochCount).spikeIndices);
 
                 end
-                
+            end
             obj.redrawPlots(epoch);
         end
         
@@ -289,7 +289,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
                 [c,s,l] = pca(reshape(obj.STA,[],obj.memory)');
                     
-                rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2))
+                rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2));
                 set(rfmap,'cdata', rf);
                 %TODO: set rfmap.cdata to rf
                 % tkernel = s(:,1);
