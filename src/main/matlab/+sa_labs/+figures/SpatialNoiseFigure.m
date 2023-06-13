@@ -53,6 +53,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
     properties (Hidden)
         mat
+        tmat
     end
     
     methods
@@ -153,7 +154,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             hold(obj.topAxis,'on');
             set(obj.topAxis,'LooseInset',get(obj.topAxis,'TightInset'))
             
-            obj.topPlots = plot(obj.topAxis, 0, 0);
+            obj.topPlot = plot(obj.topAxis, 0, 0);
             obj.topRaster = plot(obj.topAxis,[]);
 
             obj.bottomAxis = axes('Parent', bottomBox);
