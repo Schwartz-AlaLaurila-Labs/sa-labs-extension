@@ -92,11 +92,12 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
             obj.totalNumEpochs = ip.Results.totalNumEpochs;
             
-            obj.frameRate = ip.Results.frameRate;
-            obj.preFrames = ip.Results.preTime * obj.frameRate;
-            obj.stimFrames = ip.Results.stimTime * obj.frameRate;
-            obj.tailFrames = ip.Results.tailTime * obj.frameRate;
-            
+            frameRate = ip.Results.frameRate;
+            obj.preFrames = ip.Results.preTime * frameRate;
+            obj.stimFrames = ip.Results.stimTime * frameRate;
+            obj.tailFrames = ip.Results.tailTime * frameRate;
+            obj.nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
+
             obj.dimensions = ip.Results.dimensions;
             obj.colorNoiseDistribution = ip.Results.colorNoiseDistribution;
             obj.colorNoiseMode = ip.Results.colorNoiseMode;

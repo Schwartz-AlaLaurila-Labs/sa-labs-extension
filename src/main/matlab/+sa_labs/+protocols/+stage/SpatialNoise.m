@@ -1,8 +1,9 @@
 classdef SpatialNoise < sa_labs.protocols.StageProtocol
-        
+    
+    %TODO: trial length should be in frames, not ms?
     properties
         preTime = 500 % ms
-        stimTime = 10000 % ms
+        stimTime = 10000 % ms 
         tailTime = 500 % ms
 
         resolutionX = 4 % number of stimulus segments
