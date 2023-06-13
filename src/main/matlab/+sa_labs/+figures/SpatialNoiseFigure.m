@@ -25,6 +25,9 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         topPlot
         topRaster
         
+        middleAxis
+        middlePlot
+        
         bottomAxis
         rfMap
 
@@ -94,10 +97,10 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
             obj.totalNumEpochs = ip.Results.totalNumEpochs;
             
-            frameRate = ip.Results.frameRate;
-            obj.preFrames = ip.Results.preTime / 1000 * frameRate;
-            obj.stimFrames = ip.Results.stimTime / 1000 * frameRate;
-            obj.tailFrames = ip.Results.tailTime / 1000 * frameRate;
+            obj.frameRate = ip.Results.frameRate;
+            obj.preFrames = ip.Results.preTime / 1000 * obj.frameRate;
+            obj.stimFrames = ip.Results.stimTime / 1000 * obj.frameRate;
+            obj.tailFrames = ip.Results.tailTime / 1000 * obj.frameRate;
             obj.nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
 
             obj.dimensions = ip.Results.dimensions;
@@ -107,9 +110,9 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.meanLevel = ip.Results.meanLevel;
             obj.contrast = ip.Results.contrast;
 
-            obj.spatialSubsample = ip.Results.spatialSubsample;
-            obj.temporalSubsample = ip.Results.temporalSubsample;
-            obj.memory = ip.Results.memory;            
+            obj.spatialSubsample = double(ip.Results.spatialSubsample);
+            obj.temporalSubsample = double(ip.Results.temporalSubsample);
+            obj.memory = double(ip.Results.memory);            
 
             obj.createUi();
             
@@ -135,6 +138,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.STA = zeros(obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.memory);
             obj.tmat = zeros([obj.dimensions(1), obj.dimensions(2), obj.nFrames]);
             obj.mat = zeros([obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
+            obj.spikeCount = 0;
         end
         
         function createUi(obj)
@@ -156,12 +160,16 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             
             obj.topPlot = plot(obj.topAxis, 0, 0);
             obj.topRaster = plot(obj.topAxis,[]);
-
+            
+            obj.middleAxis = axes('Parent', bottomBox);
             obj.bottomAxis = axes('Parent', bottomBox);
+            
+            set(obj.middleAxis,'LooseInset',get(obj.middleAxis,'TightInset'))
             set(obj.bottomAxis,'LooseInset',get(obj.bottomAxis,'TightInset'))
         
-            obj.rfMap = imagesc(obj.bottomAxis,obj.STA(:,:,1));        
-            
+            obj.rfMap = imagesc(obj.bottomAxis,obj.STA(:,:,1));
+            axis(obj.bottomAxis,'tight');
+            obj.middlePlot = plot(obj.middleAxis, zeros(obj.memory, 1));            
         end
         
         function handleEpoch(obj, epoch)
@@ -224,7 +232,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
                     % subsample the matrix... 
                     obj.mat(:) = reshape(repmat(reshape(...
-                        obj.tmat, [obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [1, obj.spatialSubsample(1), 1, obj.spatialSubsample(2), 1, obj.temporalSubsample]),...
+                        obj.tmat, [1, obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [obj.spatialSubsample(1), 1, obj.spatialSubsample(2), 1, obj.temporalSubsample, 1]),...
                         [obj.dimensions(1)*obj.spatialSubsample(1), obj.dimensions(2)*obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
                     
                     if (obj.spatialSubsample(1) ~= 1) && (obj.spatialSubsample(2) ~= 1)
@@ -236,8 +244,9 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                             %but we could make this more convenient if required...
 
                             obj.mat(:,:,i) = circshift(obj.mat(:,:,i), p(1), 1);
-                            obj.mat(:,:,i) = circshift(mobj.at(:,:,i), p(2), 2);
-
+                            obj.mat(:,:,i) = circshift(obj.mat(:,:,i), p(2), 2);
+                            
+                            %TODO: check the logic....
                             if p(1) > 0
                                 obj.mat(1:p(1),:,i) = obj.meanLevel(1);
                             else
@@ -255,8 +264,9 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                     for sp = obj.epochData(obj.epochCount).spikeIndices
                         t = floor(sp / obj.sampleRate * obj.frameRate * obj.temporalSubsample);
                         if (t-obj.memory) < 0
+                            %TODO: for now we just skip early spikes...
                         else
-                            obj.STA = obj.STA + obj.mat(:,:,(t - obj.memory):t);
+                            obj.STA = obj.STA + obj.mat(:,:,(t - obj.memory + 1):t);
                         end
                     end
 
@@ -285,17 +295,15 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                     spikeTimes = spikeTimes'; %TODO: just not sure what shape this is, this shouldn't be necessary
                 end
                 spikeOnes = ones(size(spikeTimes));                
-                obj.topRaster = line(obj.topAxis, [spikeTimes;spikeTimes], [yl(1)*spikeOnes;yl(2)*spikeOnes], color, 'k'); %one line per column
+                obj.topRaster = line(obj.topAxis, [spikeTimes;spikeTimes], [yl(1)*spikeOnes;yl(2)*spikeOnes], 'color', 'k'); %one line per column
                 
                 % now, do the RF map
-                %possibly also plot the temporal kernel??
-
-                [c,s,l] = pca(reshape(obj.STA,[],obj.memory)');
+                [c,s,~] = pca(reshape(obj.STA,[],obj.memory)');
                     
                 rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2));
-                set(rfmap,'cdata', rf);
-                %TODO: set rfmap.cdata to rf
-                % tkernel = s(:,1);
+                set(obj.rfMap,'cdata', rf);
+                
+                set(obj.middlePlot,'ydata',s(:,1));
 
                 
             end            
