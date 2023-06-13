@@ -308,7 +308,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                     %TODO: plotting the heatmap is a bit more complicated
                     % im = get(obj.rfmaps{ci},'cdata'); %the previous heatmap
 
-                    obj.alignedResp{ci} = line(obj.bottomAxes{ci}, [spikeSpotTime;spikeSpotTime],...
+                    obj.alignedResp{ci} = line(obj.bottomAxes{ci}, [spikeSpotTime - obj.preTime;spikeSpotTime - obj.preTime],...
                         [spikeSpots - 0.5; spikeSpots + 0.5], 'color', color/2); %one line per column
 
                     
