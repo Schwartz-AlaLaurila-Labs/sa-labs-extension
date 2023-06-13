@@ -182,8 +182,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
 
             %max offset should be the pixel width....
             ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
-
-            pFactor = [obj.sizeX ./ obj.resolutionX ./ obj.subsampleX, obj.sizeY ./ obj.resolutionY ./obj.subsampleY];
+    
+            ss = double([obj.subsampleX, obj.subsampleY]);
+            pFactor = [obj.sizeX ./ obj.resolutionX ./ ss(1), obj.sizeY ./ obj.resolutionY ./ ss(2)];
 
 
             function p = getPosition(obj, frame, pattern)
@@ -195,7 +196,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                         % position = canvasSize/2 + ppm*...
                         %     (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta - 1,1,2) - obj.maxOffset);
 
-                        position = canvasSize/2 + ppm.*pFactor.*[obj.offsetStream.randi(2*obj.subsampleX - 1) - obj.subsampleX, obj.offsetStream.randi(2*obj.subsampleY - 1) - obj.subsampleY];
+                        position = canvasSize/2 + ppm.*pFactor.*[obj.offsetStream.randi(2*ss(1) - 1) - ss(1), obj.offsetStream.randi(2*ss(2) - 1) - ss(2)];
                     end
                 end
                 p = position;
