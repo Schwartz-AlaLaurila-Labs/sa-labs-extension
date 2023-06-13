@@ -48,6 +48,8 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         offsetSeed
         offsetStream
                 
+        
+        responsePlotMode = false;
         % responsePlotMode = 'cartesian';
         % responsePlotSplitParameter = 'noiseSeed';
     end
