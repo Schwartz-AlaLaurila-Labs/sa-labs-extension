@@ -242,21 +242,23 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                             p = getPosition(frame, 0, obj.frameDwell, obj.spatialSubsample, offsetStream);
                             %position ranges from -maxOffset to + maxOffset in increments of offsetDelta
                             %but we could make this more convenient if required...
-
-                            obj.mat(:,:,i) = circshift(obj.mat(:,:,i), p(1), 1);
-                            obj.mat(:,:,i) = circshift(obj.mat(:,:,i), p(2), 2);
+                            
+                            ti = (i-1)*obj.temporalSubsample + 1 :i*obj.temporalSubsample;
+                            
+                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(1), 1);
+                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(2), 2);
                             
                             %TODO: check the logic....
                             if p(1) > 0
-                                obj.mat(1:p(1),:,i) = obj.meanLevel(1);
+                                obj.mat(1:p(1),:,ti) = obj.meanLevel(1);
                             else
-                                obj.mat(end + p(1): end,:,i) = obj.meanLevel(1);
+                                obj.mat(end + p(1): end,:,ti) = obj.meanLevel(1);
                             end
 
                             if p(2) > 0
-                                obj.mat(:,1:p(2),i) = obj.meanLevel(1);
+                                obj.mat(:,1:p(2),ti) = obj.meanLevel(1);
                             else
-                                obj.mat(:,end + p(2): end,i) = obj.meanLevel(1);
+                                obj.mat(:,end + p(2): end,ti) = obj.meanLevel(1);
                             end
                         end
                     end
@@ -375,5 +377,5 @@ function intensity = clipIntensity(intensity, mn)
     intensity(intensity < 0) = 0;
     intensity(intensity > mn * 2) = mn * 2;
     intensity(intensity > 1) = 1;
-    intensity = uint8(255 * intensity);
+%     intensity = uint8(255 * intensity);
 end
