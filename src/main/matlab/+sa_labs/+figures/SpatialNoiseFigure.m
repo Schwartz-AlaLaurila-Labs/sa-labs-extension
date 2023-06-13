@@ -95,9 +95,9 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.totalNumEpochs = ip.Results.totalNumEpochs;
             
             frameRate = ip.Results.frameRate;
-            obj.preFrames = ip.Results.preTime * frameRate;
-            obj.stimFrames = ip.Results.stimTime * frameRate;
-            obj.tailFrames = ip.Results.tailTime * frameRate;
+            obj.preFrames = ip.Results.preTime / 1000 * frameRate;
+            obj.stimFrames = ip.Results.stimTime / 1000 * frameRate;
+            obj.tailFrames = ip.Results.tailTime / 1000 * frameRate;
             obj.nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
 
             obj.dimensions = ip.Results.dimensions;
@@ -171,7 +171,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 obj.totalNumEpochs = obj.epochCount;
             end
             
-            if epoch.hasResponse(obj.devices{ci}) % TODO: this should always happen?    
+            if epoch.hasResponse(obj.device) % TODO: this should always happen?    
                 obj.epochData(obj.epochCount).responseObject = epoch.getResponse(obj.device);                    
                 [obj.epochData(obj.epochCount).rawSignal,~] = obj.epochData(obj.epochCount).responseObject.getData();
 
@@ -185,7 +185,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                     ylabel(obj.topAxis, obj.ampUnits, 'Interpreter', 'none');
                 end
                 
-                if strcmp(obj.ampModes{ci}, 'Whole cell')
+                if strcmp(obj.ampMode, 'Whole cell')
                 else
                     % Extract spikes from signal
                     result = obj.spikeDetector.detectSpikes(obj.epochData(obj.epochCount).rawSignal);
@@ -194,7 +194,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
                     %% Update RF map
 
-                    noiseStream = RandStream('mt19937ar', 'Seed', obj.epochData(obj.epochCount).noiseSeed);
+                    noiseStream = RandStream('mt19937ar', 'Seed',  epoch.parameters('noiseSeed'));
                     
                     switch obj.colorNoiseDistribution
                         case 'uniform'
@@ -208,7 +208,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                     if strcmp(obj.colorNoiseMode, '1 pattern')
                         for i = 1:obj.nFrames
                             frame = i - obj.preFrames - 1; %frame counter starts at 0
-                            obj.tmat(:,:,i) = getImageMatrix(frame, obj.dimensions, obj.frameDwell, obj.meanLevel(1), obj.contrast, noiseFn);
+                            obj.tmat(:,:,i) = getImageMatrix(frame, obj.dimensions, obj.frameDwell, obj.meanLevel(1), obj.contrast(1), noiseFn);
                         end
                     else
                         warning('Plotting for 2 color mode not yet implemented');
@@ -228,7 +228,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                         [obj.dimensions(1)*obj.spatialSubsample(1), obj.dimensions(2)*obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
                     
                     if (obj.spatialSubsample(1) ~= 1) && (obj.spatialSubsample(2) ~= 1)
-                        offsetStream = RandStream('mt19937ar', 'Seed', obj.epochData(obj.epochCount).offsetSeed);
+                        offsetStream = RandStream('mt19937ar', 'Seed',  epoch.parameters('offsetSeed'));
                         for i = 1:obj.nFrames
                             frame = i - obj.preFrames - 1;
                             p = getPosition(frame, 0, obj.frameDwell, obj.spatialSubsample, offsetStream);
@@ -319,7 +319,7 @@ end
 
 % TODO: verify X vs Y in matrix
 
-function i = getImageMatrix(frame, dimensions, frameDwell, meanlevel, contrast, noiseFn)
+function i = getImageMatrix(frame, dimensions, frameDwell, meanLevel, contrast, noiseFn)
     persistent intensity;
     if frame < 0 %pre frames. frame 0 starts stimPts
         intensity = meanLevel;
