@@ -67,6 +67,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             ip.addParameter('preTime',1.0,@(x)isnumeric(x));
             ip.addParameter('stimTime',1.0,@(x)isnumeric(x));
             ip.addParameter('tailTime',1.0,@(x)isnumeric(x));
+            ip.addParameter('frameRate',60.0,@(x)isnumeric(x));
 
             ip.addParameter('meanLevel',1.0,@(x)isnumeric(x));
             ip.addParameter('contrast',1.0,@(x)isnumeric(x));
