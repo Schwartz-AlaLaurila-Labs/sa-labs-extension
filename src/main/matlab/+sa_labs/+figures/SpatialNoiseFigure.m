@@ -31,7 +31,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         %% spatial noise params
         nFrames
         preFrames
-        stimFrame
+        stimFrames
         tailFrames
         frameRate
 
