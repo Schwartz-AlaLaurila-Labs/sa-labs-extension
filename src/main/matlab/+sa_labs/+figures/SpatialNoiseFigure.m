@@ -139,7 +139,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         function createUi(obj)
             import appbox.*;
             
-            set(obj.figureHandle, 'Name', sprintf('Spatial Noise Figure: %s', obj.devices{1}.name));
+            set(obj.figureHandle, 'Name', sprintf('Spatial Noise Figure: %s', obj.device.name));
             
             set(obj.figureHandle, 'MenuBar', 'none');
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
