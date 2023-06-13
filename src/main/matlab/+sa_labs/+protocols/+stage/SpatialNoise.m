@@ -20,8 +20,16 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
 
         numberOfEpochs = uint16(30) % number of epochs to queue
 
-        offsetDelta = 0 %um
-        maxOffset = 100 %um 
+        subsampleX = uint8(10) %number of steps to shift stimulus in X (min. 1)
+        subsampleY = uint8(10) %number of steps to shift stimulus in X (min. 1)
+
+        % offsetDelta = 0 %um
+        % maxOffset = 100 %um 
+    end
+
+    properties (Transient)        
+        subsampleT = uint8(10) %number of time steps per frame to use for display
+        RFmemory = uint8(30) %total number of time steps to use for display
     end
 
     properties (Hidden)
@@ -39,9 +47,10 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
 
         offsetSeed
         offsetStream
-        
-        responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'noiseSeed';
+
+        responsePlotMode = false;
+        % responsePlotMode = 'cartesian';
+        % responsePlotSplitParameter = 'noiseSeed';
     end
     
     properties (Dependent, Hidden)
@@ -49,14 +58,41 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
     end
     
     methods
-        
-%         function prepareRun(obj)
-%             if obj.numberOfPatterns == 1 && obj.meanLevel == 0
-%                 warning('Mean Level must be greater than 0 for this to work');
-%             end
-%             
-%             prepareRun@sa_labs.protocols.StageProtocol(obj);
-%         end
+      function prepareRun(obj)            
+            prepareRun@sa_labs.protocols.StageProtocol(obj);
+
+            if strcmp(obj.colorNoiseMode, '1 pattern')
+                meanLevel_ = obj.meanLevel;
+                contrast_ = obj.contrast;
+            else
+                meanLevel_ = [obj.meanLevel1, obj.meanLevel2];
+                contrast_ = [obj.contrast1, obj.contrast2];
+            end
+
+            for ci = 1%:4
+                ampName = obj.(['chan' num2str(ci)]);
+                ampMode = obj.(['chan' num2str(ci) 'Mode']);
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
+                    device = obj.rig.getDevice(ampName);    
+                    obj.showFigure('sa_labs.figures.SpatialNoiseFigure%d', device, ampMode, ...
+                        'totalNumEpochs', obj.totalNumEpochs,...
+                        'preTime', obj.preTime,...
+                        'stimTime', obj.stimTime,...
+                        'tailTime', obj.tailTime,...
+                        'frameRate', obj.frameRate,...
+                        'dimensions', [obj.resolutionX, obj.resolutionY],...
+                        'colorNoiseDistribution', obj.colorNoiseDistribution,...
+                        'colorNoiseMode', obj.colorNoiseMode,...
+                        'frameDwell', obj.frameDwell,...
+                        'meanLevel', meanLevel_,...
+                        'contrast', contrast_,...
+                        'spatialSubsample', [obj.subsampleX, obj.subsampleY],...
+                        'temporalSubsample', obj.subsampleT,...
+                        'memory', obj.RFmemory,...
+                        'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);                
+                end
+            end
+        end
         function d = getPropertyDescriptor(obj, name)
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
             
@@ -132,7 +168,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             end
             p.addController(checkerboardImageController);
             
-            if obj.offsetDelta ~= 0
+            if (obj.subsampleX ~= 1) && ((obj.subsampleY ~= 1))
                 offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
                     @(state) getPosition(obj, state.frame - preFrames, state.pattern));
                 p.addController(offsetController);
@@ -143,15 +179,19 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
 
             ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
             
+            ss = double([obj.subsampleX, obj.subsampleY]);
+            pFactor = [obj.sizeX ./ obj.resolutionX ./ ss(1), obj.sizeY ./ obj.resolutionY ./ ss(2)];
+
             function p = getPosition(obj, frame, pattern)
                 persistent position;
                 if frame<0 %pre frames. frame 0 starts stimPts
                     position = canvasSize/2;
                 elseif pattern == 0 %only want to move once per update?
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        position = canvasSize/2 + ppm*...
-                            (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,1,2) - obj.maxOffset)...
-                            ;
+                        % position = canvasSize/2 + ppm*...
+                        %     (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,1,2) - obj.maxOffset);
+    
+                        position = canvasSize/2 + ppm.*pFactor.*[obj.offsetStream.randi(2*ss(1) - 1) - ss(1), obj.offsetStream.randi(2*ss(2) - 1) - ss(2)];
                     end
                 end
                 p = position;
