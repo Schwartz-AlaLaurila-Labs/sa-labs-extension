@@ -30,6 +30,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         
         bottomAxis
         rfMap
+        rfFit
 
         %% spatial noise params
         nFrames
@@ -57,6 +58,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
     properties (Hidden)
         mat
         tmat
+        xy
     end
     
     methods
@@ -78,6 +80,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
 
             ip.addParameter('dimensions',[4,4]);
+            ip.addParameter('extent',[300, 300]);
             ip.addParameter('spatialSubsample',[1,1]);
             ip.addParameter('temporalSubsample',10);
             ip.addParameter('memory',30);
@@ -104,6 +107,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
 
             obj.dimensions = ip.Results.dimensions;
+            obj.extent = ip.Results.extent;
             obj.colorNoiseDistribution = ip.Results.colorNoiseDistribution;
             obj.colorNoiseMode = ip.Results.colorNoiseMode;
             obj.frameDwell = ip.Results.frameDwell;
@@ -139,6 +143,10 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.tmat = zeros([obj.dimensions(1), obj.dimensions(2), obj.nFrames]);
             obj.mat = zeros([obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
             obj.spikeCount = 0;
+            
+            [X,Y] = meshgrid(linspace(obj.extent(1)*-1/2,obj.extent(1)*1/2, obj.dimensions(1) * obj.spatialSubsample(1)),...
+                linspace(obj.extent(2)*-1/2,obj.extent(2)*1/2, obj.dimensions(2) * obj.spatialSubsample(2)));
+            obj.xy = [X(:), Y(:)];
         end
         
         function createUi(obj)
@@ -167,9 +175,13 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             set(obj.middleAxis,'LooseInset',get(obj.middleAxis,'TightInset'))
             set(obj.bottomAxis,'LooseInset',get(obj.bottomAxis,'TightInset'))
         
-            obj.rfMap = imagesc(obj.bottomAxis,obj.STA(:,:,1));
+            
+            obj.rfMap = imagesc(obj.bottomAxis, obj.extent(1)*[-1/2,1/2], obj.extent(2)*[-1/2,1/2], obj.STA(:,:,1));
+            obj.rfFit = plot(obj.bottomAxis, 0,0,'k+');
+            
             axis(obj.bottomAxis,'tight');
-            obj.middlePlot = plot(obj.middleAxis, zeros(obj.memory, 1));            
+            obj.middlePlot = plot(obj.middleAxis, linspace(-obj.memory/obj.temporalSubsample/obj.frameRate,0,obj.memory), zeros(obj.memory, 1));
+            
         end
         
         function handleEpoch(obj, epoch)
@@ -299,7 +311,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 spikeOnes = ones(size(spikeTimes));                
                 obj.topRaster = line(obj.topAxis, [spikeTimes;spikeTimes], [yl(1)*spikeOnes;yl(2)*spikeOnes], 'color', 'k'); %one line per column
                 
-                % now, do the RF map
+                % now, do the RF map and temporal kernel
                 [c,s,~] = pca(reshape(obj.STA,[],obj.memory)');
                     
                 rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2));
@@ -307,6 +319,12 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 
                 set(obj.middlePlot,'ydata',s(:,1));
 
+                % fit the RF to a gaussian
+                x = lsqcurvefit(@(x0, xdata) gauss2d(x0(1), x0(2), x0(3), x0(4),...
+                    x0(5), x0(6), x0(7), xdata(:,1), xdata(:,2)), obj.xy, c(:,1));
+                
+                set(obj.rfFit,'xdata',x(2), 'ydata', x(3));
+                %(A, xm, ym, xs, ys, th, C, x, y)
                 
             end            
         end
@@ -378,4 +396,11 @@ function intensity = clipIntensity(intensity, mn)
     intensity(intensity > mn * 2) = mn * 2;
     intensity(intensity > 1) = 1;
 %     intensity = uint8(255 * intensity);
+end
+
+function g = gauss2d(A, xm, ym, xs, ys, th, C, x, y)
+    a = cos(th)^2/(2*xs^2) + sin(th)^2/(2*ys^2);
+    b = -sin(2*th)/(4*xs^2) + sin(2*th)/(4*ys^2);
+    c = sin(th)^2/(2*xs^2) + cos(th)^2/(2*ys^2);
+    g = C + A * exp(-(a*(x - xm).^2 + 2*b*(x-xm).*(y-ym) + c*(y-ym).^2));                
 end
