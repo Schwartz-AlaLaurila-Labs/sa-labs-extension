@@ -55,7 +55,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
                 obj.pulseVector = linspace(obj.minAmplitude, obj.maxAmplitude, obj.numberOfSteps);
             else
                 nsteps = round(obj.numberOfSteps ./ 2);
-                if sign(obj.minAmplitude) ~= sign(obj.maxAmplitude)
+                if sign(obj.minAmplitude) == sign(obj.maxAmplitude)
                     obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
                 else
                     pos_vector = logspace(log10(obj.min_of_log), log10(obj.maxAmplitude), nsteps);
