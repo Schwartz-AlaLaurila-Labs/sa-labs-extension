@@ -39,7 +39,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         pulse1Curr
         pulse2Curr
         currInterTime
-        logGenerator = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'})
+        logGeneratorType = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'});
     end
     
     properties (Hidden, Dependent)
