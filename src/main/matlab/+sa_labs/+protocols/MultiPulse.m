@@ -24,7 +24,8 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         
         numberOfCycles = 10
         logScaling = false % scale spot size logarithmically (more precision in smaller sizes)
-        randomOrdering = true;
+        randomOrdering = true
+        min_of_log = 1;
     end
     
     properties (Hidden)
@@ -57,17 +58,17 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
                 if obj.minAmplitude > 0
                     obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
                 else
-                    pos_vector = logspace(0, log10(obj.maxAmplitude), nsteps);
-                    neg_vector = logspace(0, log10(abs(obj.minAmplitude)), obj.numberOfSteps - nsteps);
-                    neg_vector = neg_vector * -1;
+                    pos_vector = logspace(log10(obj.min_of_log), log10(obj.maxAmplitude), nsteps);
+                    neg_vector = -logspace(log10(obj.min_of_log), log10(abs(obj.minAmplitude)), obj.numberOfSteps - nsteps);
+                    
                     obj.pulseVector = [pos_vector neg_vector];
                 end
             end
-            %if ~obj.logScaling
+            if ~obj.logScaling
                 obj.interTimeVector = linspace(obj.minInterTime, obj.maxInterTime, obj.numberOfSteps);
-            %else
-                %obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfSteps);
-            %end
+            else
+                obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfSteps);
+            end
 
         end
         
