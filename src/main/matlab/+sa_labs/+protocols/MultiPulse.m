@@ -53,13 +53,20 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             if ~obj.logScaling
                 obj.pulseVector = linspace(obj.minAmplitude, obj.maxAmplitude, obj.numberOfSteps);
             else
-                obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
+                nsteps = round(obj.numberOfSteps) ./ 2;
+                if obj.minAmplitude > 0
+                    obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
+                else
+                    pos_vector = logspace(0, log10(obj.maxAmplitude), nsteps);
+                    neg_vector = logspace(0, log10(abs(obj.minAmplitude)), nsteps);
+                    obj.pulseVector = [pos_vector neg_vector];
+                end
             end
-            if ~obj.logScaling
+            %if ~obj.logScaling
                 obj.interTimeVector = linspace(obj.minInterTime, obj.maxInterTime, obj.numberOfSteps);
-            else
-                obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfSteps);
-            end
+            %else
+                %obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfSteps);
+            %end
 
         end
         
