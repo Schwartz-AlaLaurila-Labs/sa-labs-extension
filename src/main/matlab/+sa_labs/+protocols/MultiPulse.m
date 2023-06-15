@@ -25,6 +25,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         numberOfCycles = 10
         logScaling = false % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true
+        logGenerator = 'log'
         min_of_log = 1;
     end
     
@@ -38,6 +39,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         pulse1Curr
         pulse2Curr
         currInterTime
+        logGenerator = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'})
     end
     
     properties (Hidden, Dependent)
@@ -54,14 +56,18 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             if ~obj.logScaling
                 obj.pulseVector = linspace(obj.minAmplitude, obj.maxAmplitude, obj.numberOfSteps);
             else
-                nsteps = round(obj.numberOfSteps ./ 2);
-                if sign(obj.minAmplitude) ~= sign(obj.maxAmplitude)
-                    obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
+                if strcmp(obj.logGenerator, 'log') 
+                    nsteps = round(obj.numberOfSteps ./ 2);
+                    if sign(obj.minAmplitude) == sign(obj.maxAmplitude)
+                        obj.pulseVector = logspace(log10(obj.minAmplitude), log10(obj.maxAmplitude), obj.numberOfSteps);
+                    else
+                        pos_vector = logspace(log10(obj.min_of_log), log10(obj.maxAmplitude), nsteps);
+                        neg_vector = -logspace(log10(obj.min_of_log), log10(abs(obj.minAmplitude)), obj.numberOfSteps - nsteps);
+                        
+                        obj.pulseVector = [pos_vector neg_vector];
+                    end
                 else
-                    pos_vector = logspace(log10(obj.min_of_log), log10(obj.maxAmplitude), nsteps);
-                    neg_vector = -logspace(log10(obj.min_of_log), log10(abs(obj.minAmplitude)), obj.numberOfSteps - nsteps);
-                    
-                    obj.pulseVector = [pos_vector neg_vector];
+                    obj.pulseVector = linspace(obj.minAmplitude^(1/3), obj.maxAmplitude^(1/3), numberOfSteps) /^3;
                 end
             end
             if ~obj.logScaling
