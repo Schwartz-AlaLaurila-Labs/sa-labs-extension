@@ -30,7 +30,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
-        responsePlotMode = 'cartesian';
+        responsePlotMode = 'cartesian'
         
         stepByStimType = symphonyui.core.PropertyType('char', 'row', {'neither', 'Stim 1', 'Stim 2'})
         interTimeOptsType = symphonyui.core.PropertyType('char', 'row', {'none', 'constant', 'variable'})
@@ -39,7 +39,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         pulse1Curr
         pulse2Curr
         currInterTime
-        logGeneratorType = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'});
+        logGeneratorType = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'})
     end
     
     properties (Hidden, Dependent)
@@ -67,7 +67,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
                         obj.pulseVector = [pos_vector neg_vector];
                     end
                 elseif strcmp(obj.logGenerator, 'cubic')
-                    obj.pulseVector = linspace(obj.minAmplitude^(1/3), obj.maxAmplitude^(1/3), obj.numberOfSteps) .^ 3;
+                     obj.pulseVector = linspace(nthroot(obj.minAmplitude,3), nthroot(obj.maxAmplitude,3), obj.numberOfSteps) .^ 3;
                 end
             end
             if ~obj.logScaling
