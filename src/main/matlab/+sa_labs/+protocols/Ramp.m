@@ -5,10 +5,10 @@ classdef Ramp < sa_labs.protocols.BaseProtocol
     properties
         outputAmpSelection = 1          % Output amplifier (1 or 2)
         preTime = 500                    % Pulse leading duration (ms)
-        stimTime = 500                  % Pulse duration (ms)
+        stimTime = 6000                  % Pulse duration (ms)
         tailTime = 500                   % Pulse trailing duration (ms)
-        rampSlope = 100 %pA/sec
-        numberOfEpochs = 50;
+        rampSlope = 50 %pA/sec
+        numberOfEpochs = 5;
     end
     
     properties (Hidden)

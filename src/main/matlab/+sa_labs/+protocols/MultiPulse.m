@@ -7,22 +7,22 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     properties
         outputAmpSelection = 1          % Output amplifier (1 or 2)
         preTime = 500                    % Pulse leading duration (ms)
-        stepByStim = 'neither'          % Which pulse are you stepping through (1 or 2)
+        stepByStim = 'Stim 1'          % Which pulse are you stepping through (1 or 2)
         interTimeOpts = 'none'       % Do you want no time, a contant amount, or a changing amount of time between stim1 and stim2
-        numberOfSteps = 1               % How many steps do you want
+        numberOfSteps = 15               % How many steps do you want
         stim1Time = 500                  % Pulse 1 duration (ms)
         stim2Time = 0                   % Pulse 2 duration (ms)
         interTime = 0                   % Time between stim1 and stim2 (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
-        pulse1Amplitude = 100            % Pulse 1 amplitude (mV or pA depending on amp mode)
+        pulse1Amplitude = 0            % Pulse 1 amplitude (mV or pA depending on amp mode)
         pulse2Amplitude = 0              % Pulse 2 amplitude (mV or pA depending on amp mode)
         interTimeAmplitude = 0          % Inter time amplitude from baseline
-        minAmplitude = 0              % when you step the stimulus, what is the min
-        maxAmplitude = 100              % when you step the stimulus, what is the max
+        minAmplitude = -300              % when you step the stimulus, what is the min
+        maxAmplitude = 300              % when you step the stimulus, what is the max
         minInterTime = 0                % min time between stim1 and stim2, if interTimeOpts = 'variable'
         maxInterTime = 0                % max time between stim1 and stim2, if interTimeOpts = 'variable'
         
-        numberOfCycles = 10
+        numberOfCycles = 3
         logScaling = false % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true
         logGenerator = 'log'
