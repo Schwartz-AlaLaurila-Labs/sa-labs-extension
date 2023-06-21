@@ -9,7 +9,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         preTime = 500                    % Pulse leading duration (ms)
         stepByStim = 'Stim 1'          % Which pulse are you stepping through (1 or 2)
         interTimeOpts = 'none'       % Do you want no time, a contant amount, or a changing amount of time between stim1 and stim2
-        numberOfSteps = 15               % How many steps do you want
+        numberOfSteps = 20               % How many steps do you want
         stim1Time = 500                  % Pulse 1 duration (ms)
         stim2Time = 0                   % Pulse 2 duration (ms)
         interTime = 0                   % Time between stim1 and stim2 (ms)
@@ -23,10 +23,10 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         maxInterTime = 0                % max time between stim1 and stim2, if interTimeOpts = 'variable'
         
         numberOfCycles = 3
-        logScaling = false % scale spot size logarithmically (more precision in smaller sizes)
+        logScaling = true % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true
         logGenerator = 'log'
-        min_of_log = 1;
+        min_of_log = 5;
     end
     
     properties (Hidden)
