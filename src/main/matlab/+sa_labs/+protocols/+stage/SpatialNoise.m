@@ -180,7 +180,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             end
             p.addController(checkerboardImageController);
 
-            if (obj.subsampleX ~= 1) && ((obj.subsampleY ~= 1))
+            if (obj.subsampleX ~= 1) || ((obj.subsampleY ~= 1))
                 offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
                     @(state) getPosition(obj, state.frame - preFrames, state.pattern));
                 p.addController(offsetController);

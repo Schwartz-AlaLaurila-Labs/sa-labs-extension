@@ -144,13 +144,13 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             % obj.ampUnits = cell(obj.numChannels,1);
             obj.ampUnits = '';
 
-            obj.STA = zeros(obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.memory);
+            obj.STA = zeros(obj.dimensions(1) * obj.spatialSubsample(2), obj.dimensions(2) * obj.spatialSubsample(1), obj.memory);
             obj.tmat = zeros([obj.dimensions(1), obj.dimensions(2), obj.nFrames]);
-            obj.mat = zeros([obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
+            obj.mat = zeros([obj.dimensions(1) * obj.spatialSubsample(2), obj.dimensions(2) * obj.spatialSubsample(1), obj.nFrames*obj.temporalSubsample]);
             obj.spikeCount = 0;
             
-            [X,Y] = meshgrid(linspace(obj.extent(1)*-1/2,obj.extent(1)*1/2, obj.dimensions(1) * obj.spatialSubsample(1)),...
-                linspace(obj.extent(2)*-1/2,obj.extent(2)*1/2, obj.dimensions(2) * obj.spatialSubsample(2)));
+            [X,Y] = meshgrid(linspace(obj.extent(1)*-1/2,obj.extent(1)*1/2, obj.dimensions(1) * obj.spatialSubsample(2)),...
+                linspace(obj.extent(2)*-1/2,obj.extent(2)*1/2, obj.dimensions(2) * obj.spatialSubsample(1)));
             obj.xy = [X(:), Y(:)];
             
             obj.lastFit = [.05, 0.0, 0.0, 100.0, 100.0, 0.0, 0.01]; %initial guess for RF
@@ -258,33 +258,35 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
                     % subsample the matrix... 
                     obj.mat(:) = reshape(repmat(reshape(...
-                        obj.tmat, [1, obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [obj.spatialSubsample(1), 1, obj.spatialSubsample(2), 1, obj.temporalSubsample, 1]),...
-                        [obj.dimensions(1)*obj.spatialSubsample(1), obj.dimensions(2)*obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
+                        obj.tmat, [1, obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [obj.spatialSubsample(2), 1, obj.spatialSubsample(1), 1, obj.temporalSubsample, 1]),...
+                        [obj.dimensions(1)*obj.spatialSubsample(2), obj.dimensions(2)*obj.spatialSubsample(1), obj.nFrames*obj.temporalSubsample]);
                     
-                    if (obj.spatialSubsample(1) ~= 1) && (obj.spatialSubsample(2) ~= 1)
+                    if (obj.spatialSubsample(1) ~= 1) || (obj.spatialSubsample(2) ~= 1)
                         offsetStream = RandStream('mt19937ar', 'Seed',  epoch.parameters('offsetSeed'));
                         for i = 1:obj.nFrames
                             frame = i - obj.preFrames - 1;
                             p = getPosition(frame, 0, obj.frameDwell, obj.spatialSubsample, offsetStream);
                             %position ranges from -maxOffset to + maxOffset in increments of offsetDelta
                             %but we could make this more convenient if required...
+                            p = [-p(2), p(1)];
                             
                             ti = (i-1)*obj.temporalSubsample + 1 :i*obj.temporalSubsample;
                             
-                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(1), 1);
-                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(2), 2);
+%                             obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(1), 1);
+%                             obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(2), 2);
+                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p);
                             
                             %TODO: check the logic....
-                            if p(1) > 0
+                            if p(1) >= 0
                                 obj.mat(1:p(1),:,ti) = obj.meanLevel(1);
                             else
-                                obj.mat(end + p(1): end,:,ti) = obj.meanLevel(1);
+                                obj.mat(end + p(1) + 1: end,:,ti) = obj.meanLevel(1);
                             end
 
-                            if p(2) > 0
+                            if p(2) >= 0
                                 obj.mat(:,1:p(2),ti) = obj.meanLevel(1);
                             else
-                                obj.mat(:,end + p(2): end,ti) = obj.meanLevel(1);
+                                obj.mat(:,end + p(2) + 1: end,ti) = obj.meanLevel(1);
                             end
                         end
                     end
@@ -327,7 +329,9 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 
                 % now, do the RF map and temporal kernel
                 [c,s,~] = pca(reshape(obj.STA,[],obj.memory)');
-                    
+                % only works if numel(obj.STA) > obj.memory??
+                
+                
                 rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2));
                 set(obj.rfMap,'cdata', rf);
                 
