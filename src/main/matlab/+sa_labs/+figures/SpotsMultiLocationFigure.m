@@ -34,6 +34,9 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
         bottomAxes
         alignedResp
         
+        exampleAxes
+        examplePlot
+        
     end
     
     methods
@@ -120,6 +123,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             obj.middleAxes = cell(obj.numChannels,1);
             obj.bottomAxes = cell(obj.numChannels,1);
             obj.alignedResp = cell(obj.numChannels,1);
+            
             % obj.rfmaps = cell(obj.numChannels,1);
             obj.scatters = cell(obj.numChannels,1);
             for ci = 1:obj.numChannels
@@ -146,6 +150,10 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 ylim(obj.bottomAxes{ci}, 'manual');
                                 
             end
+            
+            obj.exampleAxes = axes('Parent', middleBox);
+            obj.examplePlot = plot(obj.exampleAxes, [0,0], [0,0]);
+            xlabel(obj.exampleAxes, 'Time (ms)');
             
         end
         
@@ -185,6 +193,9 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                     
                     set(obj.topPlots{ci}, 'xdata', obj.rawTimebase,'ydata', obj.epochData(ci, obj.epochCount).rawSignal);
                     ylabel(obj.responseAxis, obj.ampUnits{ci}, 'Interpreter', 'none');
+                    ylabel(obj.exampleAxes, obj.ampUnits{ci}, 'Interpreter', 'none');
+                    
+                    
                     %TODO: whatever the last channel is will overwrite
                     %instead we should just yyplot if we have both modes,
                     %though not even sure that's possible
@@ -246,6 +257,8 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             
             title(obj.responseAxis, sprintf('Epoch %d of %d', obj.epochCount, obj.totalNumEpochs));
             
+            
+            
             for ci = 1:obj.numChannels
                 %plot raw responses
                 set(obj.topPlots{ci}, 'ydata', obj.epochData(ci, obj.epochCount).rawSignal);
@@ -287,6 +300,13 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                     
                     spikeSpots = floor(spikeTimes / obj.spotDuration) + 1;
                     spikeSpotTime = mod(spikeTimes, obj.spotDuration);
+%                     set(obj.topPlots{ci}, 'xdata', obj.rawTimebase,'ydata', obj.epochData(ci, obj.epochCount).rawSignal);
+                    exampleTrial = mode(spikeSpots);
+                    if ci == 1 && ~isnan(exampleTrial)   
+                        sl = obj.epochData(ci, obj.epochCount).responseObject.sampleRate.quantity * obj.spotDuration;
+                        set(obj.examplePlot, 'xdata', obj.timebase(:,exampleTrial)', 'ydata', obj.epochData(ci, obj.epochCount).rawSignal(sl*(exampleTrial-1)+1 : sl*exampleTrial));
+                        axis(obj.exampleAxes, 'tight');
+                    end
                     
                     if isempty(spikeSpots(spikeSpotTime>obj.preTime))
                         resp = zeros([obj.spotsPerEpoch,1]);
