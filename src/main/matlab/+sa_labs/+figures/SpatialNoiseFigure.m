@@ -189,6 +189,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         
             
             obj.rfMap = imagesc(obj.bottomAxis, obj.extent(1)*[-1/2,1/2], obj.extent(2)*[-1/2,1/2], obj.STA(:,:,1));
+            axis(obj.bottomAxis, 'xy');
             hold(obj.bottomAxis, 'on');
             obj.rfFit = plot(obj.bottomAxis, 0,0,'k+');
             obj.rfText = text(obj.bottomAxis, 0, 0, '','verticalalignment','top');
@@ -333,7 +334,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 
                 
                 rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2));
-                set(obj.rfMap,'cdata', rf);
+                set(obj.rfMap,'cdata', flipud(rf));
                 
                 set(obj.middlePlot,'ydata',s(:,1));
 
@@ -341,8 +342,8 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 obj.lastFit = lsqcurvefit(@(x0, xdata) gauss2d(x0(1), x0(2), x0(3), x0(4),...
                     x0(5), x0(6), x0(7), xdata(:,1), xdata(:,2)), obj.lastFit, obj.xy, c(:,1), obj.lb, obj.ub);
                 
-                set(obj.rfFit,'xdata',obj.lastFit(2), 'ydata', obj.lastFit(3));
-                set(obj.rfText,'position',[obj.lastFit(2), obj.lastFit(3), 0], 'String', sprintf('(%0.0f, %0.0f)', obj.lastFit(2), obj.lastFit(3)));
+                set(obj.rfFit,'xdata',obj.lastFit(2), 'ydata', -obj.lastFit(3));
+                set(obj.rfText,'position',[obj.lastFit(2), -obj.lastFit(3), 0], 'String', sprintf('(%0.0f, %0.0f)', obj.lastFit(2), -obj.lastFit(3)));
                 
                 %(A, xm, ym, xs, ys, th, C, x, y)
                 
