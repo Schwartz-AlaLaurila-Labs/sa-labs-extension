@@ -88,7 +88,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % for each cycle generate a new random ordering
             index = mod(obj.numEpochsPrepared, obj.numberOfSteps);
-            if index == 0
+            if (index == 0) && obj.randomOrdering
                 obj.pulseVector = obj.pulseVector(randperm(obj.numberOfSteps));
             end
             
