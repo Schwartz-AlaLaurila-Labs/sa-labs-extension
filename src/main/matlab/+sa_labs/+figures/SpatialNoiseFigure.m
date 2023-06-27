@@ -313,7 +313,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 return
             end
             
-            title(obj.topAxis, sprintf('Epoch %d of %d', obj.epochCount, obj.totalNumEpochs));        
+            title(obj.topAxis, sprintf('Epoch %d of %d: %d spikes (%d total)', obj.epochCount, obj.totalNumEpochs, length(obj.epochData(obj.epochCount).spikeIndices), obj.spikeCount));        
             %plot raw responses
             set(obj.topPlot, 'ydata', obj.epochData(obj.epochCount).rawSignal);
             yl = get(obj.topAxis,'ylim');
