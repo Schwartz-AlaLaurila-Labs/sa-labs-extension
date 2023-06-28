@@ -1,10 +1,10 @@
 classdef SpatialNoise < sa_labs.protocols.StageProtocol
-        
+    
     properties
         preTime = 500 % ms
         stimTime = 10000 % ms
         tailTime = 500 % ms
-
+        
         resolutionX = 10 % number of stimulus segments
         resolutionY = 10 % number of stimulus segments
         sizeX = 1000 % um
@@ -17,7 +17,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
     end
     
     properties
-        contrast = 1; 
+        contrast = 1;
         
         frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
         seedStartValue = 1
@@ -25,21 +25,21 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         colorNoiseMode = '1 pattern';
         colorNoiseDistribution = 'binary'
         
-
+        
         numberOfEpochs = uint16(30) % number of epochs to queue
-
+        
         subsampleX = uint8(10) %number of steps to shift stimulus in X (min. 1)
         subsampleY = uint8(10) %number of steps to shift stimulus in X (min. 1)
-
+        
         % offsetDelta = 0 %um
-        % maxOffset = 100 %um 
+        % maxOffset = 100 %um
     end
-
-    properties (Transient)        
+    
+    properties (Transient)
         subsampleT = uint8(10) %number of time steps per frame to use for display
         RFMemory = uint8(120) %total number of time steps to use for display
     end
-
+    
     properties (Hidden)
         version = 1;
         
@@ -50,12 +50,12 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         
         noiseSeed
         noiseStream
-
+        
         noiseFn
-
+        
         offsetSeed
         offsetStream
-
+        
         responsePlotMode = false;
         % responsePlotMode = 'cartesian';
         % responsePlotSplitParameter = 'noiseSeed';
@@ -66,9 +66,9 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
     end
     
     methods
-      function prepareRun(obj)            
+        function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
-
+            
             if strcmp(obj.colorNoiseMode, '1 pattern')
                 meanLevel_ = obj.meanLevel;
                 contrast_ = obj.contrast;
@@ -76,12 +76,12 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                 meanLevel_ = [obj.meanLevel1, obj.meanLevel2];
                 contrast_ = [obj.contrast1, obj.contrast2];
             end
-
+            
             for ci = 1%:4
                 ampName = obj.(['chan' num2str(ci)]);
                 ampMode = obj.(['chan' num2str(ci) 'Mode']);
                 if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
-                    device = obj.rig.getDevice(ampName);    
+                    device = obj.rig.getDevice(ampName);
                     obj.showFigure('sa_labs.figures.SpatialNoiseFigure', device, ampMode, ...
                         'totalNumEpochs', obj.totalNumEpochs,...
                         'preTime', obj.preTime,...
@@ -98,7 +98,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                         'spatialSubsample', [obj.subsampleX, obj.subsampleY],...
                         'temporalSubsample', obj.subsampleT,...
                         'memory', obj.RFMemory,...
-                        'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);                
+                        'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
                 end
             end
         end
@@ -129,17 +129,17 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 2;
                 end
             end
-                                    
+            
             obj.noiseSeed = seed;
             obj.offsetSeed = 2^32 - seed;
             fprintf('Using seed %g\n', obj.noiseSeed);
-
+            
             %at start of epoch, set random streams using this cycle's seeds
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             obj.offsetStream = RandStream('mt19937ar', 'Seed', obj.offsetSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
             epoch.addParameter('offsetSeed', obj.offsetSeed);
-
+            
             switch obj.colorNoiseDistribution
                 case 'uniform'
                     obj.noiseFn = @(x) 2 * obj.noiseStream.rand(x) - 1;
@@ -149,10 +149,10 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     obj.noiseFn = @(x) 2 * (obj.noiseStream.rand(x) > .5) - 1;
             end
         end
-
+        
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
-                        
+            
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3); %create presentation of specified duration
             preFrames = round(obj.frameRate * (obj.preTime/1e3));
             
@@ -185,12 +185,12 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             
             
             obj.setOnDuringStimController(p, checkerboard);
-
+            
             ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
             
             ss = double([obj.subsampleX, obj.subsampleY]);
             pFactor = [obj.sizeX ./ obj.resolutionX ./ ss(1), obj.sizeY ./ obj.resolutionY ./ ss(2)];
-
+            
             function p = getPosition(obj, frame, pattern)
                 persistent position;
                 if frame<0 %pre frames. frame 0 starts stimPts
@@ -199,7 +199,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     if mod(frame, obj.frameDwell) == 0 %noise update
                         % position = canvasSize/2 + ppm*...
                         %     (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,1,2) - obj.maxOffset);
-    
+                        
                         position = canvasSize/2 + ppm.*pFactor.*[obj.offsetStream.randi(2*ss(1) - 1) - ss(1), obj.offsetStream.randi(2*ss(2) - 1) - ss(2)];
                     end
                 end
@@ -215,15 +215,15 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                     intensity = clipIntensity(intensity, obj.meanLevel);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.meanLevel + ... 
+                        intensity = obj.meanLevel + ...
                             obj.contrast * obj.meanLevel * obj.noiseFn(dimensions);
                         intensity = clipIntensity(intensity, obj.meanLevel);
                     end
                 end
-%                 intensity = imgaussfilt(intensity, 1);
+                %                 intensity = imgaussfilt(intensity, 1);
                 i = intensity;
             end
-                       
+            
             
             function i = getImageMatrix2Pattern(obj, frame, pattern, dimensions)
                 persistent intensity;
@@ -239,19 +239,19 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                 end
                 
                 if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity{pattern} = mn;                    
+                    intensity{pattern} = mn;
                     intensity{pattern} = clipIntensity(intensity{pattern}, mn);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity{pattern} = mn + c * mn * obj.noiseFn(dimensions);                        
+                        intensity{pattern} = mn + c * mn * obj.noiseFn(dimensions);
                         intensity{pattern} = clipIntensity(intensity{pattern}, mn);
                     end
                     
                 end
-          
+                
                 i = intensity{pattern};
             end
-
+            
             
             function intensity = clipIntensity(intensity, mn)
                 intensity(intensity < 0) = 0;
@@ -259,20 +259,21 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                 intensity(intensity > 1) = 1;
                 intensity = uint8(255 * intensity);
             end
-
+            
         end
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochs;
         end
-    end
-    
         
-    function pixelWidth = get.pixelWidth(obj)
-        pixelWidth = obj.sizeX / obj.resolutionX;
-    end
-    
-    
-    function pixelWidth = get.pixelHeight(obj)
-        pixelWidth = obj.sizeY / obj.resolutionY;
+        
+        function pixelWidth = get.pixelWidth(obj)
+            pixelWidth = obj.sizeX / obj.resolutionX;
+        end
+        
+        
+        function pixelWidth = get.pixelHeight(obj)
+            pixelWidth = obj.sizeY / obj.resolutionY;
+        end
+        
     end
 end
