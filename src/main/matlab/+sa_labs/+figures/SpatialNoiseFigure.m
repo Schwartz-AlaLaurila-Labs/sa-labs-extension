@@ -30,6 +30,8 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         
         bottomAxis
         rfMap
+        rfFit
+        rfText
 
         %% spatial noise params
         nFrames
@@ -38,6 +40,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
         tailFrames
         frameRate
 
+        extent
         dimensions
         colorNoiseDistribution
         colorNoiseMode
@@ -57,6 +60,10 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
     properties (Hidden)
         mat
         tmat
+        xy
+        lastFit
+        lb
+        ub
     end
     
     methods
@@ -78,6 +85,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
 
             ip.addParameter('dimensions',[4,4]);
+            ip.addParameter('extent',[300, 300]);
             ip.addParameter('spatialSubsample',[1,1]);
             ip.addParameter('temporalSubsample',10);
             ip.addParameter('memory',30);
@@ -104,6 +112,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             obj.nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
 
             obj.dimensions = ip.Results.dimensions;
+            obj.extent = ip.Results.extent;
             obj.colorNoiseDistribution = ip.Results.colorNoiseDistribution;
             obj.colorNoiseMode = ip.Results.colorNoiseMode;
             obj.frameDwell = ip.Results.frameDwell;
@@ -135,10 +144,21 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             % obj.ampUnits = cell(obj.numChannels,1);
             obj.ampUnits = '';
 
-            obj.STA = zeros(obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.memory);
+            obj.STA = zeros(obj.dimensions(1) * obj.spatialSubsample(2), obj.dimensions(2) * obj.spatialSubsample(1), obj.memory);
             obj.tmat = zeros([obj.dimensions(1), obj.dimensions(2), obj.nFrames]);
-            obj.mat = zeros([obj.dimensions(1) * obj.spatialSubsample(1), obj.dimensions(2) * obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
+            obj.mat = zeros([obj.dimensions(1) * obj.spatialSubsample(2), obj.dimensions(2) * obj.spatialSubsample(1), obj.nFrames*obj.temporalSubsample]);
             obj.spikeCount = 0;
+            
+            [X,Y] = meshgrid(linspace(obj.extent(1)*-1/2,obj.extent(1)*1/2, obj.dimensions(1) * obj.spatialSubsample(2)),...
+                linspace(obj.extent(2)*-1/2,obj.extent(2)*1/2, obj.dimensions(2) * obj.spatialSubsample(1)));
+            obj.xy = [X(:), Y(:)];
+            
+            obj.lastFit = [.05, 0.0, 0.0, 100.0, 100.0, 0.0, 0.01]; %initial guess for RF
+            obj.lb = [-inf, obj.extent(1)*-1/2, obj.extent(2)*-1/2, 0,0,-pi,-inf];
+            obj.ub = [inf, obj.extent(1)*1/2, obj.extent(2)*1/2, obj.extent(1), obj.extent(2), pi, inf];
+            
+                
+            %(A, xm, ym, xs, ys, th, C)
         end
         
         function createUi(obj)
@@ -167,9 +187,16 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             set(obj.middleAxis,'LooseInset',get(obj.middleAxis,'TightInset'))
             set(obj.bottomAxis,'LooseInset',get(obj.bottomAxis,'TightInset'))
         
-            obj.rfMap = imagesc(obj.bottomAxis,obj.STA(:,:,1));
+            
+            obj.rfMap = imagesc(obj.bottomAxis, obj.extent(1)*[-1/2,1/2], obj.extent(2)*[-1/2,1/2], obj.STA(:,:,1));
+            axis(obj.bottomAxis, 'xy');
+            hold(obj.bottomAxis, 'on');
+            obj.rfFit = plot(obj.bottomAxis, 0,0,'k+');
+            obj.rfText = text(obj.bottomAxis, 0, 0, '','verticalalignment','top');
+            
             axis(obj.bottomAxis,'tight');
-            obj.middlePlot = plot(obj.middleAxis, zeros(obj.memory, 1));            
+            obj.middlePlot = plot(obj.middleAxis, linspace(-obj.memory/obj.temporalSubsample/obj.frameRate,0,obj.memory), zeros(obj.memory, 1));
+            
         end
         
         function handleEpoch(obj, epoch)
@@ -232,35 +259,35 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
 
                     % subsample the matrix... 
                     obj.mat(:) = reshape(repmat(reshape(...
-                        obj.tmat, [1, obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [obj.spatialSubsample(1), 1, obj.spatialSubsample(2), 1, obj.temporalSubsample, 1]),...
-                        [obj.dimensions(1)*obj.spatialSubsample(1), obj.dimensions(2)*obj.spatialSubsample(2), obj.nFrames*obj.temporalSubsample]);
+                        obj.tmat, [1, obj.dimensions(1), 1, obj.dimensions(2), 1, obj.nFrames]), [obj.spatialSubsample(2), 1, obj.spatialSubsample(1), 1, obj.temporalSubsample, 1]),...
+                        [obj.dimensions(1)*obj.spatialSubsample(2), obj.dimensions(2)*obj.spatialSubsample(1), obj.nFrames*obj.temporalSubsample]);
                     
-                    if (obj.spatialSubsample(1) ~= 1) && (obj.spatialSubsample(2) ~= 1)
+                    if (obj.spatialSubsample(1) ~= 1) || (obj.spatialSubsample(2) ~= 1)
                         offsetStream = RandStream('mt19937ar', 'Seed',  epoch.parameters('offsetSeed'));
                         for i = 1:obj.nFrames
                             frame = i - obj.preFrames - 1;
                             p = getPosition(frame, 0, obj.frameDwell, obj.spatialSubsample, offsetStream);
                             %position ranges from -maxOffset to + maxOffset in increments of offsetDelta
                             %but we could make this more convenient if required...
-
+                            p = [-p(2), p(1)];
+                            
                             ti = (i-1)*obj.temporalSubsample + 1 :i*obj.temporalSubsample;
-                        
-
-                            %TODO: is this correct? don't we want to shift along second dim for x?
-                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(1), 1);
-                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(2), 2);
+                            
+%                             obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(1), 1);
+%                             obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p(2), 2);
+                            obj.mat(:,:,ti) = circshift(obj.mat(:,:,ti), p);
                             
                             %TODO: check the logic....
-                            if p(1) > 0
+                            if p(1) >= 0
                                 obj.mat(1:p(1),:,ti) = obj.meanLevel(1);
                             else
-                                obj.mat(end + p(1): end,:,ti) = obj.meanLevel(1);
+                                obj.mat(end + p(1) + 1: end,:,ti) = obj.meanLevel(1);
                             end
 
-                            if p(2) > 0
+                            if p(2) >= 0
                                 obj.mat(:,1:p(2),ti) = obj.meanLevel(1);
                             else
-                                obj.mat(:,end + p(2): end,ti) = obj.meanLevel(1);
+                                obj.mat(:,end + p(2) + 1: end,ti) = obj.meanLevel(1);
                             end
                         end
                     end
@@ -286,7 +313,7 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 return
             end
             
-            title(obj.topAxis, sprintf('Epoch %d of %d', obj.epochCount, obj.totalNumEpochs));        
+            title(obj.topAxis, sprintf('Epoch %d of %d: %d spikes (%d total)', obj.epochCount, obj.totalNumEpochs, length(obj.epochData(obj.epochCount).spikeIndices), obj.spikeCount));        
             %plot raw responses
             set(obj.topPlot, 'ydata', obj.epochData(obj.epochCount).rawSignal);
             yl = get(obj.topAxis,'ylim');
@@ -301,14 +328,24 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
                 spikeOnes = ones(size(spikeTimes));                
                 obj.topRaster = line(obj.topAxis, [spikeTimes;spikeTimes], [yl(1)*spikeOnes;yl(2)*spikeOnes], 'color', 'k'); %one line per column
                 
-                % now, do the RF map
+                % now, do the RF map and temporal kernel
                 [c,s,~] = pca(reshape(obj.STA,[],obj.memory)');
-                    
+                % only works if numel(obj.STA) > obj.memory??
+                
+                
                 rf = reshape(c(:,1), size(obj.STA,1), size(obj.STA,2));
-                set(obj.rfMap,'cdata', rf);
+                set(obj.rfMap,'cdata', flipud(rf));
                 
                 set(obj.middlePlot,'ydata',s(:,1));
 
+                % fit the RF to a gaussian
+                obj.lastFit = lsqcurvefit(@(x0, xdata) gauss2d(x0(1), x0(2), x0(3), x0(4),...
+                    x0(5), x0(6), x0(7), xdata(:,1), xdata(:,2)), obj.lastFit, obj.xy, c(:,1), obj.lb, obj.ub);
+                
+                set(obj.rfFit,'xdata',obj.lastFit(2), 'ydata', -obj.lastFit(3));
+                set(obj.rfText,'position',[obj.lastFit(2), -obj.lastFit(3), 0], 'String', sprintf('(%0.0f, %0.0f)', obj.lastFit(2), -obj.lastFit(3)));
+                
+                %(A, xm, ym, xs, ys, th, C, x, y)
                 
             end            
         end
@@ -379,5 +416,12 @@ function intensity = clipIntensity(intensity, mn)
     intensity(intensity < 0) = 0;
     intensity(intensity > mn * 2) = mn * 2;
     intensity(intensity > 1) = 1;
-    % intensity = uint8(255 * intensity);
+%     intensity = uint8(255 * intensity);
+end
+
+function g = gauss2d(A, xm, ym, xs, ys, th, C, x, y)
+    a = cos(th)^2/(2*xs^2) + sin(th)^2/(2*ys^2);
+    b = -sin(2*th)/(4*xs^2) + sin(2*th)/(4*ys^2);
+    c = sin(th)^2/(2*xs^2) + cos(th)^2/(2*ys^2);
+    g = C + A * exp(-(a*(x - xm).^2 + 2*b*(x-xm).*(y-ym) + c*(y-ym).^2));                
 end

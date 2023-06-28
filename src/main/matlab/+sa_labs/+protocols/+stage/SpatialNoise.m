@@ -5,15 +5,23 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         stimTime = 10000 % ms
         tailTime = 500 % ms
 
-        resolutionX = 4 % number of stimulus segments
-        resolutionY = 4 % number of stimulus segments
-        sizeX = 300 % um
-        sizeY = 300 % um
+        resolutionX = 10 % number of stimulus segments
+        resolutionY = 10 % number of stimulus segments
+        sizeX = 1000 % um
+        sizeY = 1000 % um
+    end
+    
+    properties (Dependent)
+        pixelWidth %um, the size of each checker in the checkerboard
+        pixelHeight %um, the size of each checker in the checkerboard
+    end
+    
+    properties
         contrast = 1; 
         
         frameDwell = 1 % Frames per noise update, use only 1 when colorMode is 2 pattern
         seedStartValue = 1
-        seedChangeMode = 'repeat only';
+        seedChangeMode = 'increment only';
         colorNoiseMode = '1 pattern';
         colorNoiseDistribution = 'binary'
         
@@ -29,7 +37,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
 
     properties (Transient)        
         subsampleT = uint8(10) %number of time steps per frame to use for display
-        RFmemory = uint8(30) %total number of time steps to use for display
+        RFMemory = uint8(120) %total number of time steps to use for display
     end
 
     properties (Hidden)
@@ -81,6 +89,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                         'tailTime', obj.tailTime,...
                         'frameRate', obj.frameRate,...
                         'dimensions', [obj.resolutionX, obj.resolutionY],...
+                        'extent', [obj.sizeX, obj.sizeY],...
                         'colorNoiseDistribution', obj.colorNoiseDistribution,...
                         'colorNoiseMode', obj.colorNoiseMode,...
                         'frameDwell', obj.frameDwell,...
@@ -88,7 +97,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
                         'contrast', contrast_,...
                         'spatialSubsample', [obj.subsampleX, obj.subsampleY],...
                         'temporalSubsample', obj.subsampleT,...
-                        'memory', obj.RFmemory,...
+                        'memory', obj.RFMemory,...
                         'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);                
                 end
             end
@@ -257,4 +266,13 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         end
     end
     
+        
+    function pixelWidth = get.pixelWidth(obj)
+        pixelWidth = obj.sizeX / obj.resolutionX;
+    end
+    
+    
+    function pixelWidth = get.pixelHeight(obj)
+        pixelWidth = obj.sizeY / obj.resolutionY;
+    end
 end
