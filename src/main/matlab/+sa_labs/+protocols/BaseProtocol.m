@@ -185,8 +185,13 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
             end
 
-            if any(strcmp(obj.rig.getDeviceNames, 'Frame timing'))
-                epoch.addResponse(obj.rig.getDevice('Frame timing'));
+            if any(strcmp(obj.rig.getDeviceNames, 'PstimTrigger'))
+                epoch.addResponse(obj.rig.getDevice('PstimTrigger'));
+            end
+            
+            if any(strcmp(obj.rig.getDeviceNames, 'Bath Tempature'))
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
+                epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
             end
 
             
