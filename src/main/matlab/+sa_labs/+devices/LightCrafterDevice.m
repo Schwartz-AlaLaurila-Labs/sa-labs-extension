@@ -277,7 +277,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             trackerBackground = stage.builtin.stimuli.Rectangle();
             trackerBackground.size = frameTrackerBackgroundSize;
             trackerBackground.position = obj.getFrameTrackerPosition() - canvasTranslation;
-            trackerBackground.color = 0;
+            trackerBackground.color = 0;  %change this for testing alignment?
 
             tracker = stage.builtin.stimuli.Rectangle();
             % tracker.size = frameTrackerSize;
@@ -298,6 +298,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
 
             trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
                 @(s) 1.0*(s.time < (presentation.duration - (1/frameRate))));
+            
+%             trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
+%                 @(s) 1.0);
+            
             presentation.addController(trackerOpacity);
             
             % trackerSize = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...

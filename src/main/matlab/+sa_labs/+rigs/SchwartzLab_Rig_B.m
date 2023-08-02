@@ -12,10 +12,10 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_UV = [0.05594405594 0.003496503497 0.000201048951 0.0000166958042 0.000001001748252 1]; %updated 7/18/22 - Zach
         
         fitBlue = [0 0 0 0];%updated 6/9/22 - Zach
-        fitGreen = 1.0e-11 * [ -0.000000004724626  -0.000066611981518   0.152551895079695  -0.251696442734011];%updated 8/29/22 - Zach
-        fitUV = 1.0e-11 * [-0.000000152703718  -0.000044641539479   0.139866315500134  -0.147409969366771];%updated 8/29/22 - Zach
-        
-        micronsPerPixel = 1.3 %updated 7/18/22 Zach
+        fitGreen = [0 0 0 0];%updated 8/01/23 - Zach
+        fitUV = 1.0e-11 *[-0.000000418893734   0.000051764234837   0.13173700493451 -0.066463059869604]; %updated 8/01/23 - Zach
+      
+        micronsPerPixel = 1.6 %updated 7/31/23 Zach
 
         frameTrackerPosition = [0, 300]; %updated 9/1/22 David
         frameTrackerDuration = 0.05; %updated 9/1/22 David
@@ -30,8 +30,9 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         %Overlap of the Rod, S_cone, and M_cone spectrum with each LED. Must be in order [1 Rod, 2 S cone, 3 M cone]
         spectralOverlap_Blue = [4.73e+18,2.85e+15,3.76e+18];%updated 7/1/21 - David
         spectralOverlap_Green = [2.50272617664986e+18	1.47464420795067e+15	4.03261286137103e+18];%updated 6/9/22 - Zach
-        spectralOverlap_UV = [1.18974879467848e+18	6.55496793103621e+17	1.17668333802297e+18];%updated 6/9/22 - Zach
-        
+        % spectralOverlap_UV = [1.18974879467848e+18	6.55496793103621e+17	1.17668333802297e+18];%updated 6/9/22 - Zach
+        spectralOverlap_UV = 1.0e+18 *[1.335648892402653   0.377578876684479   1.219682200402653];%updated 8/1/23 Zach
+
         projectorColorMode = 'uv';
         numberOfAmplifiers = 1;
         

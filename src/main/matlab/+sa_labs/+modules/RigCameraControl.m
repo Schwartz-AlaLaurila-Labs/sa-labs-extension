@@ -142,10 +142,10 @@ classdef RigCameraControl < symphonyui.ui.Module
             
             switch self.lastmag
             case '10X'
-                um = 1.3783 * pix;
+                um = 1.53834503 * pix; %calibrated in Fiji, 07/28/23 Zach
 %                 um = 1.5 * pix;
             case '60X'
-                um = 0.2417 * pix;
+                um = 0.2627499 * pix; %calibrated in Fiji, 07/28/23 Zach
 %                 um = 0.65 * pix;
             otherwise
                 error('Unknown magnification');
