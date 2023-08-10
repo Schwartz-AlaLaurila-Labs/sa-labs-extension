@@ -161,8 +161,16 @@ classdef RigCameraControl < symphonyui.ui.Module
 
             %% get handles to the devices
             camera = self.configurationService.getDevice('RigCamera');
-            stage = Stage.Stage();
-            self.lastpos = stage.pos;
+            if self.ncols > 1 || self.nrows > 1
+                doStage = true;
+            else
+                doStage = false;
+            end
+            
+            if doStage
+                stage = Stage.Stage();
+                self.lastpos = stage.pos;
+            end
 
 
             %% configure the image settings
@@ -175,8 +183,9 @@ classdef RigCameraControl < symphonyui.ui.Module
             x = [self.lastx(:); 0];
             y = [self.lasty(:); 0];
             
-            stage.pos = self.lastpos + [x(1), y(1), 0]'; %initiate the first movement, while we continue setting up
-
+            if doStage
+                stage.pos = self.lastpos + [x(1), y(1), 0]'; %initiate the first movement, while we continue setting up
+            end
             %% configure the stitching settings
             glob = imref2d([... %the global view onto which images will be warped
                 round((self.width * self.ncols) - (self.overlap* self.width * (self.ncols-1))), ...
@@ -197,8 +206,10 @@ classdef RigCameraControl < symphonyui.ui.Module
             for r = 1:self.nrows
                 for c = 1:self.ncols
                     %% move to (x,y)
-                    while stage.status % make sure we've finished moving
-%                         pause(1-self.overlap); %helps with motion blur
+                    if doStage
+                        while stage.status % make sure we've finished moving
+    %                         pause(1-self.overlap); %helps with motion blur
+                        end
                     end
                     pause(1-self.overlap);
                     
@@ -212,8 +223,9 @@ classdef RigCameraControl < symphonyui.ui.Module
                     self.frms{r,c} = self.frms{r,c} / 5;
                     
                     %% initiate move to next location
-                    stage.pos = self.lastpos + [x(c + self.ncols*(r-1) + 1), y(c + self.ncols*(r-1) + 1), 0]';
-                    
+                    if doStage
+                        stage.pos = self.lastpos + [x(c + self.ncols*(r-1) + 1), y(c + self.ncols*(r-1) + 1), 0]';
+                    end
                     %% prepare image for stitching image
                     grads{r,c} = imgradient(self.frms{r,c});
                     %NOTE: we use the gradient to filter out lowpass artifacts
@@ -268,8 +280,9 @@ classdef RigCameraControl < symphonyui.ui.Module
                 drawnow;
             end
             %% clean up
-            delete(stage);
-
+            if doStage
+                delete(stage);
+            end
         end
         
         function save(self, ~, ~)
