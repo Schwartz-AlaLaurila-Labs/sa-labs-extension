@@ -21,12 +21,12 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         maxAmplitude = 300              % when you step the stimulus, what is the max
         minInterTime = 0                % min time between stim1 and stim2, if interTimeOpts = 'variable'
         maxInterTime = 0                % max time between stim1 and stim2, if interTimeOpts = 'variable'
-        
         numberOfCycles = 3
         logScaling = true % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true
         logGenerator = 'log'
         min_of_log = 5;
+        delayStart = 0;
     end
     
     properties (Hidden)
@@ -77,7 +77,17 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             end
 
         end
-        
+        function delay = createDelay(obj, ampName)
+            genD = symphonyui.builtin.stimuli.PulseGenerator();
+            genD.preTime = 0;
+            genD.stimTime = obj.delayStart;
+            genD.tailTime = 0;
+            genD.amplitude = obj.rig.getDevice(ampName).background.quantity;
+            genD.mean = 0;
+            genD.sampleRate = obj.sampleRate;
+            genD.units = obj.rig.getDevice(ampName).background.displayUnits;
+            delay = genD.generate();
+        end
         function stim = createAmpStimulus(obj, ampName)
             stimCell = {};
             
@@ -96,7 +106,6 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % create stim 1 pulse
             gen1 = symphonyui.builtin.stimuli.PulseGenerator();
-            
             gen1.preTime = obj.preTime;
             gen1.stimTime = obj.stim1Time;
             gen1.tailTime = obj.maxInterTime+obj.stim2Time+obj.tailTime;
@@ -192,6 +201,9 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
+            if obj.delayStart > 0
+                epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createDelay(outputAmpName));
+            end
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
             
             
