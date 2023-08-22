@@ -40,6 +40,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         pulse2Curr
         currInterTime
         logGeneratorType = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'})
+        actualPreTime = obj.preTime;
     end
     
     properties (Hidden, Dependent)
@@ -78,7 +79,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
 
         end
         
-        function stim = createAmpStimulus(obj, ampName, index)
+        function stim = createAmpStimulus(obj, ampName)
             stimCell = {};
             % create delay pulse
             % create background pulse
@@ -163,7 +164,11 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
                 obj.interTimeVector = obj.interTimeVector(randperm(obj.numberOfSteps));
             end
 
-           
+            if index == 0 && obj.delayStart > 0
+                obj.preTime = obj.actualPreTime + obj.delayStart;
+            else
+                obj.preTime = obj.actualPreTime;
+            end
             % set current pulses depending which one you're stepping by
             obj.pulse1Curr = 0;
             obj.pulse2Curr = 0;
