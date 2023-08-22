@@ -31,7 +31,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     
     properties (Hidden)
         responsePlotMode = 'cartesian'
-        
+
         stepByStimType = symphonyui.core.PropertyType('char', 'row', {'neither', 'Stim 1', 'Stim 2'})
         interTimeOptsType = symphonyui.core.PropertyType('char', 'row', {'none', 'constant', 'variable'})
         pulseVector
@@ -40,7 +40,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         pulse2Curr
         currInterTime
         logGeneratorType = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'})
-        actualPreTime = obj.preTime;
+        actualPreTime
     end
     
     properties (Hidden, Dependent)
@@ -51,6 +51,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
     
     methods   
         function prepareRun(obj)
+            obj.actualPreTime = obj.preTime;
             prepareRun@sa_labs.protocols.BaseProtocol(obj, true);
             
             %set amplitude pulse vector
