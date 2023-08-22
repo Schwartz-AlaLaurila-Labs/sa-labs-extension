@@ -26,7 +26,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         randomOrdering = true
         logGenerator = 'log'
         min_of_log = 5;
-        delayStart = 0;
+        delayStart = 0; %delay start (ms)
     end
     
     properties (Hidden)
@@ -77,20 +77,10 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             end
 
         end
-        function delay = createDelay(obj, ampName)
-            genD = symphonyui.builtin.stimuli.PulseGenerator();
-            genD.preTime = 0;
-            genD.stimTime = obj.delayStart;
-            genD.tailTime = 0;
-            genD.amplitude = obj.rig.getDevice(ampName).background.quantity;
-            genD.mean = 0;
-            genD.sampleRate = obj.sampleRate;
-            genD.units = obj.rig.getDevice(ampName).background.displayUnits;
-            delay = genD.generate();
-        end
+        
         function stim = createAmpStimulus(obj, ampName)
             stimCell = {};
-            
+
             % create background pulse
             genB = symphonyui.builtin.stimuli.PulseGenerator();
             
@@ -166,11 +156,14 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % for each cycle generate a new random ordering
             index = mod(obj.numEpochsPrepared, obj.numberOfSteps);
-            if index == 0
+            if index == 0  && obj.randomOrdering 
                 obj.pulseVector = obj.pulseVector(randperm(obj.numberOfSteps));
                 obj.interTimeVector = obj.interTimeVector(randperm(obj.numberOfSteps));
             end
-            
+
+            if index == 0 && obj.delayStart > 0 
+                obj.preTime = obj.preTime + obj.delayStart;
+            end
             % set current pulses depending which one you're stepping by
             obj.pulse1Curr = 0;
             obj.pulse2Curr = 0;
@@ -201,9 +194,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
-            if obj.delayStart > 0
-                epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createDelay(outputAmpName));
-            end
+            
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
             
             
