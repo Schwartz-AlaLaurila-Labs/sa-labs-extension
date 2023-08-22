@@ -162,7 +162,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             end
 
             if index == 0 && obj.delayStart > 0 
-                obj.preTime = obj.preTime + obj.delayStart;
+                epoch.addParameter('preTime') = obj.preTime + obj.delayStart;
             end
             % set current pulses depending which one you're stepping by
             obj.pulse1Curr = 0;
