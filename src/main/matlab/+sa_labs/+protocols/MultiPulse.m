@@ -78,9 +78,9 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
 
         end
         
-        function stim = createAmpStimulus(obj, ampName)
+        function stim = createAmpStimulus(obj, ampName, index)
             stimCell = {};
-
+            % create delay pulse
             % create background pulse
             genB = symphonyui.builtin.stimuli.PulseGenerator();
             
@@ -156,14 +156,14 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % for each cycle generate a new random ordering
             index = mod(obj.numEpochsPrepared, obj.numberOfSteps);
+            obj.pulseVector = sort(obj.pulseVector);
+            obj.interTimeVector = sort(obj.interTimeVector);
             if index == 0  && obj.randomOrdering 
                 obj.pulseVector = obj.pulseVector(randperm(obj.numberOfSteps));
                 obj.interTimeVector = obj.interTimeVector(randperm(obj.numberOfSteps));
             end
 
-            if index == 0 && obj.delayStart > 0 
-                epoch.addParameter('preTime') = obj.preTime + obj.delayStart;
-            end
+           
             % set current pulses depending which one you're stepping by
             obj.pulse1Curr = 0;
             obj.pulse2Curr = 0;
