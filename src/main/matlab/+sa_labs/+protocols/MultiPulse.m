@@ -77,6 +77,8 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             else
                 obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfSteps);
             end
+            obj.pulseVector = sort(obj.pulseVector);
+            obj.interTimeVector = sort(obj.interTimeVector);
 
         end
         
@@ -158,8 +160,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % for each cycle generate a new random ordering
             index = mod(obj.numEpochsPrepared, obj.numberOfSteps);
-            obj.pulseVector = sort(obj.pulseVector);
-            obj.interTimeVector = sort(obj.interTimeVector);
+            
             if index == 0  && obj.randomOrdering 
                 obj.pulseVector = obj.pulseVector(randperm(obj.numberOfSteps));
                 obj.interTimeVector = obj.interTimeVector(randperm(obj.numberOfSteps));
