@@ -196,7 +196,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             epoch.addParameter('pulse1Curr', obj.pulse1Curr);
             epoch.addParameter('pulse2Curr', obj.pulse2Curr);
             epoch.addParameter('currInterTime', obj.currInterTime);
-            epoch.addParameter('preTime', obj.preTime);
+            epoch.addParameter('epochPreTime', obj.preTime);
 
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
