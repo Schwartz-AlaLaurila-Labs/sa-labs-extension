@@ -77,20 +77,27 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             xStartPos = canvasSize(1)/2 - (pixelDistance / 2 + stepBack) * cosd(obj.barAngle);
             yStartPos = canvasSize(2)/2 - (pixelDistance / 2 + stepBack) * sind(obj.barAngle);
             
-            function pos = movementController(state)
-                pos = [NaN, NaN];
-                t = state.time - obj.preTime * 1e-3;
-                if t >= 0 && t < obj.stimTime * 1e-3
-                    pos = [xStartPos + t * xStep, yStartPos + t * yStep];
-                end
+            function pos = movementController(state,preTime,stimTime,xStep, yStep, xStartPos, yStartPos)
+                t = max(min(state.time - preTime * 1e-3, stimTime * 1e-3),0);
+                pos = [xStartPos + t * xStep, yStartPos + t * yStep];
             end
             
-            barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(state)movementController(state));
+            preTime_ = obj.preTime;
+            stimTime_ = obj.stimTime;
+            barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(s) movementController(s, preTime_, stimTime_, xStep, yStep, xStartPos, yStartPos));
             p.addController(barMovement);
             
             
             % shared code for multi-pattern objects
+%             obj.setOnDuringStimController(p, bar);
             obj.setColorController(p, bar);
+%             function c = onDuringStim(state, preTime, stimTime)
+%                 c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
+%             end
+%             
+            controller = stage.builtin.controllers.PropertyController(bar, 'opacity', ...
+                @(s)1 * (s.time>preTime_*1e-3 && s.time<=(preTime_+stimTime_)*1e-3));
+            p.addController(controller);
             
         end
                 

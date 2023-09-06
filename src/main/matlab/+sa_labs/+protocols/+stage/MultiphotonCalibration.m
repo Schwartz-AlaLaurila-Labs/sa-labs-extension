@@ -1,4 +1,4 @@
-classdef LightStep < sa_labs.protocols.StageProtocol
+classdef MultiphotonCalibration < sa_labs.protocols.StageProtocol
     
     properties
         %times in ms
@@ -9,8 +9,6 @@ classdef LightStep < sa_labs.protocols.StageProtocol
         numberOfContrastSteps = 5       % Number of contrast steps, not including laser activation
         minContrast = 0.02              % Minimum contrast (0-1)
         maxContrast = 1                 % Maximum contrast (0-1)
-        
-        intensity = 1;
 
         numberOfCycles = 3;      
 
@@ -45,6 +43,8 @@ classdef LightStep < sa_labs.protocols.StageProtocol
     
         sizeX                           % Width of the visual stimulus in um
         sizeY                           % Height of the visual stimulus in um
+        
+        imageMatrix
     end
     
     properties (Hidden, Dependent)
@@ -66,7 +66,9 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             obj.intensityValues = obj.meanLevel + (obj.contrastValues .* obj.meanLevel);
 
             %% simulate the laser activation field
-            dxy = 1e-2; %simulation resolution (um)
+            dxy = .1; %simulation resolution (um)
+            scanq = round([obj.scanWidth, obj.scanHeight]./dxy);% .* dxy;
+
             
             % 1) create a matrix, with the profile of the beam on the photoreceptors
             % requires knowing the beam profile, objective NA, refractive index (1.333), and distance to outer segments form focal plane
@@ -74,58 +76,50 @@ classdef LightStep < sa_labs.protocols.StageProtocol
 
             Ar = tan(asin(obj.numericalAperture./1.333)) .* obj.focalPlaneToOuterSegmentDistance; %radius of outer segment activation (um)
             Arq = round(Ar./dxy);% .* dxy;
-            [spreadx,spready] = meshgrid((-Arq:Arq)*dxy, (-Arq:Arq)*dxy);
-            spreadNorm = (spreadx.^2 + spready.^2);
+            [spreadx,spready] = meshgrid(((-Arq-scanq(1)/2):(Arq+scanq(1)/2))*dxy, ((-Arq-scanq(2)/2):(Arq+scanq(2)/2))*dxy);
+            
+            spreadNorm = (spreadx.^2 + spready.^2); %distance in um to the center of the beam profile
 
             %model the beam as a clipped gaussian, squared by the 2 photon effect
-            w = obj.beamWidth * obj.objectiveMagnification;
-            
-
-            spread =  exp(-2 .* spreadNorm ./ w.^2) .* (spreadNorm < Ar.^2) .^2; 
-
+            w = obj.beamWidth * obj.objectiveMagnification; %beam width in mm
+            spread =  exp(-2 .* spreadNorm ./ w.^2 ./ 1e6) .* (spreadNorm < Ar.^2) .^2; 
 
             % 2) create a scan matrix: 1 where the pulses occur, 0 otherwise
-            scanq = round([obj.scanWidth, obj.scanHeight]./dxy);% .* dxy;
-
-            xx = -obj.scanWidth/2 - Ar: dxy: obj.scanWidth/2 + Ar;
-            yy = -obj.scanHeight/2 - Ar: dxy: obj.scanHeight/2 + Ar;
-            [qx,qy] = meshgrid(xx, yy);
-            qa = zeros(size(qx));
-
             if obj.resonantMode
                 pulsePerLine = obj.linePeriod * obj.pulseRate;
                 pulsePerFrame = pulsePerLine * obj.linesPerFrame;
-
+                
                 % the y position is linspaced
-                y = linspace(-obj.scanHeight / 2, obj.scanHeight/ 2, pulsePerFrame);
-
+                sy = round(linspace(Arq, scanq(2) + Arq, pulsePerFrame))';
+                
                 %the x position follows a sinewave
                 % phase = -cos
                 % amp = obj.scanWidth / obj.spatialFillFraction
                 % freq = linesPerFrame / 2
-                x = -obj.scanWidth / obj.spatialFillFraction / 2 * cos(linspace(0, pi*obj.linesPerFrame, obj.pulsePerFrame));
-
+                sx = round(-scanq(1)/obj.spatialFillFraction / 2 * cos(linspace(0, pi*obj.linesPerFrame, pulsePerFrame)) + (scanq(1)+Arq*2) / 2)';
+                
                 % blank the laser -- assume perfect pockels cell performance
-                y((x < -obj.scanWidth/2) | (x > -obj.scanWidth/2)) = [];
-                x((x < -obj.scanWidth/2) | (x > -obj.scanWidth/2)) = [];
-
-                %now we just find the closest points in qx/qy...
-                [~,sx] = min(abs(x - xx'), [], 1); %TODO: check...
-                [~,sy] = min(abs(y - yy'), [], 1);               
-
+                sy((sx < Arq) | (sx > (scanq(1)+Arq))) = [];
+                sx((sx < Arq) | (sx > (scanq(1)+Arq))) = [];
+                qa = accumarray([sy,sx],1,size(spreadx));
             else % we just assume an equal number of pulses per pixel (i.e., laser clock synchronization)
-                % [sx,sy] = meshgrid(Ar+1 : dxy : Ar + obj.scanWidth, Ar+1 : dxy : Ar + obj.scanWidth);
                 [sx,sy] = meshgrid(Arq + 1 : Arq + scanq(1), Arq+1 :Arq + scanq(2));
+                sx = sx(:);
+                sy = sy(:);
+                qa = zeros(size(spreadx));
+                qa(sub2ind(size(qa), sy, sx)) = 1;            
             end
-            qa(sub2ind(size(qa), sy, sx)) = 1; %scan locations -- should be accumarray?
             
 
             % 3) convolve and normalize
-            obj.imageMatrix = imfilter(qa, spread);
-            obj.imageMatrix = obj.imageMatrix / max(obj.imageMatrix,[],'all');
+            obj.imageMatrix = ifft2(fft2(qa).*fft2(spread));
+            obj.imageMatrix = circshift(circshift(obj.imageMatrix,floor(size(qa,1)/2),1),floor(size(qa,2)/2),2);
+            obj.imageMatrix = obj.imageMatrix / max(max(obj.imageMatrix,[],1),[],2);
             
-            % the stimulus should match the laser up to a normalization factor, to be fit by comparing to contrast steps       
+            % 4) resize the image so that it can be transferred to stage
+            obj.imageMatrix = imresize(obj.imageMatrix, [500,500]);
 
+            % 5) set the scale
             obj.sizeX = (scanq(1) + 2*Arq) * dxy;
             obj.sizeY = (scanq(2) + 2*Arq) * dxy;
 
@@ -136,7 +130,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
 
             index = mod(obj.numEpochsPrepared, obj.numberOfContrastSteps + 1);
             if index == 0
-                reorder = randperm(obj.numberOfContrastSteps);
+                reorder = randperm(obj.numberOfContrastSteps + 1);
                 obj.contrastValues = obj.contrastValues(reorder);
                 obj.intensityValues = obj.intensityValues(reorder);
             end
@@ -146,7 +140,7 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             epoch.addParameter('contrast', obj.contrast);
             epoch.addParameter('intensity', obj.intensity);
 
-            if obj.intensity == 0 %trigger the scanhead
+            if obj.contrast == 0 %trigger the scanhead
                 obj.scanHeadTrigger = true;
             else
                 obj.scanHeadTrigger = false;
@@ -161,13 +155,34 @@ classdef LightStep < sa_labs.protocols.StageProtocol
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
 
-            stim = stage.builtin.stimuli.Image(obj.imageMatrix * obj.intensity);
+%             stim = stage.builtin.stimuli.Image(single(obj.imageMatrix * obj.contrast * obj.meanLevel + obj.meanLevel));
+%             
+%             stim.size = obj.um2pix([obj.sizeX, obj.sizeY]);
+%             stim.position = canvasSize / 2;
+%             stim.color = 1;
+%             stim.opacity = 0;
+%             
+%             stim = stage.builtin.stimuli.Ellipse();
+%             stim.radiusX = 100;
+%             stim.radiusY = 100;
+%             stim.position = canvasSize/2;
+%             stim.color = 1;
+%             stim.opacity = 0;
+            
+            stim = stage.builtin.stimuli.Image(single(obj.imageMatrix * obj.contrast * obj.meanLevel + obj.meanLevel));
             stim.size = obj.um2pix([obj.sizeX, obj.sizeY]);
             stim.position = canvasSize / 2;
+            stim.color = 1;
+            stim.opacity = 0;
+            
+            
             p.addStimulus(stim);
+%             
+            preTime_ = obj.preTime * 1e-3;
+            stimTime_ = (obj.stimTime + obj.preTime) * 1e-3;
             
             stimVisible = stage.builtin.controllers.PropertyController(stim, 'opacity', ...
-                @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                @(s) s.time >= preTime_ && s.time < stimTime_);
             p.addController(stimVisible);
         end
                

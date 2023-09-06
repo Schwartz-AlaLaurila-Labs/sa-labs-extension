@@ -155,7 +155,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 p.preTime = obj.preTime; %trigger at start of stimtime
                 p.stimTime = obj.stimTime; %ms
                 p.tailTime = obj.tailTime;
-                p.amplitude = 5; % 5V trigger
+                p.amplitude = 1; % digital trigger
                 p.mean = 0;
                 p.sampleRate = obj.sampleRate;
                 p.units = Symphony.Core.Measurement.UNITLESS;

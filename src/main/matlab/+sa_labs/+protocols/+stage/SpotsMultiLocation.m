@@ -25,7 +25,7 @@ properties
     % numberOfChirps = 0
     % numberOfBars = 0
 
-    gridMode = true
+    gridMode = 'grid'
     coverage =.9069                 % For grid mode. No overlap in spots if .9069 or lower. Represents the number of spots which intersect the average pixel.
     
     %TODO: calculate spot spacing
@@ -52,6 +52,10 @@ properties (Hidden)
     % theta = [];
 
     responsePlotMode = false;
+    
+    
+
+    gridModeType = symphonyui.core.PropertyType('char', 'row', {'grid','random','rings','multiGrid'});
 
     % barSpeed = 1000 % um / s
     % barDistance = 3000 % um
@@ -74,7 +78,6 @@ properties (Dependent)
     % MstarIntensityBar
     % SstarIntensityBar
     
-    numSpotsPerEpoch
     
     spotOverlap % For grid mode. The amount of overlap between neighboring spots along the diameter, in um. Adjust the coverage factor or spot size to change.
 
@@ -82,6 +85,8 @@ end
 
 properties (Hidden, Dependent)
     totalNumEpochs
+    
+    numSpotsPerEpoch
 end
 
 methods
@@ -94,7 +99,7 @@ methods
         % case {'uvLED','redLED','greenLED','blueLED','RstarIntensity1','MstarIntensity1','SstarIntensity1'}
         %     d.isHidden = true;
         case {'coverage'}
-            if obj.gridMode
+            if strcmp(obj.gridMode,'grid') || strcmp(obj.gridMode,'multiGrid')
                 d.isHidden = false;
             else
                 d.isHidden = true;
@@ -106,37 +111,9 @@ methods
         end
 
     end
-
-    function prepareRun(obj)
-        prepareRun@sa_labs.protocols.StageProtocol(obj);
-
-        % dt = 1/obj.frameRate; % assume frame rate in Hz
-        
-        % % *0.001 is to make in terms of seconds
-        % prePattern = zeros(1, round(2*obj.frameRate));
-        % interPattern = ones(1, round(2*obj.frameRate))*obj.chirpIntensity;
-        % tailPattern = zeros(1, round(5*obj.frameRate));
-        % posStepPattern = ones(1, round(3*obj.frameRate))*2*obj.chirpIntensity;
-        % negStepPattern = zeros(1, round(3*obj.frameRate));
-        
-        % freqT = dt:dt:8;
-        % freqChange = linspace(0, 8, length(freqT));
-        % freqPhase = cumsum(freqChange*dt);
-        % freqPattern = obj.chirpIntensity*-sin(2*pi*freqPhase + pi) + obj.chirpIntensity;
-        
-        % contrastT = dt:dt:8;
-        % contrastChange = linspace(0, 1, length(contrastT));
-        % contrastPattern = contrastChange.*obj.chirpIntensity.*-sin(4*pi.*contrastT + pi) + obj.chirpIntensity;
-
-        % obj.chirpPattern = [prePattern, posStepPattern, negStepPattern, interPattern...
-        %     freqPattern, interPattern, contrastPattern, interPattern, tailPattern];
-
-
-        % obj.theta = linspace(0,2*pi,11);
-        % obj.theta(end) = [];
-        
-        
-        if obj.gridMode
+    
+    function makeGrid(obj)
+        if strcmp(obj.gridMode,'grid') || strcmp(obj.gridMode,'multiGrid')
             %space the spots to achieve the desired coverage factor
             %uses the ratio of the area of a hexagon to that of a circle
             spaceFactor = sqrt(3*pi/4 / obj.coverage / (3*sqrt(3)/2));
@@ -168,7 +145,63 @@ methods
             halfGrids = repmat(halfGrids, size(locs,1),1);
             obj.grid = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= obj.spotSize.^2 , :);
 
+        elseif strcmp(obj.gridMode,'rings')
+            N = cumsum([6, 10, 14, 8, 16, 30]);
+            R = [8, 9, 12, 22, 24, 28] / 60; % * obj.extentX;
+            obj.grid = [];
+            for i = 1:numel(N)
+                th = linspace(0, 2*pi, N(i) + 1)';
+                obj.grid = vertcat(obj.grid, R(i)*[cos(th(1:end-1)), sin(th(1:end-1))]);
+            end
+            obj.grid(:,1) = obj.grid(:,1) * obj.extentX;
+            obj.grid(:,2) = obj.grid(:,2) * obj.extentY;
+        else
+            obj.grid = nan(28,2);
         end
+        
+        if strcmp(obj.gridMode, 'multiGrid')
+            
+            R = obj.grid(:,1).^2 + obj.grid(:,2).^2;
+            th = atan2(obj.grid(:,2),obj.grid(:,1));
+            X = R.^(3/2).*cos(th); 
+            Y = R.^(3/2).*sin(th);
+            X = X/max(abs(X)) * obj.extentX/2;
+            Y = Y/max(abs(Y)) * obj.extentY/2;
+            obj.grid = [X, Y];  
+        end
+        
+    end
+
+    function prepareRun(obj)
+        prepareRun@sa_labs.protocols.StageProtocol(obj);
+
+        % dt = 1/obj.frameRate; % assume frame rate in Hz
+        
+        % % *0.001 is to make in terms of seconds
+        % prePattern = zeros(1, round(2*obj.frameRate));
+        % interPattern = ones(1, round(2*obj.frameRate))*obj.chirpIntensity;
+        % tailPattern = zeros(1, round(5*obj.frameRate));
+        % posStepPattern = ones(1, round(3*obj.frameRate))*2*obj.chirpIntensity;
+        % negStepPattern = zeros(1, round(3*obj.frameRate));
+        
+        % freqT = dt:dt:8;
+        % freqChange = linspace(0, 8, length(freqT));
+        % freqPhase = cumsum(freqChange*dt);
+        % freqPattern = obj.chirpIntensity*-sin(2*pi*freqPhase + pi) + obj.chirpIntensity;
+        
+        % contrastT = dt:dt:8;
+        % contrastChange = linspace(0, 1, length(contrastT));
+        % contrastPattern = contrastChange.*obj.chirpIntensity.*-sin(4*pi.*contrastT + pi) + obj.chirpIntensity;
+
+        % obj.chirpPattern = [prePattern, posStepPattern, negStepPattern, interPattern...
+        %     freqPattern, interPattern, contrastPattern, interPattern, tailPattern];
+
+
+        % obj.theta = linspace(0,2*pi,11);
+        % obj.theta(end) = [];
+        
+        
+        obj.makeGrid();
 
         if obj.seed >= 0
             obj.randStream = RandStream('mt19937ar','seed',obj.seed);
@@ -210,17 +243,18 @@ methods
         % if obj.trialType == 1
         epoch.addParameter('trialType', 'field');
 
-        if obj.gridMode
-            gridSize = size(obj.grid,1);
-            if gridSize < obj.numSpotsPerEpoch
-                nPerms = ceil(obj.numSpotsPerEpoch / gridSize);
-                spots = zeros(gridSize * nPerms,1);
-                for n = 1:nPerms
-                    spots((1+gridSize*(n-1)):(gridSize*n)) = randperm(obj.randStream, gridSize);
-                end
-            else
-                spots = randperm(obj.randStream, gridSize, obj.numSpotsPerEpoch);
-            end
+        if ~strcmp(obj.gridMode, 'random')
+%             gridSize = size(obj.grid,1);
+%             if gridSize < obj.numSpotsPerEpoch
+%                 nPerms = ceil(obj.numSpotsPerEpoch / gridSize);
+%                 spots = zeros(gridSize * nPerms,1);
+%                 for n = 1:nPerms
+%                     spots((1+gridSize*(n-1)):(gridSize*n)) = randperm(obj.randStream, gridSize);
+%                 end
+%             else
+%                 spots = randperm(obj.randStream, gridSize, obj.numSpotsPerEpoch);
+%             end
+            spots = randperm(obj.randStream, obj.numSpotsPerEpoch, obj.numSpotsPerEpoch);
             obj.cx = obj.grid(spots,1);
             obj.cy = obj.grid(spots,2);
         else
@@ -276,7 +310,7 @@ methods
         
         sI = obj.intensity;
         bg = obj.meanLevel;
-        nFrames = obj.frameRate * 35;
+        nFrames = obj.numSpotsPerEpoch * (obj.spotStimFrames+obj.spotPreFrames+obj.spotTailFrames);
         function c = getSpotIntensity(state, spotPre, spotPreStim, spotPreStimPost, intensity_, bg_, nFrames_)
             if state.frame >= nFrames_ - 1
                 c = bg_;
@@ -335,7 +369,7 @@ methods
         %     th = theta_(t);
         % end
 
-        p = stage.core.Presentation(35);
+        p = stage.core.Presentation(obj.stimTime * 1e-3);
 
         % if obj.trialType == 1 % grid
         spot = stage.builtin.stimuli.Ellipse();
@@ -403,7 +437,9 @@ methods
     end
 
     function stimTime = get.stimTime(obj)
-        stimTime = 35000;
+%         stimTime = 35000;
+        obj.makeGrid();
+        stimTime = obj.numSpotsPerEpoch * (obj.spotStimFrames+obj.spotPreFrames+obj.spotTailFrames) / obj.frameRate * 1e3;
     end
 
     function totalNumEpochs = get.totalNumEpochs(obj)
@@ -412,7 +448,8 @@ methods
     end
     
     function numSpotsPerEpoch = get.numSpotsPerEpoch(obj)
-        numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
+%         numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
+        numSpotsPerEpoch = size(obj.grid,1);
     end
     
     function spotOverlap = get.spotOverlap(obj)
