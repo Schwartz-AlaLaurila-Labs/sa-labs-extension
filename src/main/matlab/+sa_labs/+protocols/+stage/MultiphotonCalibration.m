@@ -154,36 +154,22 @@ classdef MultiphotonCalibration < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();                   
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
+            if obj.contrast ~= 0
+                stim = stage.builtin.stimuli.Image(single(obj.imageMatrix * obj.contrast * obj.meanLevel + obj.meanLevel));
+                stim.size = obj.um2pix([obj.sizeX, obj.sizeY]);
+                stim.position = canvasSize / 2;
+                stim.color = 1;
+                stim.opacity = 0;
 
-%             stim = stage.builtin.stimuli.Image(single(obj.imageMatrix * obj.contrast * obj.meanLevel + obj.meanLevel));
-%             
-%             stim.size = obj.um2pix([obj.sizeX, obj.sizeY]);
-%             stim.position = canvasSize / 2;
-%             stim.color = 1;
-%             stim.opacity = 0;
-%             
-%             stim = stage.builtin.stimuli.Ellipse();
-%             stim.radiusX = 100;
-%             stim.radiusY = 100;
-%             stim.position = canvasSize/2;
-%             stim.color = 1;
-%             stim.opacity = 0;
-            
-            stim = stage.builtin.stimuli.Image(single(obj.imageMatrix * obj.contrast * obj.meanLevel + obj.meanLevel));
-            stim.size = obj.um2pix([obj.sizeX, obj.sizeY]);
-            stim.position = canvasSize / 2;
-            stim.color = 1;
-            stim.opacity = 0;
-            
-            
-            p.addStimulus(stim);
-%             
-            preTime_ = obj.preTime * 1e-3;
-            stimTime_ = (obj.stimTime + obj.preTime) * 1e-3;
-            
-            stimVisible = stage.builtin.controllers.PropertyController(stim, 'opacity', ...
-                @(s) s.time >= preTime_ && s.time < stimTime_);
-            p.addController(stimVisible);
+                p.addStimulus(stim);
+                
+                preTime_ = obj.preTime * 1e-3;
+                stimTime_ = (obj.stimTime + obj.preTime) * 1e-3;
+
+                stimVisible = stage.builtin.controllers.PropertyController(stim, 'opacity', ...
+                    @(s) s.time >= preTime_ && s.time < stimTime_);
+                p.addController(stimVisible);
+            end
         end
                
         function totalNumEpochs = get.totalNumEpochs(obj)
