@@ -208,7 +208,11 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.addGaussianLoopbackSignals(epoch);
             else
                 % it is required to have an amp stimulus for stage protocols
-                device = obj.rig.getDevice(obj.chan1);
+                if strcmp(obj.chan1, 'None')
+                    device = obj.rig.getDevice('Amp1');
+                else
+                    device = obj.rig.getDevice(obj.chan1);
+                end
                 duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
                 epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
             end
@@ -226,7 +230,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         function completeEpoch(obj, epoch)
            
             if ~ obj.rigProperty.testMode
-                epoch.removeStimulus(obj.rig.getDevice(obj.chan1));
+                if strcmp(obj.chan1, 'None')
+                    device = obj.rig.getDevice('Amp1');
+                else
+                    device = obj.rig.getDevice(obj.chan1);
+                end
+                epoch.removeStimulus(device);
             end
             completeEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
         end
