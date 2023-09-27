@@ -45,10 +45,10 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         chan2Type
         chan3Type
         chan4Type
-        chan1ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell'});
-        chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
-        chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
-        chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off'});
+        chan1ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell', 'PerforatedEscin','PerforatedAmpho','PerforatedGrami'});
+        chan2ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off', 'PerforatedEscin','PerforatedAmpho','PerforatedGrami'});
+        chan3ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off', 'PerforatedEscin','PerforatedAmpho','PerforatedGrami'});
+        chan4ModeType = symphonyui.core.PropertyType('char', 'row', {'Cell attached','Whole cell','Off', 'PerforatedEscin','PerforatedAmpho','PerforatedGrami'});
         ampList
         
         spikeDetectorModeType = symphonyui.core.PropertyType('char', 'row', {'advanced', 'Simple Threshold', 'Filtered Threshold', 'none'});
@@ -171,7 +171,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
-                if strcmp(ampMode, 'Whole cell')
+                if strcmp(ampMode, 'Whole cell') || regex(ampMode, 'Perforated')
                     if strcmp(obj.rig.getDevice(ampName).background.displayUnits, 'mV')
                         epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Vclamp');
                     else
