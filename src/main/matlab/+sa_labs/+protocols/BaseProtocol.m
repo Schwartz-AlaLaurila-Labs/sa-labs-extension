@@ -171,7 +171,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
-                if strcmp(ampMode, 'Whole cell') || regex(ampMode, 'Perforated')
+                if strcmp(ampMode, 'Whole cell') || regexp(ampMode, 'Perforated')
                     if strcmp(obj.rig.getDevice(ampName).background.displayUnits, 'mV')
                         epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Vclamp');
                     else
