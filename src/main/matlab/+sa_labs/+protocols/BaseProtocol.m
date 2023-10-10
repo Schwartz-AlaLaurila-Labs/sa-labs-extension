@@ -171,7 +171,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
                 ampDevice = obj.rig.getDevice(ampName);
                 epoch.addResponse(ampDevice);
-                if strcmp(ampMode, 'Whole cell') || regexp(ampMode, 'Perforated')
+                if strcmp(ampMode, 'Whole cell')  
                     if strcmp(obj.rig.getDevice(ampName).background.displayUnits, 'mV')
                         epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Vclamp');
                     else
@@ -179,6 +179,14 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     end
                 end
                 
+                if regexp(ampMode, 'Perforated')
+                    if strcmp(obj.rig.getDevice(ampName).background.displayUnits, 'mV')
+                        epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Vclamp');
+                    else
+                        epoch.addParameter(sprintf('wholeCellRecordingMode_Ch%g', ci), 'Iclamp');
+                    end
+                end
+            
             end
             if any(strcmp(obj.rig.getDeviceNames, 'Bath Tempature'))
                 epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
