@@ -21,17 +21,17 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         maxAmplitude = 300              % when you step the stimulus, what is the max
         minInterTime = 0                % min time between stim1 and stim2, if interTimeOpts = 'variable'
         maxInterTime = 0                % max time between stim1 and stim2, if interTimeOpts = 'variable'
-        
         numberOfCycles = 3
         logScaling = true % scale spot size logarithmically (more precision in smaller sizes)
         randomOrdering = true
         logGenerator = 'log'
         min_of_log = 5;
+        delayStart = 0; %delay start (ms)
     end
     
     properties (Hidden)
         responsePlotMode = 'cartesian'
-        
+
         stepByStimType = symphonyui.core.PropertyType('char', 'row', {'neither', 'Stim 1', 'Stim 2'})
         interTimeOptsType = symphonyui.core.PropertyType('char', 'row', {'none', 'constant', 'variable'})
         pulseVector
@@ -40,6 +40,7 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
         pulse2Curr
         currInterTime
         logGeneratorType = symphonyui.core.PropertyType('char', 'row', {'log', 'cubic'})
+        actualPreTime
     end
     
     properties (Hidden, Dependent)
@@ -75,12 +76,14 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             else
                 obj.interTimeVector = logspace(log10(obj.minInterTime), log10(obj.maxInterTime), obj.numberOfSteps);
             end
-
+            obj.pulseVector = sort(obj.pulseVector);
+            obj.interTimeVector = sort(obj.interTimeVector);
+            obj.actualPreTime = obj.preTime;
         end
         
         function stim = createAmpStimulus(obj, ampName)
             stimCell = {};
-            
+            % create delay pulse
             % create background pulse
             genB = symphonyui.builtin.stimuli.PulseGenerator();
             
@@ -96,7 +99,6 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % create stim 1 pulse
             gen1 = symphonyui.builtin.stimuli.PulseGenerator();
-            
             gen1.preTime = obj.preTime;
             gen1.stimTime = obj.stim1Time;
             gen1.tailTime = obj.maxInterTime+obj.stim2Time+obj.tailTime;
@@ -157,11 +159,17 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             
             % for each cycle generate a new random ordering
             index = mod(obj.numEpochsPrepared, obj.numberOfSteps);
-            if index == 0
+            
+            if index == 0  && obj.randomOrdering 
                 obj.pulseVector = obj.pulseVector(randperm(obj.numberOfSteps));
                 obj.interTimeVector = obj.interTimeVector(randperm(obj.numberOfSteps));
             end
-            
+
+            if index == 0 && obj.delayStart > 0
+                obj.preTime = obj.actualPreTime + obj.delayStart;
+            else
+                obj.preTime = obj.actualPreTime;
+            end
             % set current pulses depending which one you're stepping by
             obj.pulse1Curr = 0;
             obj.pulse2Curr = 0;
@@ -188,10 +196,12 @@ classdef MultiPulse < sa_labs.protocols.BaseProtocol
             epoch.addParameter('pulse1Curr', obj.pulse1Curr);
             epoch.addParameter('pulse2Curr', obj.pulse2Curr);
             epoch.addParameter('currInterTime', obj.currInterTime);
+            epoch.addParameter('epochPreTime', obj.preTime);
 
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
+            
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
             
             
