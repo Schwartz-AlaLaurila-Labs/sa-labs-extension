@@ -9,11 +9,14 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         
         filterWheelAttenuationValues_Blue = [0.087209302	0.00744186	0.000612403	6.77132E-05	6.47287E-06 1];%updated 7/1/21 - David
         filterWheelAttenuationValues_Green = [0.09226100152 0.009301972686 0.0007905918058 0.00008679817906 0.000007738998483 1];%updated 7/18/22 - Zach
-        filterWheelAttenuationValues_UV = [0.05594405594 0.003496503497 0.000201048951 0.0000166958042 0.000001001748252 1]; %updated 7/18/22 - Zach
+        %filterWheelAttenuationValues_UV = [0.05594405594 0.003496503497 0.000201048951 0.0000166958042 0.000001001748252 1]; %updated 7/18/22 - Zach
+        filterWheelAttenuationValues_UV = [0.05592417062 0.003601895735 0.0002180094787 0.0001943127962 0.000001815165877 0.00000005473933649 1] %updated 9/6/23 - Raphael Julia
+
         
         fitBlue = [0 0 0 0];%updated 6/9/22 - Zach
         fitGreen = [0 0 0 0];%updated 8/01/23 - Zach
-        fitUV = 1.0e-11 *[-0.000000418893734   0.000051764234837   0.13173700493451 -0.066463059869604]; %updated 8/01/23 - Zach
+        %fitUV = 1.0e-11 *[-0.000000418893734   0.000051764234837   0.13173700493451 -0.066463059869604]; %updated 8/01/23 - Zach
+        fitUV = 1.0e-11 *[ 0.000000792067937, -0.001815711190665, 1.929889803588720, -0.83029837531757]; %updated 9/06/23 - Raphael Julia
       
         micronsPerPixel = 1.6 %updated 7/31/23 Zach
 
@@ -31,7 +34,8 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         spectralOverlap_Blue = [4.73e+18,2.85e+15,3.76e+18];%updated 7/1/21 - David
         spectralOverlap_Green = [2.50272617664986e+18	1.47464420795067e+15	4.03261286137103e+18];%updated 6/9/22 - Zach
         % spectralOverlap_UV = [1.18974879467848e+18	6.55496793103621e+17	1.17668333802297e+18];%updated 6/9/22 - Zach
-        spectralOverlap_UV = 1.0e+18 *[1.335648892402653   0.377578876684479   1.219682200402653];%updated 8/1/23 Zach
+        % spectralOverlap_UV = 1.0e+18 *[1.335648892402653   0.377578876684479   1.219682200402653];%updated 8/1/23 Zach
+        spectralOverlap_UV = 1.0e+18 *[1.664963607035264256   0.229857695610952384   1.390285909043689984]; %updated 9/6/23 Raphael 
 
         projectorColorMode = 'uv';
         numberOfAmplifiers = 1;
