@@ -97,6 +97,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
             obj.theta(end) = [];
             
             obj.numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
+            obj.numSpotsPerEpoch
 
             if strcmp(obj.gridMode,'grid')
                 %space the spots to achieve the desired coverage factor
@@ -173,21 +174,22 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 end
             end
 
-            obj.responseFigure = obj.showFigure('sa_labs.figures.SpotsMultiLocationFigure', devices, modes, ...
-                    'totalNumEpochs', obj.totalNumEpochs,...
-                    'preTime', obj.spotPreFrames / obj.frameRate,...
-                    'stimTime', obj.spotStimFrames / obj.frameRate,...
-                    'tailTime', obj.spotTailFrames / obj.frameRate,...
-                    'spotsPerEpoch', obj.numSpotsPerEpoch, ...
-                    'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
-        end
+%             obj.responseFigure = obj.showFigure('sa_labs.figures.SpotsMultiLocationFigure', devices, modes, ...
+%                     'totalNumEpochs', obj.totalNumEpochs,...
+%                     'preTime', obj.spotPreFrames / obj.frameRate,...
+%                     'stimTime', obj.spotStimFrames / obj.frameRate,...
+%                     'tailTime', obj.spotTailFrames / obj.frameRate,...
+%                     'spotsPerEpoch', obj.numSpotsPerEpoch, ...
+%                     'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
+         end
         
         function prepareEpoch(obj, epoch)
             if strcmp(obj.gridMode,'random')
                 obj.cx = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
                 obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
             else
-                spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
+                spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch)
+                obj.grid
                 %would be better to do a complete permutation...
                 obj.cx = obj.grid(spots,1);
                 obj.cy = obj.grid(spots,2);
@@ -222,6 +224,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
             spotPre = obj.spotPreFrames;
             spotPreStim = obj.spotPreFrames+ obj.spotStimFrames;
             spotPreStimPost = obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames;
+                        
             function xy = getSpotPosition(state)
                 i = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
                 % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
@@ -230,23 +233,17 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 xy = canvasSize/2 + [cx_(i); cy_(i)];
             end
             
-            sI = obj.spotIntensity;
+            sI = obj.spotIntensity
             function c = getSpotIntensity(state)
-                if state.frame >= (nFrames - 1)
-                    c = 0;
-                    return
-                end
-                
-                i = mod(state.frame, spotPreStimPost);
-
+                i = mod(state.frame, spotPreStimPost)
                 if (i < spotPre) || (i >= spotPreStim)
                     c = 0;
                 else
-                    c = sI;
+                    c = sI
                 end
             end
             
-            p = stage.core.Presentation(35);
+            p = stage.core.Presentation(5);
 
                 spot = stage.builtin.stimuli.Ellipse();
             
