@@ -5,6 +5,9 @@ classdef SpotField < sa_labs.protocols.StageProtocol
 
         extentX = 60 %um
         extentY = 60 %um
+        
+        arms = 6; %only for radial
+        spotsPerArm = 6; %only for radial
 
         spotStimFrames = 15
         spotPreFrames = 15
@@ -96,7 +99,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
             obj.theta = linspace(0,2*pi,11);
             obj.theta(end) = [];
             
-            obj.numSpotsPerEpoch = floor(35 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
+            obj.numSpotsPerEpoch = floor(36 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
             obj.numSpotsPerEpoch
 
             if strcmp(obj.gridMode,'grid')
@@ -144,16 +147,20 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 obj.grid(:,1) = obj.grid(:,1) * obj.extentX;
                 obj.grid(:,2) = obj.grid(:,2) * obj.extentY;
             elseif strcmp(obj.gridMode,'radial') 
-                   %TODO radial part
-                   N = cumsum([6, 10, 14, 8, 16, 30]);
-                   R = [8, 9, 12, 22, 24, 28] / 60; % * obj.extentX;
-                   obj.grid = [];
-                   for i = 1:numel(N)
-                       th = linspace(0, 2*pi, N(i) + 1)';
-                       obj.grid = vertcat(obj.grid, R(i)*[cos(th(1:end-1)), sin(th(1:end-1))]);
-                   end
-                   obj.grid(:,1) = obj.grid(:,1) * obj.extentX;
-                   obj.grid(:,2) = obj.grid(:,2) * obj.extentY;
+                    angles = linspace(0,2*pi,obj.arms+1);
+                    angles = angles(1:obj.arms);
+                    
+                    arm_spots = linspace(0, obj.extentX, obj.spotsPerArm);
+                
+                    N = obj.arms * obj.spotsPerArm;
+                    obj.grid = zeros(N,2);
+                    for i=1:obj.arms
+                        for j=1:obj.spotsPerArm
+                            [x, y] = pol2cart(angles(i), arm_spots(j));
+                            obj.grid((i-1)*obj.spotsPerArm+j,1) = x;
+                            obj.grid((i-1)*obj.spotsPerArm+j,2) = y;
+                        end
+                    end 
             end
 
             if obj.seed >= 0
@@ -174,13 +181,13 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 end
             end
 
-%             obj.responseFigure = obj.showFigure('sa_labs.figures.SpotsMultiLocationFigure', devices, modes, ...
-%                     'totalNumEpochs', obj.totalNumEpochs,...
-%                     'preTime', obj.spotPreFrames / obj.frameRate,...
-%                     'stimTime', obj.spotStimFrames / obj.frameRate,...
-%                     'tailTime', obj.spotTailFrames / obj.frameRate,...
-%                     'spotsPerEpoch', obj.numSpotsPerEpoch, ...
-%                     'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
+            obj.responseFigure = obj.showFigure('sa_labs.figures.SpotsMultiLocationFigure', devices, modes, ...
+                    'totalNumEpochs', obj.totalNumEpochs,...
+                    'preTime', obj.spotPreFrames / obj.frameRate,...
+                    'stimTime', obj.spotStimFrames / obj.frameRate,...
+                    'tailTime', obj.spotTailFrames / obj.frameRate,...
+                    'spotsPerEpoch', obj.numSpotsPerEpoch, ...
+                    'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
          end
         
         function prepareEpoch(obj, epoch)
@@ -188,8 +195,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 obj.cx = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
                 obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
             else
-                spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch)
-                obj.grid
+                spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
                 %would be better to do a complete permutation...
                 obj.cx = obj.grid(spots,1);
                 obj.cy = obj.grid(spots,2);
@@ -233,17 +239,17 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 xy = canvasSize/2 + [cx_(i); cy_(i)];
             end
             
-            sI = obj.spotIntensity
+            sI = obj.spotIntensity;
             function c = getSpotIntensity(state)
-                i = mod(state.frame, spotPreStimPost)
+                i = mod(state.frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
                     c = 0;
                 else
-                    c = sI
+                    c = sI;
                 end
             end
             
-            p = stage.core.Presentation(5);
+            p = stage.core.Presentation(36);
 
                 spot = stage.builtin.stimuli.Ellipse();
             
@@ -283,7 +289,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
         function stimTime = get.stimTime(~)
             
             % if strcmp(obj.trialType,'chirp')
-                stimTime = 5000;
+                stimTime = 36000;
             % else
             %     stimTime = obj.spotCountInX * obj.spotCountInY * (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) / obj.frameRate * 1e3;
             % end
