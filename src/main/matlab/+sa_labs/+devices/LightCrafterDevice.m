@@ -280,8 +280,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             trackerBackground.color = 0;  %change this for testing alignment?
 
             tracker = stage.builtin.stimuli.Rectangle();
-            tracker.size = frameTrackerSize;
-            % tracker.size = [0,0];
+            % tracker.size = frameTrackerSize;
+            tracker.size = [0,0];
             tracker.position = obj.getFrameTrackerPosition() - canvasTranslation;
             tracker.color = 1.0;
             
@@ -296,10 +296,13 @@ classdef LightCrafterDevice < symphonyui.core.Device
             %     @(s) s.time < trackerDuration);% && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
             % presentation.addController(trackerOpacity);
 
-            % trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
-            %     @(s) 1.0*(s.time < (presentation.duration - (1/frameRate))));
+            trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
+                @(s) 1.0*(s.time < (presentation.duration - (1/frameRate))));
             
-            % presentation.addController(trackerOpacity);
+%             trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
+%                 @(s) 1.0);
+            
+            presentation.addController(trackerOpacity);
             
             % trackerSize = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
             %     @(s) (s.frame == 0)*.75 + (mod(s.frame,4)==0)*.25 + (mod(s.frame,4)==3)*.125 + (mod(s.frame,4)==3)*.375);
@@ -307,8 +310,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             xy_yx = [frameTrackerSize(1)/frameTrackerSize(2) frameTrackerSize(2)/frameTrackerSize(1)];
             function sz = resizeFrameTracker(s)
                 if s.frame < 4 %<3
-                    % sz = frameTrackerSize;
-                    sz = 1
+                    sz = frameTrackerSize;
                 else
                     m = mod(s.frame, 4);
                     % if mod(s.frame, 2)
@@ -317,13 +319,10 @@ classdef LightCrafterDevice < symphonyui.core.Device
                     %     sz = [0, 0];                
                     % end
                     sc = (m==1) * .5 + (m==2) * .1 + (m==3) * .3;
-                    % sz = [frameTrackerSize(1), frameTrackerSize(2) * sc];
-                    sz = sc;
+                    sz = [frameTrackerSize(1), frameTrackerSize(2) * sc];
                 end
             end
-            % trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...
-            %     @(s) resizeFrameTracker(s));
-            trackerSize = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
+            trackerSize = stage.builtin.controllers.PropertyController(tracker, 'size', ...
                 @(s) resizeFrameTracker(s));
             presentation.addController(trackerSize);
             
