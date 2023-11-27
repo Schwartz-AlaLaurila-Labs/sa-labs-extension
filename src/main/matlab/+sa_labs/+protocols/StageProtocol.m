@@ -375,6 +375,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 duration = (obj.preTime + obj.stimTime + obj.tailTime) / 1e3;
                 epoch.addDirectCurrentStimulus(device, device.background, duration, obj.sampleRate);
             end
+
+            if any(strcmp(obj.rig.getDeviceNames, 'Frame Timing'))
+                epoch.addResponse(obj.rig.getDevice('Frame Timing'));
+            end
                         
         end
        

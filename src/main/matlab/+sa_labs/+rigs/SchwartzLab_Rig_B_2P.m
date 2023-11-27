@@ -62,7 +62,7 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
      
             obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
             obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
-            obj.daqStreams('Frame timing') = {'ai3',-1, 'V'};
+            obj.daqStreams('Frame Timing') = {'ai3',-1, 'V'};
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
