@@ -19,8 +19,6 @@ classdef SchwartzLab_Rig_B_2P < sa_labs.rigs.SchwartzLab_Rig_Base
         fitGreen = [0 0 0 0];%updated 8/01/23 - Zach
         % fitUV = 1.0e-11 *[ 0.000000792067937, -0.001815711190665, 1.929889803588720, -0.83029837531757]; %updated 9/06/23 - Raphael Julia no filters
         fitUV = 1.0e-11 *[-0.000000222416821,  -0.000023093679523,   0.132667150269873,  -0.062845871410866];  %updated 10/25/23 - Zach & Trung
-
-   -0.0000   -0.0000    0.1327   -0.0628
       
         micronsPerPixel = 1.6 %updated 08/01/23 Zach
 
