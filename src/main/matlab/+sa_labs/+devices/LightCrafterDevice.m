@@ -318,7 +318,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
                     % else
                     %     sz = [0, 0];                
                     % end
-                    sc = (m==1) * .5 + (m==2) * .1 + (m==3) * .3;
+                    sc = (m==1) * .5 + (m==2) * .025 + (m==3) * .075;
                     sz = [frameTrackerSize(1), frameTrackerSize(2) * sc];
                 end
             end
