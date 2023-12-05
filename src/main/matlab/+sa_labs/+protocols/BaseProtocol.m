@@ -188,7 +188,7 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                 end
             
             end
-            if any(strcmp(obj.rig.getDeviceNames, 'Bath Tempature'))
+            if any(strcmp(obj.rig.getDeviceNames, 'Bath Temperature'))
                 epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
                 epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
             end
@@ -196,12 +196,6 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
             if any(strcmp(obj.rig.getDeviceNames, 'PstimTrigger'))
                 epoch.addResponse(obj.rig.getDevice('PstimTrigger'));
             end
-            
-            if any(strcmp(obj.rig.getDeviceNames, 'Bath Tempature'))
-                epoch.addResponse(obj.rig.getDevice('Bath Temperature'));
-                epoch.addResponse(obj.rig.getDevice('Bath Temperature Control'));
-            end
-
             
             %scanhead trigger for function imaging, added by Greg 3/5/18
             if obj.scanHeadTrigger

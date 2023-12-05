@@ -161,6 +161,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                             obj.grid((i-1)*obj.spotsPerArm+j,2) = y;
                         end
                     end 
+                    size(obj.grid)
             end
 
             if obj.seed >= 0
@@ -196,9 +197,12 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
             else
                 spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
+                size(spots);
                 %would be better to do a complete permutation...
                 obj.cx = obj.grid(spots,1);
                 obj.cy = obj.grid(spots,2);
+                size(obj.cx)
+                size(obj.cy)
             end
             
             epoch.addParameter('cx', obj.cx);

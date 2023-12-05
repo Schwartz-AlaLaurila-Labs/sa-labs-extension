@@ -37,14 +37,18 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         spectralOverlap_UV = 1.0e+18 *[1.317131095011983   0.388339837907882   1.209319067404767];%updated 8=10/20/23 Zach
         
         projectorColorMode = 'uv';
-        numberOfAmplifiers = 1;
+        numberOfAmplifier
+        
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
-        % host = 'localhost';
-        daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
+       
+        daq_type = 'NI'; 
+        board is being used?  'Heka' or 'NI'
 
-        blankingCircuitComPort = 'COM3';
-        video_path = 'D:\Movies\'
+        blankingCircuitCo
+        
+        video_path = 'D:\
+        
     end
     
     methods
@@ -57,7 +61,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
      
             obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
             obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
-            obj.daqStreams('Frame timing') = {'ai3',-1, 'V'};
+            obj.daqStreams('Frame Timing') = {'ai3',-1, 'V'};
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
