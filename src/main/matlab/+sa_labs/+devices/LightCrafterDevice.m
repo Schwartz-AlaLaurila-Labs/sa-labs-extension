@@ -52,7 +52,8 @@ classdef LightCrafterDevice < symphonyui.core.Device
             
             trueCanvasSize = obj.stageClient.getCanvasSize();
             canvasSize = [trueCanvasSize(1) * 2, trueCanvasSize(2)]; %not clear why this is the case, but necessary for proper x/y scaling
-            
+%             canvasSize = trueCanvasSize;
+%             canvasSize = [1140 912];
             obj.stageClient.setCanvasProjectionIdentity();
             obj.stageClient.setCanvasProjectionOrthographic(0, canvasSize(1), 0, canvasSize(2));
             

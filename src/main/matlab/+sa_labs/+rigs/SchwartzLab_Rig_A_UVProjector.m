@@ -16,10 +16,11 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         fitUV =   [-1.03e-18, -1.07e-16, 1.89e-13, 1.76e-11];%updated 11/15/2022 -David
         
         micronsPerPixel = 1.3; %updated 6/1/2022 -David
-        frameTrackerPosition = [10,50]; %updated 1/16/2023 - Trung
-        frameTrackerSize = [200,100]; %updated 5/26/2022 -David
-        frameTrackerBackgroundSize = [200, 100]; %updated 7/28/2022 - Zach
-        
+        frameTrackerPosition = [182.4,570]; %updated 052924 Zach
+        frameTrackerSize = [300,1149]; %updated 052924 Zach
+        frameTrackerBackgroundSize = [364.8,1140]; %updated 052924 Zach
+        canvasTranslation = [182.4,0]; %updated 052924 Zach        
+
         filterWheelComPort = 'COM7';
         orientation = [false, true];%[flip Y, flip X]
         angleOffset = 0; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
