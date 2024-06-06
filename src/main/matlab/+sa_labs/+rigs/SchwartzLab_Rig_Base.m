@@ -27,7 +27,11 @@ classdef SchwartzLab_Rig_Base < symphonyui.core.descriptions.RigDescription
                 if strcmpi(obj.daq_type, 'Heka')
                     daq = HekaDaqController(HekaDeviceType.USB18);
                 elseif strcmpi(obj.daq_type, 'NI')
-                    daq = NiDaqController();
+                    if isprop(obj,'daq_name')
+                        daq = NiDaqController(obj.daq_name);
+                    else
+                        daq = NiDaqController();
+                    end
                 else
                     error('Could not identify Daq type from RigConfig')
                 end
