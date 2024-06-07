@@ -13,12 +13,13 @@ classdef SchwartzLab_Rig_A_Pstim < sa_labs.rigs.SchwartzLab_Rig_Base
         
         fitBlue = [9.10317387691189e-18	-1.18865973635156e-14	3.85486264901338e-12	-1.66847157811571e-11];%updated 5/26/2022 -David
         fitGreen =[1.21309650979622e-18	-4.08598841738357e-16	3.78474579983637e-14	-4.17594216385694e-14];%updated 5/26/2022 -David (Green projector not modulating current and is dim)
-        fitUV =   [-1.03e-18, -1.07e-16, 1.89e-13, 1.76e-11];%updated 11/15/2022 -David
+        fitUV = 1.0e-10 * [-0.000000039305705   0.000007157074113   0.005342993520666   0.592950091514012]; %updated 060524 Trung 
         
         micronsPerPixel = 1.3; %updated 6/1/2022 -David
-        frameTrackerPosition = [10,50]; %updated 01/18/2023 - Trung
-        frameTrackerSize = [200,100]; %updated 5/26/2022 -David
-        frameTrackerBackgroundSize = [200, 100]; %updated 7/28/2022 - Zach
+        frameTrackerPosition = [0,570]; %updated 052924 Zach
+        frameTrackerSize = [60,1140]; %updated 052924 Zach
+        frameTrackerBackgroundSize = [364.8,1140]; %updated 052924 Zach
+        canvasTranslation = [182.4,0]; %updated 052924 Zach    
         
         filterWheelComPort = 'COM7';
         orientation = [false, true];%[flip Y, flip X]
