@@ -100,8 +100,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
             obj.theta(end) = [];
             
             obj.numSpotsPerEpoch = floor(36 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
-            obj.numSpotsPerEpoch
-
+            
             if strcmp(obj.gridMode,'grid')
                 %space the spots to achieve the desired coverage factor
                 %uses the ratio of the area of a hexagon to that of a circle
@@ -189,20 +188,25 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                     'tailTime', obj.spotTailFrames / obj.frameRate,...
                     'spotsPerEpoch', obj.numSpotsPerEpoch, ...
                     'spikeThreshold', obj.spikeThreshold, 'spikeDetectorMode', obj.spikeDetectorMode);
+                
+            total_spots = obj.numSpotsPerEpoch * obj.totalNumEpochs;
+            num_repeats = ceil(total_spots / size(obj.grid,1));
+            total_spots_up = num_repeats * size(obj.grid,1);
+            spot_index = mod(0:total_spots_up-1, size(obj.grid,1)) + 1; % 1...77, 1...77, 1...77, ...., 1...77
+            rand_index = randperm(obj.randStream, total_spots_up, total_spots);
+            obj.grid = obj.grid(spot_index(rand_index), :);
+            
          end
         
         function prepareEpoch(obj, epoch)
             if strcmp(obj.gridMode,'random')
                 obj.cx = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
                 obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
-            else
-                spots = randperm(obj.randStream, size(obj.grid,1), obj.numSpotsPerEpoch);
-                size(spots);
-                %would be better to do a complete permutation...
-                obj.cx = obj.grid(spots,1);
-                obj.cy = obj.grid(spots,2);
-                size(obj.cx)
-                size(obj.cy)
+            else                %would be better to do a complete permutation...
+                si = obj.numEpochsPrepared * obj.numSpotsPerEpoch + 1 : (obj.numEpochsPrepared+1) * obj.numSpotsPerEpoch;
+                
+                obj.cx = obj.grid(si,1);
+                obj.cy = obj.grid(si,2);
             end
             
             epoch.addParameter('cx', obj.cx);
@@ -293,7 +297,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
         function stimTime = get.stimTime(~)
             
             % if strcmp(obj.trialType,'chirp')
-                stimTime = 36000;
+                stimTime = 35000;
             % else
             %     stimTime = obj.spotCountInX * obj.spotCountInY * (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) / obj.frameRate * 1e3;
             % end
