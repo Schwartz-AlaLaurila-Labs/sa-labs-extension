@@ -37,6 +37,9 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
         exampleAxes
         examplePlot
         
+        gridHistory
+        respHistory
+        
     end
     
     methods
@@ -89,6 +92,9 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             obj.timebase = [];
             obj.rawTimebase = [];
             obj.ampUnits = cell(obj.numChannels,1);
+            
+            obj.gridHistory = [];
+            obj.respHistory = [];
         end
         
         function createUi(obj)
@@ -132,7 +138,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 obj.topRasters{ci} = plot(obj.responseAxis,[]); %line(0,0, 'color',color);
                 
                 obj.middleAxes{ci} = axes('Parent', middleBox);
-                obj.scatters{ci} = scatter(obj.middleAxes{ci},0,0,200,0,'filled'); %TODO: check size
+                obj.scatters{ci} = scatter(obj.middleAxes{ci},0,0,100,0,'filled'); %TODO: check size
                 axis(obj.middleAxes{ci}, 'equal');
                 
                 obj.bottomAxes{ci} = axes('Parent', bottomBox);
@@ -253,6 +259,7 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                 return
             end
             grid = [epoch.parameters('cx'); epoch.parameters('cy')]';
+            obj.gridHistory = cat(1,obj.gridHistory, grid);
             
             
             title(obj.responseAxis, sprintf('Epoch %d of %d', obj.epochCount, obj.totalNumEpochs));
@@ -320,9 +327,11 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
                         bl = accumarray(spikeSpots(spikeSpotTime<=obj.preTime)', 1, [obj.spotsPerEpoch,1], @sum, 0);
                     end
                     
-                    [u,~,ui] = unique(grid,'rows');
+                    %need to store past resp-bl and grid, concatenate, 
+                    obj.respHistory = cat(1,obj.respHistory, resp-bl);
+                    [u,~,ui] = unique(obj.gridHistory,'rows');
                     
-                    set(obj.scatters{ci}, 'xdata', u(:,1), 'ydata', u(:,2), 'cdata', splitapply(@mean,resp - bl,ui));
+                    set(obj.scatters{ci}, 'xdata', u(:,1), 'ydata', u(:,2), 'cdata', splitapply(@mean,obj.respHistory,ui));
                     axis(obj.middleAxes{ci}, 'equal');
                     
                     %TODO: plotting the heatmap is a bit more complicated
