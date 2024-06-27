@@ -19,16 +19,16 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
     
     properties (Dependent)
         numPulses % Total number of current/voltage train pulses
-        test1numPulses = 4
-        test2numPulses = 9
         stimTime
     end
     
     properties (Hidden)
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = ''; %'pulseAmplitude';
-        stim1Time = test1numPulses*(1000/obj.PTFreq)
-        stim2Time = test2numPulses*(1000/obj.PTFreq)
+        stim1Time
+        stim2Time
+        test1numPulses = 4
+        test2numPulses = 9
     end
     
     properties (Hidden, Dependent)
@@ -50,21 +50,23 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
         function stim = createAmpStimulus(obj, ampName)
 
             stimCell = {};
+            stim1Time = test1numPulses*(1000/obj.PTFreq)
+            stim2Time = test2numPulses*(1000/obj.PTFreq)
             
             % create delay pulse
-            % create background pulse
-            genB = symphonyui.builtin.stimuli.PulseGenerator();
-            
-            genB.preTime = 0;
-            genB.stimTime = obj.preTime+obj.stim1Time+obj.stim2Time+obj.tailTime;
-            genB.tailTime = 0;
-            genB.amplitude = obj.rig.getDevice(ampName).background.quantity;
-            genB.mean = 0;
-            genB.sampleRate = obj.sampleRate;
-            genB.units = obj.rig.getDevice(ampName).background.displayUnits;
-
-            stimCell{1} = genB.generate();
-            
+%             % create background pulse
+%             genB = symphonyui.builtin.stimuli.PulseGenerator();
+%             
+%             genB.preTime = 0;
+%             genB.stimTime = obj.preTime+obj.stim1Time+ obj.PulseTrainTime + obj.stim2Time+obj.tailTime;
+%             genB.tailTime = 0;
+%             genB.amplitude = obj.rig.getDevice(ampName).background.quantity;
+%             genB.mean = 0;
+%             genB.sampleRate = obj.sampleRate;
+%             genB.units = obj.rig.getDevice(ampName).background.displayUnits;
+% 
+%             stimCell{1} = genB.generate();
+%             
             %Create stim baseline pulses
             gen1 = symphonyui.builtin.stimuli.PulseTrainGenerator();
             
@@ -78,7 +80,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
             gen1.sampleRate = obj.sampleRate;
             gen1.units = obj.rig.getDevice(ampName).background.displayUnits;
             
-            stimCell{2} = gen1.generate();
+            stimCell{1} = gen1.generate();
 
             %Create spike train
 
@@ -94,7 +96,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
             gen2.sampleRate = obj.sampleRate;
             gen2.units = obj.rig.getDevice(ampName).background.displayUnits;
             
-            stimCell{3} = gen2.generate();
+            stimCell{2} = gen2.generate();
 
             %Create PostTrain pulses
 
@@ -110,7 +112,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
             gen3.sampleRate = obj.sampleRate;
             gen3.units = obj.rig.getDevice(ampName).background.displayUnits;
             
-            stimCell{4} = gen3.generate();
+            stimCell{3} = gen3.generate();
 
             % add together all stimuli
             genSum = symphonyui.builtin.stimuli.SumGenerator();
@@ -139,7 +141,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
         end        
         
         function numPulses = get.numPulses(obj)
-            numPulses = obj.stimTime/(1000/obj.trainFreq); 
+            numPulses = obj.stimTime/(1000/obj.STFreq); 
         end
         function stimTime = get.stimTime(obj)
             stimTime = obj.stim1Time+obj.PulseTrainTime+obj.stim2Time;
