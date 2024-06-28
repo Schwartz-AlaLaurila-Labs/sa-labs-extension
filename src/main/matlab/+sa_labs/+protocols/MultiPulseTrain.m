@@ -57,7 +57,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
             genB = symphonyui.builtin.stimuli.PulseGenerator();
             
             genB.preTime = 0;
-            genB.stimTime = obj.preTime + obj.stim1Time + obj.PulseTrainTime + obj.stim2Time + obj.tailTime;
+            genB.stimTime = obj.preTime + obj.stim1Time + obj.PulseTrainTime + obj.stim2Time + obj.tailTime + 200;
             genB.tailTime = 0;
             genB.amplitude = obj.rig.getDevice(ampName).background.quantity;
             genB.mean = 0;
@@ -71,7 +71,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
             
             gen1.preTime = obj.preTime;
             gen1.pulseTime = obj.TestPulseTime;
-            gen1.tailTime =  obj.PulseTrainTime + obj.stim2Time+obj.tailTime; 
+            gen1.tailTime =  obj.PulseTrainTime + obj.stim2Time+obj.tailTime+200; 
             gen1.intervalTime = obj.TestPulseIntervalTime;
             gen1.amplitude = obj.TestPulseAmplitude;
             gen1.numPulses = obj.test1numPulses;
@@ -85,9 +85,9 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
 
             gen2 = symphonyui.builtin.stimuli.PulseTrainGenerator();
             
-            gen2.preTime = obj.preTime + obj.stim1Time;
+            gen2.preTime = obj.preTime + obj.stim1Time +100;
             gen2.pulseTime = obj.SpikeTrainPulseTime;
-            gen2.tailTime = obj.stim2Time+obj.tailTime;
+            gen2.tailTime = obj.stim2Time+obj.tailTime +100;
             actual_dur = obj.pulseInterval * obj.StNumPulses - obj.intervalTime;
             dur_diff = obj.PulseTrainTime - actual_dur;
             gen2.tailTime = gen2.tailTime + dur_diff;
@@ -104,7 +104,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
 
             gen3 = symphonyui.builtin.stimuli.PulseTrainGenerator();
             
-            gen3.preTime = obj.preTime + obj.stim1Time + obj.PulseTrainTime;
+            gen3.preTime = obj.preTime + obj.stim1Time + obj.PulseTrainTime+200;
             gen3.pulseTime = obj.TestPulseTime;
             gen3.tailTime = obj.tailTime;  %Test pulses frequency over 2 (ms)
             gen3.intervalTime = obj.TestPulseIntervalTime;
