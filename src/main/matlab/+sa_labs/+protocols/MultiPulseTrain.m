@@ -13,7 +13,10 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
         STFreq = 25                         % Stimulation frequency (Hz)
         pulseAmplitude = 1000               % Pulse amplitude (mV or pA depending on amp mode)
         PulseTrainTime = 250                   % Pulse train duration (ms)
-        numberOfEpochs = 10;
+        numberOfEpochs = 10
+        test1numPulses = 4
+        test2numPulses = 9
+        PTFreq = 0.5
     end
     
     properties (Dependent)
@@ -25,9 +28,7 @@ classdef MultiPulseTrain < sa_labs.protocols.BaseProtocol
     properties (Hidden)
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = ''; %'pulseAmplitude';
-        test1numPulses = 4
-        test2numPulses = 9
-        PTFreq = 0.5                         % Test pulses frequency (Hz)
+        
     end
     
     properties (Hidden, Dependent)
