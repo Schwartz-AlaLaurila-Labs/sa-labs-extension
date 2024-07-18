@@ -52,7 +52,7 @@ classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
         end     
 
         function generateParameters(obj)
-            [x,y,u,v,~,t,x0,y0,u0,v0] = DHOARGSM(obj.tau, obj.omega0, obj.D, obj.tauz, obj.Dz, obj.dt, obj.stimTime, obj.preTime, obj.motionSeed);
+            [x,y,u,v,~,t,x0,y0,u0,v0] = sa_labs.util.DHOARGSM(obj.tau, obj.omega0, obj.D, obj.tauz, obj.Dz, obj.dt, obj.stimTime, obj.preTime, obj.motionSeed);
 
             vstd = std([u; v]); % equalize velocity variance for GSM and control
             % instead of this, std of the vector velocity
