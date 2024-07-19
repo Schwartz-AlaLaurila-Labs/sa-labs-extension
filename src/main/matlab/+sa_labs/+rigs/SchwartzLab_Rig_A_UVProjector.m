@@ -17,9 +17,12 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         %fitUV =   [-1.03e-18, -1.07e-16, 1.89e-13, 1.76e-11];%updated 11/15/2022 -David
         fitUV = 1.0e-10 * [-0.000000039305705   0.000007157074113   0.005342993520666   0.592950091514012]; %updated 060524 Trung 
         micronsPerPixel = 1.3; %updated 6/1/2022 -David
-        frameTrackerPosition = [0,570]; %updated 052924 Zach
+        %frameTrackerPosition = [0,570]; %updated 052924 Zach
         frameTrackerSize = [60,1140]; %updated 052924 Zach
         frameTrackerBackgroundSize = [364.8,1140]; %updated 052924 Zach
+        
+        frameTrackerPosition = [70,570]; %updated 052924 Zach
+   
         canvasTranslation = [182.4,0]; %updated 052924 Zach        
 
         filterWheelComPort = 'COM7';
