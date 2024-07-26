@@ -10,6 +10,7 @@ properties
     position = [0, 0]       % Center position on the canvas [x, y] (pixels)
     size = [100, 100]       % Size [width, height] (pixels)
     orientation = 0         % Orientation (degrees)
+    color = [1, 1, 1]       % Color multiplier as single value or [R, G, B] (real number)
     opacity = 1             % Opacity (0 to 1)
 end
 
@@ -154,13 +155,13 @@ methods (Access = protected)
         modelView.rotate(obj.orientation, 0, 0, 1);
         modelView.scale(obj.size(1) / 2, obj.size(2) / 2, 1);
 
-        % c = obj.color;
-        % if length(c) == 1
-        %     c = [c, c, c, obj.opacity];
-        % elseif length(c) == 3
-        %     c = [c, obj.opacity];
-        % end
-        c = [1, 1, 1, obj.opacity];
+        c = obj.color;
+        if length(c) == 1
+            c = [c, c, c, obj.opacity];
+        elseif length(c) == 3
+            c = [c, obj.opacity];
+        end
+%         c = [1, 1, 1, obj.opacity];
 
         obj.canvas.drawArray(obj.vao, GL.TRIANGLE_STRIP, 0, 4, c, obj.mask, obj.texture, obj.filter);
 
