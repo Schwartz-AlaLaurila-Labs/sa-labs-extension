@@ -1,6 +1,9 @@
 classdef PairedSpotField < sa_labs.protocols.StageProtocol
     properties
         
+        preTime = 100
+        tailTime = 100
+
         spotSize = 30
         
         spotStimFrames = 15
@@ -10,9 +13,9 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         numSpotsPerEpoch = 30
         numRepeats = 3
         
-        spotPairs = [] %size N-by-(a,b)-by-(x,y)
-        
         seed = -1 %-1 to use global stream, else a non-negative integer
+        
+        intensity = 1
         
     end
     
@@ -20,8 +23,6 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
     properties (Dependent)
         
         stimTime
-        preTime
-        tailTime
         
         spotStimTime
         spotPreTime
@@ -31,9 +32,12 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         
     end
     
-    properties (Hidden)
+    properties (Hidden, Transient)
         
         responsePlotMode = false;
+        
+        spotPairs = [] %size N-by-(a,b)-by-(x,y)
+        spotPairsType = symphonyui.core.PropertyType('denserealdouble', 'matrix')
         
     end
     
@@ -60,13 +64,13 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             % create the cycles and shuffle them
             totalSpots = obj.numSpotsPerEpoch * obj.totalNumEpochs;
             [~,i] = sort(rand(randStream, size(obj.spotPairs,1), ceil(totalSpots / size(obj.spotPairs,1))));
-            obj.index = reshape(i, obj.numSpotsPerEpoch, obj.totalNumEpochs);
+            obj.index = reshape(i(1:totalSpots), obj.numSpotsPerEpoch, obj.totalNumEpochs);
             
         end
         
-        function prepareEpoch(obj)
-            obj.cx = obj.spotPairs(obj.index(obj.numEpochsPrepared + 1), :, 1);
-            obj.cy = obj.spotPairs(obj.index(obj.numEpochsPrepared + 1), :, 2);
+        function prepareEpoch(obj, epoch)
+            obj.cx = obj.spotPairs(obj.index(:,obj.numEpochsPrepared + 1), :, 1);
+            obj.cy = obj.spotPairs(obj.index(:,obj.numEpochsPrepared + 1), :, 2);
             
             
             epoch.addParameter('cx', obj.cx);
@@ -91,7 +95,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
                 xy = canvasSize/2 + [cx_(i, spot); cy_(i, spot)];
             end
             
-            sI = obj.spotIntensity;
+            sI = obj.intensity;
             function c = getSpotIntensity(state)
                 i = mod(state.frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
@@ -106,7 +110,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotA = stage.builtin.stimuli.Ellipse();
             
             [~,spotA.radiusX] = obj.um2pix(obj.spotSize / 2);
-            spotA.radiusY = spot.radiusX;
+            spotA.radiusY = spotA.radiusX;
             spotA.opacity = 1;
             spotA.color = 0;
             
@@ -124,7 +128,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotB = stage.builtin.stimuli.Ellipse();
             
             [~,spotB.radiusX] = obj.um2pix(obj.spotSize / 2);
-            spotB.radiusY = spot.radiusX;
+            spotB.radiusY = spotB.radiusX;
             spotB.opacity = 1;
             spotB.color = 0;
             
@@ -139,34 +143,29 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             p.addController(spotBPosition);
             
         end
-        
-        
+
         function stimTime = get.stimTime(obj)
-            stimTime = (obj.spotStimFrames + obj.spotPreFrames + obj.spotTailFrames) / obj.frameRate * obj.numSpotsPerEpoch;
-        end
-        
-        function preTime = get.preTime(~)
-            preTime = 0;
-        end
-        
-        function tailTime = get.tailTime(~)
-            tailTime = 0;
+            stimTime = (obj.spotStimFrames + obj.spotPreFrames + obj.spotTailFrames) / obj.frameRate *1e3 * obj.numSpotsPerEpoch;
         end
         
         function spotStimTime = get.spotStimTime(obj)
-            spotStimTime = obj.spotStimFrames;
+            spotStimTime = obj.spotStimFrames / obj.frameRate * 1e3;
         end
         
         function spotPreTime = get.spotPreTime(obj)
-            spotPreTime = obj.spotPreFrames;
+            spotPreTime = obj.spotPreFrames / obj.frameRate * 1e3;
         end
         
         function spotTailTime = get.spotTailTime(obj)
-            spotTailTime = obj.spotTailFrames;
+            spotTailTime = obj.spotTailFrames / obj.frameRate * 1e3;
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = ceil(size(obj.spotPairs,1) * obj.numRepeats / obj.numSpotsPerEpoch);
+        end
+        
+        function self = set.spotPairs(self, pairs)
+            self.spotPairs = reshape(pairs,[],2,2);
         end
     end
     

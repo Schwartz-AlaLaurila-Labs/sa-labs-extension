@@ -20,6 +20,7 @@ properties (Access = private)
     lastTopSpotAx
     lastTraceAx
     
+    params
     spikeDetector
 end
 
@@ -202,16 +203,16 @@ methods
         
     end
 
-    function run(self)
+    function run(self, ~, ~)
         self.acquisitionService.selectProtocol('sa_labs.protocols.stage.PairedSpotField');
 
         % % set the properties based on the menu items
         self.acquisitionService.setProtocolProperty('spotSize',self.spotDiam);
         
         switch self.order
+            % note that setter reshapes pairs into N-by-(a,b)-by-(x,y)
             case '0'
-                g = reshape(self.grid,[],1,2);
-                self.acquisitionService.setProtocolProperty('spotPairs',cat(2,g,g));
+                self.acquisitionService.setProtocolProperty('spotPairs',cat(1,self.grid,self.grid));
             case '1'
                 self.acquisitionService.setProtocolProperty('spotPairs',self.grid(self.pairs1,:));
             case '2'
@@ -220,6 +221,13 @@ methods
                 self.acquisitionService.setProtocolProperty('spotPairs',self.grid(cat(1,self.pairs1,self.pairs2),:));
         end
 
+        self.params = self.acquisitionService.getProtocolPropertyDescriptors().toMap();
+        
+        self.spikeDetector = sa_labs.util.SpikeDetector(self.params('spikeDetectorMode'),...
+            self.params('spikeThreshold'));
+        % etc...
+        
+        % set(lastTraceTr, 'xdata', ..., 'ydata', zeros)
         self.acquisitionService.record()
 
         % % check if running
@@ -227,13 +235,7 @@ methods
 
         % % handle state change
         % % addListener(obj.acquisitionService, 'ChangedControllerState, @...)
-        
-        properties = self.acquisitionService.getProtocolPropertyDescriptors();
-        self.spikeDetector = sa_labs.util.SpikeDetector(properties('spikeDetectorMode'),...
-            properties('spikeThreshold'));
-        % etc...
-        
-        % set(lastTraceTr, 'xdata', ..., 'ydata', zeros)
+
 
     end
 
