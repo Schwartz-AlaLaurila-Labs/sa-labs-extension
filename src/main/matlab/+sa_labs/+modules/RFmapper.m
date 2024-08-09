@@ -1,31 +1,37 @@
-classdef RFmapper < symphony.ui.Module & symphonyui.core.FigureHandler
+classdef RFmapper < symphonyui.ui.Module & symphonyui.core.FigureHandler
 % for the time being, this only operates with the PairedSpotField stimulus
 
 properties (Access = private)
     h
-    extentR = 400
-    spotDiam = 15
-    spacing = 15
+    extentR = 200
+    spotDiam = 30
+    spacing = 30
     grid = []
+    pairs1 = []
+    pairs2 = []
+    order = '0'
 
     gridSc
+    lastSpotsSc
 
     gridAx
     lastSpotsAx
     lastRasterAx 
     lastTopSpotAx
     lastTraceAx
+    
+    spikeDetector
 end
 
 methods
     function createUi(self, figure_handle)
         self.h = figure_handle;
-        set(h,...
+        set(self.h,...
             'Name','RF Mapper',...
             'Position', appbox.screenCenter(1000,750));
         
         layout = uix.VBox(...
-            'parent', h,...
+            'parent', self.h,...
             'padding', 8);
 
         menu = uix.HBox(...
@@ -36,7 +42,7 @@ methods
            'parent', menu,...
            'style', 'edit',...
            'string', self.extentR,...
-           'tooltip', 'Extent of grid (microns)',...
+           'tooltip', 'Radius of grid (microns)',...
            'Callback', @self.setExtentR);
         
         uicontrol(...
@@ -57,7 +63,14 @@ methods
             'parent', menu,...
             'style', 'popupmenu',...
             'string', {'0','1','2','1+2'},...
-            'tooltip', 'Order of neighbors to test');
+            'tooltip', 'Order of neighbors to test',...
+            'Callback', @self.setOrder);
+        
+        uicontrol(...
+            'parent', menu,...
+            'style', 'pushbutton',...
+            'string', 'Draw RF',...
+            'Callback', @self.draw);
 
         uicontrol(...
             'parent', menu,...
@@ -72,12 +85,14 @@ methods
         self.gridAx = axes(...
             'parent', displayTop,...
             'units', 'points',...
-            'color', 'none');
+            'color', 'none',...
+            'ycolor', 'none');
 
         self.lastSpotsAx = axes(...
             'parent', displayTop,...
             'units', 'points',...
-            'color', 'none');
+            'color', 'none',...
+            'ycolor', 'none');
 
         displayRight = uix.VBox(...
             'parent', displayTop,...
@@ -95,14 +110,27 @@ methods
             'parent', layout,...
             'color', 'none');
 
-
+        hold(self.gridAx, 'on');
+        title(self.gridAx, 'RF map');
+        xlabel(self.gridAx, 'Position (microns)');
+        xlim(self.gridAx,[-self.extentR, self.extentR]);
+        ylim(self.gridAx,[-self.extentR, self.extentR]);
         self.gridSc = scatter(self.gridAx,...
-            [],[],'k','linewidth', 3);        
+            [],[],'k','linewidth', 2);        
         
-        set(layout, 'Heights', [50, -1]);
-        set(displayTop, 'Widths', [2,2,1]);
+        hold(self.lastSpotsAx, 'on');
+        title(self.lastSpotsAx, 'Last epoch map');
+        xlabel(self.lastSpotsAx, 'Position (microns)');
+        xlim(self.lastSpotsAx,[-self.extentR, self.extentR]);
+        ylim(self.lastSpotsAx,[-self.extentR, self.extentR]);
+        self.lastSpotsSc = scatter(self.gridAx,...
+            [],[],'k','linewidth', 2);        
+        
+        
+        set(layout, 'Heights', [40, -1, -1]);
+        set(displayTop, 'Widths', [-2, -2, -1]);
+        
         self.updateGrid();
-
     end
 
     function setExtentR(self, e, ~)
@@ -112,20 +140,24 @@ methods
 
     function setSpotDiam(self, e, ~)
         self.spotDiam = str2double(e.String);
-        self.updateGrid();
+        self.updateGrid(); %TODO: only need to redraw
     end
 
     function setSpacing(self, e, ~)
         self.spacing = str2double(e.String);
         self.updateGrid();
     end
+    
+    function setOrder(self, e, ~)
+        self.order = e.String;
+    end
 
 
     function updateGrid(self)
-        xa = [0:-self.spacing:-self.extentR/2-self.spacing, self.spacing:self.spacing:self.extentR/2+self.spacing];
-        xb= [xa - self.spacing/2, xa(end)+self.spacing/2];
+        xa = [0:-self.spacing:-self.extentR-self.spacing, self.spacing:self.spacing:self.extentR+self.spacing];
+        xb = [xa - self.spacing/2, xa(end)+self.spacing/2];
         yspacing = cos(pi/6)*self.spacing;
-        ya = [0:-2*yspacing:-self.extentR/2-yspacing, 2*yspacing:2*yspacing:self.extentR/2+yspacing];
+        ya = [0:-2*yspacing:-self.extentR-yspacing, 2*yspacing:2*yspacing:self.extentR+yspacing];
         yb = [ya - yspacing, ya(end) + yspacing];
 
         %create the grid
@@ -133,58 +165,159 @@ methods
         [xqb, yqb] = meshgrid(xb,yb);
         locs = [xqa(:), yqa(:); xqb(:), yqb(:)];
 
-        halfGrids = [self.extentR, self.extentR]/2;
         %remove any circles that aren't contained by the grid circumference
-        self.grid = locs(sum(locs .^2, 2) <= (self.extentR .^2), :);
-
+        self.grid = locs(sum(locs.^2, 2) <= (self.extentR.^2), :);
+        
+        xlim(self.gridAx,[-self.extentR, self.extentR]);
+        ylim(self.gridAx,[-self.extentR, self.extentR]);
+        
         axpos =  get(self.gridAx, 'position');
-        msz = self.spotDiam / diff(xlim(self.gridAx)) * axpos(3);
+        msz = self.spotDiam / sqrt(pi) / diff(xlim(self.gridAx)) * axpos(3);
 
-        set(self.gridSc, 'xdata', self.grid(:,1), 'ydata', self.grid(:,2), 'sizedata', msz.^2, 'cdata', 'k');
+        set(self.gridSc, 'xdata', self.grid(:,1), 'ydata', self.grid(:,2), 'sizedata', msz.^2, 'cdata', [0,0,0]);
         axis(self.gridAx,'equal');
+        
+        
+        %% generate first and second order pairs
+        d = pdist(self.grid);
+        p = d < (self.spacing * 1.5);
+        p = triu(squareform(p),1);
+        [r,c] = find(p);
+        self.pairs1 = [r,c];
+        
+        p = (d > (self.spacing * 1.5)) & (d < (self.spacing * 2.5));
+        p = triu(squareform(p),1);
+        [r,c] = find(p);
+        self.pairs2 = [r,c];
+        
+    end
+    
+    function draw(self)
+        % draw polygon on self.gridAx;
+        % find all pairs of each order inPolygon
+        % delete polygon and draw pretty polygon...
+        % set state so that run() only uses pairs inpolygon...
+        
+        % only inPolygon if both spots in pair are inpolygon...
+        
     end
 
     function run(self)
-        % self.acquisitionService.selectProtocol('sa_labs.protocols.stage.PairedSpotField');
+        self.acquisitionService.selectProtocol('sa_labs.protocols.stage.PairedSpotField');
 
         % % set the properties based on the menu items
-        % % self.acquisitionService.setProtocolProperty();
+        self.acquisitionService.setProtocolProperty('spotSize',self.spotDiam);
+        
+        switch self.order
+            case '0'
+                g = reshape(self.grid,[],1,2);
+                self.acquisitionService.setProtocolProperty('spotPairs',cat(2,g,g));
+            case '1'
+                self.acquisitionService.setProtocolProperty('spotPairs',self.grid(self.pairs1,:));
+            case '2'
+                self.acquisitionService.setProtocolProperty('spotPairs',self.grid(self.pairs2,:));
+            case '1+2'                
+                self.acquisitionService.setProtocolProperty('spotPairs',self.grid(cat(1,self.pairs1,self.pairs2),:));
+        end
 
-        % self.acquisitionService.record()
-
-
+        self.acquisitionService.record()
 
         % % check if running
         % % self.acquisitionService.getControllerState() 
 
         % % handle state change
         % % addListener(obj.acquisitionService, 'ChangedControllerState, @...)
-
-        % % obj.documentationService.getCurrentEpochBlock(obj)
-
-    end
-
-    function updateFigures(self, epochOrInterval)
-        if epochOrInterval.isInterval()
-            return
-        else
-            epoch = epochOrInterval;
-        end
         
-        % ...
+        properties = self.acquisitionService.getProtocolPropertyDescriptors();
+        self.spikeDetector = sa_labs.util.SpikeDetector(properties('spikeDetectorMode'),...
+            properties('spikeThreshold'));
+        % etc...
+        
+        % set(lastTraceTr, 'xdata', ..., 'ydata', zeros)
 
     end
 
-    function h = showFigure(self, className, varargin)
+    function updateFigures(self, epoch)
+        if epoch.isInterval()
+            return
+        end
+%         properties = self.acquisitionService.getProtocolPropertyDescriptors();
+        properties = epoch.parameters;
+        
+        
+        %% Epoch-wise plots
+        % update the bottom trace
+        response = epoch.getResponse('Amp1');
+        [dat, ~] = response.getData();
+        
+        samplesPerSpot = (properties('spikePreFrames') + properties('spikeStimFrames') + properties('spikeTailFrames')) / properties('frameRate') * properties('sampleRate');
+        
+        spikeI = self.spikeDetector.detectSpikes(dat);
+        spikeI = spikeI.sp - properties('preTime') * 1e-3 * properties('sampleRate');
+        spikeI(spikeI < 0) = [];
+        spikeI(spikeI >= properties('stimTime') * 1e-3 * properties('sampleRate')) = [];
+                
+        spikeS = floor(spikeI / samplesPerSpot) + 1;
+        
+        % accumulate the spike count
+        countS = accumarray(spikeS', 1, [properties('spotsPerEpoch'),1], @sum, 0);
+        
+        % update the last spots map
+        cx = properties('cx');
+        cy = properties('cy');
+        % set('xdata','ydata','cdata')...
+        
+        % divide spike indices by numSpots per epoch
+        % update the raster map
+        spikeE = mod(spikeI-1, samplesPerSpot) + 1;
+        % line(spikeE, spikeS,...)
+        
+        % draw the section of trace with most spikes
+        exampleS = mode(spikeS);
+        % set('ydata',dat(properties('sampleRate')*properties('preTime') +
+        %   samplesPerSpot*(exampleS-1 : exampleS) + 1))
+        
+        
+        %% RF map
+        
+        % accumulate the spike and trial counts for each spot/pair index 
+        % pairI = func(cx,cy) -> index
+        
+        % if order 0
+        %   gridSpikeCounts(pairI) += countS
+        %   gridTrialCounts(pairI) += ??
+        %   set(gridSc, 'cdata', gridSpikeCount / gridTrialCounts)
+        % elseif order 1
+        %   pair1SpikeCounts(pairI) += countS
+        %   pair1TrialCounts(pairI) += ??
+        %   set(gridLines1, 'cdata', pair1SpikeCount / pair1TrialCounts)
+        % elseif order 2
+        %   pair2SpikeCounts(pairI) += countS
+        %   pair2TrialCounts(pairI) += ??
+        %   set(gridLines2, 'cdata', pair2SpikeCount / pair2TrialCounts)
+        % elseif order 1+2
+        %   pairI(pairI <= size(pairs1,1)) -> pair1 ?
+        
+        
+        
+
+    end
+
+    function h = showFigure(self, ~, ~)
         h = self.h;
+        self.show();
     end
 
-    function clearFigures(self)
+    function clearFigures(~)
         %pass
     end
 
-    function closeFigures(self)
+    function closeFigures(~)
         %pass
+    end
+    
+    function show(self)
+        figure(self.h);
     end
 
 
