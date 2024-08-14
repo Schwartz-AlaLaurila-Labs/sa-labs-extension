@@ -17,6 +17,7 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
         
         noisePowerDistribution = 2 %1/(freq)^n noise
         highPassSpatial = 0.01 % 1/mm        
+        lowPassSpatial = 100 % 1/mm
         peakSpatialFrequency = 12.5 % 1/mm
         peakWidth = 4 % 1/mm
         peakAmplitude = 0.03
@@ -57,22 +58,30 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
             obj.meanLevel = 0.5;
         end
         function [fs,ft,filt_s,filt_t] = calcFilter(obj)
-            resX = obj.um2pix(obj.sizeX);
-            resY = obj.um2pix(obj.sizeY);
+            % resX = obj.um2pix(obj.sizeX);
+            % resY = obj.um2pix(obj.sizeY);
+            resX = ceil(obj.lowPassSpatial * 3 / 1000 * obj.sizeX);
+            resY = ceil(obj.lowPassSpatial * 3 / 1000 * obj.sizeY);
+
 
             nFrames = round(obj.frameRate * (obj.stimTime/1e3));
             ft = ((1:nFrames) - 1 - nFrames/2)/nFrames*obj.frameRate; %1/sec
 
-            [~,fy] = obj.um2pix(((1:resY) - 1 - resY/2)/resY); % 1/mm
-            [~,fx] = obj.um2pix(((1:resX) - 1 - resX/2)/resX); % 1/mm
+            % [~,fy] = obj.um2pix(((1:resY) - 1 - resY/2)/resY); % 1/mm
+            % [~,fx] = obj.um2pix(((1:resX) - 1 - resX/2)/resX); % 1/mm
+
+            fy = ((1:resY) - 1 - resY/2)/obj.sizeY; % 1/mm
+            fx = ((1:resX) - 1 - resX/2)/obj.sizeX; % 1/mm
 
             fy = fy * 1000;
             fx = fx * 1000;
 
             fs = sqrt(bsxfun(@plus,fy'.^2,fx.^2)); %backwards compatibility
 
-            filt_s = (fs>obj.highPassSpatial)./fs.^obj.noisePowerDistribution + obj.peakAmplitude * exp(-(fs-obj.peakSpatialFrequency).^2 ./ obj.peakWidth.^2);
+            filt_s = (fs>obj.highPassSpatial & fs<obj.lowPassSpatial) .* (1./fs.^obj.noisePowerDistribution + obj.peakAmplitude * exp(-(fs-obj.peakSpatialFrequency).^2 ./ obj.peakWidth.^2));
+            filt_s(fs==0) = 0;
             filt_t = exp(-(ft).^2./obj.temporalWidth.^2) .* (abs(ft) > obj.highPassTemporal);
+            filt_t(ft==0) = 0;
 
             obj.filt = single(bsxfun(@times, filt_s, shiftdim(filt_t,-1)));
         end
@@ -145,16 +154,17 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
             nFrames = round(obj.frameRate * (obj.stimTime/1e3));
             
             % texture is filled from top left (1,1)
+            tex_ = obj.tex;
+
             resX = obj.um2pix(obj.sizeX);
             resY = obj.um2pix(obj.sizeY);
-            texture = stage.builtin.stimuli.Image(uint8(zeros(resY, resX)));
+            texture = stage.builtin.stimuli.Image(uint8(zeros(size(tex_,1), size(tex_,2))));
             texture.position = canvasSize / 2;
             texture.size = [resX, resY];
             texture.setMinFunction(GL.NEAREST);
             texture.setMagFunction(GL.NEAREST);
             p.addStimulus(texture);
             
-            tex_ = obj.tex;
 
             % add controllers
             textureImageController = stage.builtin.controllers.PropertyController(texture, 'imageMatrix',...
@@ -162,8 +172,7 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
                 
             p.addController(textureImageController);
             
-            obj.setOnDuringStimController(p, texture);
-            
+            obj.setOnDuringStimController(p, texture);            
         end
 
         function p = getPreview(self, panel)
