@@ -51,6 +51,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
     end
     
     methods
+
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj)
             %%
@@ -164,9 +165,10 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             totalNumEpochs = ceil(size(obj.spotPairs,1) * obj.numRepeats / obj.numSpotsPerEpoch);
         end
         
-        function self = set.spotPairs(self, pairs)
+        function set.spotPairs(self, pairs)
             self.spotPairs = reshape(pairs,[],2,2);
         end
+
     end
     
 end
