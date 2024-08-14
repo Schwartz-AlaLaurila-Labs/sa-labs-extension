@@ -265,8 +265,8 @@ methods
         roi = drawpolygon(self.gridAx,'color','k');
         
         self.useGrid = inROI(roi, self.grid(:,1), self.grid(:,2));
-        self.usePairs1 = self.useGrid(self.pairs1,1) & self.useGrid(self.pairs1,2);
-        self.usePairs2 = self.useGrid(self.pairs2,1) & self.useGrid(self.pairs2,2);
+        self.usePairs1 = self.useGrid(self.pairs1(:,1)) & self.useGrid(self.pairs1(:,2));
+        self.usePairs2 = self.useGrid(self.pairs2(:,1)) & self.useGrid(self.pairs2(:,2));
         
         roi.Deletable = false;
         roi.InteractionsAllowed = 'none';
@@ -333,8 +333,8 @@ methods
         delete(self.lastSpotsAx.Children(1:end-2));
         
         % set(lastTraceTr, 'xdata', ..., 'ydata', zeros)
-%         self.acquisitionService.record()
-        self.acquisitionService.viewOnly()
+        self.acquisitionService.record()
+%         self.acquisitionService.viewOnly()
 
         % % check if running
         % % self.acquisitionService.getControllerState() 

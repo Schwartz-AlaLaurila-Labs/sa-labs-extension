@@ -93,7 +93,7 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
             for ci = 1%:4
                 ampName = obj.(['chan' num2str(ci)]);
                 ampMode = obj.(['chan' num2str(ci) 'Mode']);
-                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'));
+                if ~(strcmp(ampName, 'None') || strcmp(ampMode, 'Off'))
                     device = obj.rig.getDevice(ampName);
                     obj.showFigure('sa_labs.figures.TextureNoiseFigure', device, ampMode, ...
                         'totalNumEpochs', obj.totalNumEpochs,...
@@ -115,20 +115,18 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
         end
         
         function prepareEpoch(obj, epoch)
-            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-            
+             
             %get seed
             index = mod(obj.numEpochsPrepared, obj.numSeeds) + 1;
             if index == 1
                 obj.seeds = randperm(obj.numSeeds) + obj.seedStartValue - 1; 
             end
-            seed = obj.seeds(index);
-
-            if isempty(obj.texs{seed}) %only generate the textures once
+            
+            if isempty(obj.texs{index}) %only generate the textures once
             
                 % set the random stream for texture generation
-                obj.noiseStream = RandStream('mt19937ar', 'Seed', seed);
-                epoch.addParameter('noiseSeed', seed);
+                obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.seeds(index));
+                
 
                 % generate texture from filter with random phase
                 % this step takes ~5seconds for a 30second texture in testing on office PC with default params
@@ -139,10 +137,14 @@ classdef TextureNoise < sa_labs.protocols.StageProtocol
                 t(t < -3) = -3;
                 t = uint8(((t * (obj.meanLevel * obj.contrast / 6)) + obj.meanLevel) * 255);
 
-                obj.texs{seed} = t;
+                obj.texs{index} = t;
             end
+            epoch.addParameter('noiseSeed', obj.seeds(index));
 
-            obj.tex =  obj.texs{seed};
+            obj.tex =  obj.texs{index};
+            
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+           
         
         end
         
