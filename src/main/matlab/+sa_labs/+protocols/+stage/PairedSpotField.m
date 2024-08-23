@@ -96,11 +96,12 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
                 xy = canvasSize/2 + [cx_(i, spot); cy_(i, spot)];
             end
             
+            bg = obj.meanLevel;
             sI = obj.intensity;
             function c = getSpotIntensity(state)
                 i = mod(state.frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
-                    c = 0;
+                    c = bg;
                 else
                     c = sI;
                 end
