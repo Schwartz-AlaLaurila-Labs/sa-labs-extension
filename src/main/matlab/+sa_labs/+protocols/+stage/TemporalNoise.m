@@ -5,7 +5,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
         stimTime = 30000 % ms
         tailTime = 500 % ms
         
-        contrast = 1 % weber contrast
+        contrast = .25 % weber contrast
 
         aperture = 2000 % um diameter
 
