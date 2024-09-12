@@ -424,10 +424,10 @@ methods
             
         elseif strcmp(self.order,'2')
             
-            delete(self.lastSpotsAx.Children(1:end-2));
+           delete(self.lastSpotsAx.Children(1:end-2));
         
-           text(self.lastSpotsAx,cx(:,1),cy(:,1),num2cell(num2str((1:self.params('numSpotsPerEpoch'))')));
-           text(self.lastSpotsAx,cx(:,2),cy(:,2),num2cell(num2str((1:self.params('numSpotsPerEpoch'))')));
+           text(self.lastSpotsAx,cx(:,1),cy(:,1),arrayfun(@num2str,1:self.params('numSpotsPerEpoch'),'uni',0)');
+           text(self.lastSpotsAx,cx(:,2),cy(:,2),arrayfun(@num2str,1:self.params('numSpotsPerEpoch'),'uni',0)');
            
         elseif strcmp(self.order,'1+2')
         end    
