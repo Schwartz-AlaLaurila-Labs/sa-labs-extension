@@ -77,11 +77,11 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             
             switch obj.colorNoiseDistribution
                 case 'uniform'
-                    obj.noiseFn = @(x) 2 * obj.noiseStream.rand(x) - 1;
+                    obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1;
                 case 'gaussian'
-                    obj.noiseFn = @(x) obj.noiseStream.randn(x);
+                    obj.noiseFn = @() obj.noiseStream.randn();
                 case 'binary'
-                    obj.noiseFn = @(x) 2 * (obj.noiseStream.rand(x) > .5) - 1;
+                    obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1;
             end
         end
         
