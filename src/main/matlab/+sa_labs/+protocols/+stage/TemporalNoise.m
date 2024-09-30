@@ -131,6 +131,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                     end
                 end
                 i = intensity;
+                fprintf('Mean Level: %.4f, Intensity: %.4f\n', obj.spotMeanLevel, i);
             end
                         
             function i = getIntensity2Pattern(obj, frame, pattern)
@@ -165,9 +166,8 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                 intensity(intensity < 0) = 0;
                 intensity(intensity > mn * 3) = mn * 3;
                 intensity(intensity > 1) = 1;
-                intensity = uint8(255 * intensity);
-                fprintf('%.4f',mn);
-                fprintf('%.4f',intensity);
+%                 intensity = uint8(255 * intensity);
+                
                 
             end
             
