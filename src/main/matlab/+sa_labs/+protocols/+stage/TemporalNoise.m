@@ -98,6 +98,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             spot.radiusX =  round(obj.um2pix(obj.aperture/2));
             spot.radiusY = spot.radiusX;
             spot.position = canvasSize / 2;
+            spot.color = obj.getIntensity();
 
             p.addStimulus(spot);
             
