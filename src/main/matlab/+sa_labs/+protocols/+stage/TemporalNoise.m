@@ -126,12 +126,12 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                     intensity = clipIntensity(intensity, obj.meanLevel);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.spotMeanLevel + 0.3*obj.contrast*obj.noiseFn();
+                        intensity = obj.spotMeanLevel + *obj.contrast*obj.noiseFn();
                         intensity = clipIntensity(intensity, obj.spotMeanLevel);
                     end
                 end
                 i = intensity;
-                fprintf('Mean Level: %.4f, Intensity: %.4f\n', obj.spotMeanLevel, i);
+%                 fprintf('Mean Level: %.4f, Intensity: %.4f\n', obj.spotMeanLevel, i);
             end
                         
             function i = getIntensity2Pattern(obj, frame, pattern)
