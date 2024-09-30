@@ -80,7 +80,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                 case 'uniform'
                     obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1;
                 case 'gaussian'
-                    obj.noiseFn = @() obj.spotMeanLevel + obj.contrast* obj.noiseStream.randn();
+                    obj.noiseFn = @() obj.noiseStream.randn();
                 case 'binary'
                     obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1;
             end
@@ -98,7 +98,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             spot.radiusX =  round(obj.um2pix(obj.aperture/2));
             spot.radiusY = spot.radiusX;
             spot.position = canvasSize / 2;
-            spot.color = obj.getIntensity();
+            %spot.color = obj.spotMeanLevel;
 
             p.addStimulus(spot);
             
@@ -122,13 +122,12 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             function i = getIntensity(obj, frame)
                 persistent intensity;
                 if frame < 0 %pre frames. frame 0 starts stimPts
-                    intensity = obj.meanLevel;
+                    intensity = obj.spotMeanLevel;
                     intensity = clipIntensity(intensity, obj.meanLevel);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.spotMeanLevel + ...
-                            obj.contrast * obj.spotMeanLevel * obj.noiseFn();
-                        intensity = clipIntensity(intensity, obj.meanLevel);
+                        intensity = obj.spotMeanLevel + obj.contrast*obj.noiseFn();
+                        intensity = clipIntensity(intensity, obj.spotMeanLevel);
                     end
                 end
                 i = intensity;
