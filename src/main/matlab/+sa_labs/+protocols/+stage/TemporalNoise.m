@@ -6,6 +6,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
         tailTime = 500 % ms
         
         contrast = .25 % weber contrast
+        spotMeanLevel = 0.1 %Mean intensity of the light spot
 
         aperture = 2000 % um diameter
 
@@ -79,7 +80,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                 case 'uniform'
                     obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1;
                 case 'gaussian'
-                    obj.noiseFn = @() obj.noiseStream.randn();
+                    obj.noiseFn = @() obj.spotMeanLevel + obj.contrast* obj.noiseStream.randn();
                 case 'binary'
                     obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1;
             end
@@ -124,8 +125,8 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                     intensity = clipIntensity(intensity, obj.meanLevel);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.meanLevel + ...
-                            obj.contrast * obj.meanLevel * obj.noiseFn();
+                        intensity = obj.spotMeanLevel + ...
+                            obj.contrast * obj.spotMeanLevel * obj.noiseFn();
                         intensity = clipIntensity(intensity, obj.meanLevel);
                     end
                 end
@@ -138,10 +139,10 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                     intensity = cell(2,1);
                 end
                 if pattern == 1
-                    mn = obj.meanLevel1;
+                    mn = obj.spotMeanLevel;
                     c = obj.contrast1;
                 else
-                    mn = obj.meanLevel2;
+                    mn = obj.spotMeanLevel;
                     c = obj.contrast2;
                 end
                 
