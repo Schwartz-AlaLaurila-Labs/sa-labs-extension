@@ -28,7 +28,7 @@ classdef WhiteNoisePulseFigure < symphonyui.core.FigureHandler
             ip.addParameter('spikeRateBinLength', 0.05, @(x)isnumeric(x));
             ip.addParameter('totalNumEpochs',1,@(x)isnumeric(x));
             ip.addParameter('analysisRegion',[0,inf]);
-            ip.addParameter('slope',1);
+            
             
             ip.parse(varargin{:});
             
@@ -39,7 +39,7 @@ classdef WhiteNoisePulseFigure < symphonyui.core.FigureHandler
             obj.spikeRateBinLength = ip.Results.spikeRateBinLength;
             obj.totalNumEpochs = ip.Results.totalNumEpochs;
             obj.analysisRegion = ip.Results.analysisRegion;
-            obj.slope = ip.Results.slope;
+           
             
             obj.createUi();
             
@@ -113,7 +113,7 @@ classdef WhiteNoisePulseFigure < symphonyui.core.FigureHandler
 
             %if spikeTimes is 0 -> preTime
             % if spikes Times is preTime -> current = 0
-            spikeCurrents = (spikeTimes - obj.analysisRegion(1)) * obj.slope;
+
             
             
             if ~isempty(spikeCurrents)
@@ -133,7 +133,7 @@ classdef WhiteNoisePulseFigure < symphonyui.core.FigureHandler
             histogram(obj.responseAxis, firstSpikeCurrents,'numbins',20);
 
             
-            xlim(obj.responseAxis, [0, (obj.analysisRegion(2) - obj.analysisRegion(1))*obj.slope]);
+
 
             titleStr = sprintf('Mean: %0.02f, Median: %0.02f, Mode: %0.02f', nanmean(firstSpikeCurrents), nanmedian(firstSpikeCurrents), mode(firstSpikeCurrents));
             title(obj.responseAxis, titleStr);
