@@ -72,13 +72,13 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
             if strcmp(obj.seedChangeMode, 'repeat only')
                 seed = obj.seedStartValue;
             elseif strcmp(obj.seedChangeMode, 'increment only')
-                seed = obj.numEpochsCompleted + obj.seedStartValue;
+                seed = obj.numEpochsPrepared + obj.seedStartValue;
             else
-                seedIndex = mod(obj.numEpochsCompleted,2);
+                seedIndex = mod(obj.numEpochsPrepared,2);
                 if seedIndex == 0
                     seed = obj.seedStartValue;
                 elseif seedIndex == 1
-                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 2;
+                    seed = obj.seedStartValue + (obj.numEpochsPrepared + 1) / 2;
                 end
             end
             
