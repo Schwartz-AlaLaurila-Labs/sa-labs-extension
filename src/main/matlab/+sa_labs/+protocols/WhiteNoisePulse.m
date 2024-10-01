@@ -12,7 +12,7 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
     
     properties (Hidden)
         responsePlotMode = 'cartesian'
-        
+        responsePlotSplitParameter = ''; %'pulseAmplitude';
     end
     properties (Hidden, Dependent)
         totalNumEpochs
