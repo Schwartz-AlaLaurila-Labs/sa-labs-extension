@@ -6,6 +6,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
         tailTime = 500 % ms
         
         contrast = .25 % weber contrast
+        spotMeanLevel = 0.1 %Mean intensity of the light spot
 
         aperture = 2000 % um diameter
 
@@ -97,6 +98,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             spot.radiusX =  round(obj.um2pix(obj.aperture/2));
             spot.radiusY = spot.radiusX;
             spot.position = canvasSize / 2;
+            %spot.color = obj.spotMeanLevel;
 
             p.addStimulus(spot);
             
@@ -120,16 +122,16 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             function i = getIntensity(obj, frame)
                 persistent intensity;
                 if frame < 0 %pre frames. frame 0 starts stimPts
-                    intensity = obj.meanLevel;
+                    intensity = obj.spotMeanLevel;
                     intensity = clipIntensity(intensity, obj.meanLevel);
                 else %in stim frames
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.meanLevel + ...
-                            obj.contrast * obj.meanLevel * obj.noiseFn();
-                        intensity = clipIntensity(intensity, obj.meanLevel);
+                        intensity = obj.spotMeanLevel + obj.contrast*obj.noiseFn();
+                        intensity = clipIntensity(intensity, obj.spotMeanLevel);
                     end
                 end
                 i = intensity;
+%                 fprintf('Mean Level: %.4f, Intensity: %.4f\n', obj.spotMeanLevel, i);
             end
                         
             function i = getIntensity2Pattern(obj, frame, pattern)
@@ -138,10 +140,10 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                     intensity = cell(2,1);
                 end
                 if pattern == 1
-                    mn = obj.meanLevel1;
+                    mn = obj.spotMeanLevel;
                     c = obj.contrast1;
                 else
-                    mn = obj.meanLevel2;
+                    mn = obj.spotMeanLevel;
                     c = obj.contrast2;
                 end
                 
@@ -162,9 +164,11 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             
             function intensity = clipIntensity(intensity, mn)
                 intensity(intensity < 0) = 0;
-                intensity(intensity > mn * 2) = mn * 2;
+                intensity(intensity > mn * 3) = mn * 3;
                 intensity(intensity > 1) = 1;
-                intensity = uint8(255 * intensity);
+%                 intensity = uint8(255 * intensity);
+                
+                
             end
             
         end
