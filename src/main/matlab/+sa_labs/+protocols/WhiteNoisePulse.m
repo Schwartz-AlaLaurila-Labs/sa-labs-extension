@@ -21,20 +21,20 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
     methods
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
-            obj.responseFigure = obj.showFigure('sa_labs.figures.WhiteNoisePulseFigure', obj.devices, ...
-                    'totalNumEpochs',obj.totalNumEpochs,...
-                    'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime],...
-                    'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
-                    'spikeThreshold', obj.spikeThreshold, ...
-                    'spikeDetectorMode', obj.spikeDetectorMode);
+            % obj.responseFigure = obj.showFigure('sa_labs.figures.WhiteNoisePulseFigure', obj.devices, ...
+            %         'totalNumEpochs',obj.totalNumEpochs,...
+            %         'analysisRegion', 1e-3 * [obj.preTime, obj.preTime + obj.stimTime],...
+            %         'responseMode',obj.chan1Mode,... % TODO: different modes for multiple amps
+            %         'spikeThreshold', obj.spikeThreshold, ...
+            %         'spikeDetectorMode', obj.spikeDetectorMode);
         end
         
         function stim = createAmpStimulus(obj, ampName)
             %Create white noise with pre and tail time with chosen frequency;
             
             sample_rate = obj.sampleRate;
-            prestim_wave = repelem([0], obj.preTime * sample_rate / 1E3);
-            tailstim_wave = repelem([0], obj.tailstim_wave * sample_rate / 1E3);
+            prestim_wave = repelem(0, obj.preTime * sample_rate / 1E3);
+            tailstim_wave = repelem(0, obj.tailTime * sample_rate / 1E3);
             rate = 1;
             if sample_rate > obj.frequency
                 rate = ceil(sample_rate / obj.frequency);
@@ -47,7 +47,7 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
                 stim_wave = stim_wave(0 : n_stimpoints); %may introduce bug teehee
             end
             
-            totalWave = [prestim_wave, stim_wave, tailstim_wave];
+            totalWave = horzcat(prestim_wave, stim_wave', tailstim_wave); %IDK why stim_wave needs transpose for concat but the dim got messed up
             
             
             %Create Waveform stimulus
