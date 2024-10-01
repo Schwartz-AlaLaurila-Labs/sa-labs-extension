@@ -7,12 +7,16 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
         amplitude = 0 %pA
         std = 20 %pA
         frequency = 100 %Hz
-        numberOfEpochs = 5;
+        numberOfEpochs = 5
+        seedStartValue = 1
+        seedChangeMode = 'increment only';
     end
     
     properties (Hidden)
         responsePlotMode = 'cartesian'
         responsePlotSplitParameter = ''; %'pulseAmplitude';
+        seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only',});
+        randomSeed;
     end
     properties (Hidden, Dependent)
         totalNumEpochs
@@ -29,6 +33,8 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
             %         'spikeDetectorMode', obj.spikeDetectorMode);
         end
         
+    
+
         function stim = createAmpStimulus(obj, ampName)
             %Create white noise with pre and tail time with chosen frequency;
             
@@ -40,14 +46,15 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
                 rate = ceil(sample_rate / obj.frequency);
             end
             n_stimpoints = obj.stimTime * sample_rate / 1E3;
-            white_noise_wave = randn(n_stimpoints,1) .* obj.std + obj.amplitude;
+            random_stream = RandStream("twister", 'Seed', obj.randomSeed);
+            white_noise_wave = randn(random_stream, 1, n_stimpoints) .* obj.std + obj.amplitude;
             down_sample_wave = downsample(white_noise_wave, rate); %this is so convoluted lol can do the other way but oh well...
             stim_wave = repelem(down_sample_wave, rate);
             if length(stim_wave) > n_stimpoints
                 stim_wave = stim_wave(0 : n_stimpoints); %may introduce bug teehee
             end
             
-            totalWave = horzcat(prestim_wave, stim_wave', tailstim_wave); %IDK why stim_wave needs transpose for concat but the dim got messed up
+            totalWave = horzcat(prestim_wave, stim_wave, tailstim_wave); 
             
             
             %Create Waveform stimulus
@@ -61,6 +68,23 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
+
+            if strcmp(obj.seedChangeMode, 'repeat only')
+                seed = obj.seedStartValue;
+            elseif strcmp(obj.seedChangeMode, 'increment only')
+                seed = obj.numEpochsCompleted + obj.seedStartValue;
+            else
+                seedIndex = mod(obj.numEpochsCompleted,2);
+                if seedIndex == 0
+                    seed = obj.seedStartValue;
+                elseif seedIndex == 1
+                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 2;
+                end
+            end
+            
+            obj.randomSeed = seed;
+            epoch.addParameter('randomSeed', obj.randomSeed);
+            fprintf('Using seed %d\n', obj.randomSeed);
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
         end
         
