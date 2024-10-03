@@ -80,7 +80,8 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                 case 'uniform'
                     obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1;
                 case 'gaussian'
-                    obj.noiseFn = @() obj.noiseStream.randn();
+%                     obj.noiseFn = @() obj.noiseStream.randn();
+                    obj.noiseFn = @() sqrt(-2*log(obj.noiseStream.rand()))*cos(2*pi*obj.noiseStream.rand());
                 case 'binary'
                     obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1;
             end
@@ -163,8 +164,13 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             
             
             function intensity = clipIntensity(intensity, mn)
+                 intensity(intensity > mn * 2) = mn * 2; %standard way of cliping 
+%                 %clip within 2 SD
+%                 lb = mn - 2*obj.contrast;
+%                 ub = mn + 2*obj.contrast;
+%                 intensity(intensity < lb) = lb;
+%                 intensity(intensity > ub) = ub;
                 intensity(intensity < 0) = 0;
-                intensity(intensity > mn * 3) = mn * 3;
                 intensity(intensity > 1) = 1;
 %                 intensity = uint8(255 * intensity);
                 
