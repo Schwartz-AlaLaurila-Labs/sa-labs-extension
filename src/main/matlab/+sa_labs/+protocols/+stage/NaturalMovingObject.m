@@ -1,41 +1,46 @@
 classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 50                     % Object leading duration (ms)
-        tailTime = 50                    % Object trailing duration (ms)
-        stimTime = 10000                  % stimulus duration (ms)
-        intensity = 1.0                 % Object light intensity (0-1)
-        tau = 0.1;                      %relaxation time
-        D = 1;                            % diffusion coefficient
-        dt = 1/60;                          % time step
-        tauz = 0.25;                       % relaxtion time for z calc
-        Dz = 0.125;                          % diffusion coefficient for z calc
-        diameter = 50;                
-        RFwidth = 200;                  % 95% of the motion will be within RFwidth/2 of the center
-        motionSeed = 5;                     % seed 
-        motionSeedChangeMode = 'increment only';
-        numRepeats = 8;
-        numSeeds = 5;
-        motionTrajectory = 'natural';
-    end
-    
-    properties (Hidden)
-        version = 1                     % v1: initial version
-        parameters = []                      % matrix of all epoch params [x,y,u,v,t]
-        seedlist = []                   % vector with seeds
-        motionSeedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
-        motionTrajectoryType = symphonyui.core.PropertyType('char', 'row', {'natural', 'control'})
-        
-        responsePlotMode = 'cartesian';
-        responsePlotSplitParameter = 'motionSeed'; 
+        preFrames = 30                          % burn-in frames
+        stimFrames = 60                         % frames before hexagon constraint
+        tailFrames = 60                         % frames after hexagon constraint
+        intensity = 1.0                         % Object light intensity (0-1)
+        tau = 0.25                              % velocity time constant (sec)
+        tauz = 0.50                             % scale time constant (sec)
+        sigma = 200                             % velocity variance (um/sec)
+        sigmaz = 2/3                            % scale variance
+        diameter = 30                           % spot size (um)          
+        mosaicSpacing = 168                     % distance (um) between cells in simulated mosaic
+        mosaicDegree = int8(1)                 % 0: centered only, 1: centered + 6 nearest neighbors, 2: centered + 18 nearest neighbors 
+        seedStartValue = 1                      % seed 
+        numSeeds = 1000                         % number of seeds to test
+        numRepeats = 1                          % number of repeats per seed
+        motionTrajectory = 'natural+control'    % which kind of trajectory
     end
     
     properties (Dependent)
-        omega0                          %critical damping factor
+        preTime
+        stimTime
+        tailTime
+        totalNumEpochs
+        numTranslations
+    end
+
+    properties (Hidden)
+        version = 2                     % v2: brownian motion constrained to hexagon
     end
     
-    properties (Hidden, Dependent)
-        totalNumEpochs
+    properties (Hidden, Transient)
+        seedList = []                   % seed values
+        motionType = []                 % natural (1) or control (0) 
+        translation = []                % offset for trial
+        xy = []                         % trajectories
+        i_ = []                         % current trajectory
+        tr_ = []                        % current offset
+        motionTrajectoryType = symphonyui.core.PropertyType('char', 'row', {'natural', 'control', 'natural+control'})
+        responsePlotMode = 'cartesian' %TODO...
+        responsePlotSplitParameter = 'motionSeed'
+        mosaicDegreeType = symphonyui.core.PropertyType('int8', 'scalar')
     end
     
     methods
@@ -43,113 +48,124 @@ classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
-            if strcmp(obj.motionSeedChangeMode, 'repeat & increment')
-                for n=1:obj.numRepeats
-                    seeds = randperm(obj.numSeeds);
-                    obj.seedlist = [obj.seedlist; seeds];
-                end
+            if strcmp(obj.motionTrajectory, 'natural+control')
+                nSeeds = obj.numSeeds * 2;
+            else
+                nSeeds = obj.numSeeds;
             end
+
+            nSeeds = nSeeds * obj.numTranslations;
+
+            obj.seedList = zeros(nSeeds, obj.numRepeats);
+            obj.motionType = zeros(nSeeds, obj.numRepeats);
+            obj.translation = zeros(nSeeds, obj.numRepeats);
+            for r=1:obj.numRepeats
+                s = randperm(nSeeds) - 1;
+                obj.seedList(:,r) = mod(s, obj.numSeeds);
+                obj.translation(:,r) = mod(floor(s / obj.numSeeds), obj.numTranslations) + 1;
+                obj.motionType(:,r) = floor(floor(s / obj.numSeeds) / obj.numTranslations);
+            end
+            if strcmp(obj.motionTrajectory, 'natural')
+                obj.motionType = obj.motionType + 1;
+            end
+            obj.seedList = obj.seedList + obj.seedStartValue;
+            [~,obj.xy] = obj.um2pix(obj.generateParameters(1/obj.frameRate));
+
+            grid = obj.generateGrid();
+            obj.translation = grid(obj.translation,:);
         end     
 
-        function generateParameters(obj)
-            [x,y,u,v,~,t,x0,y0,u0,v0] = sa_labs.util.DHOARGSM(obj.tau, obj.omega0, obj.D, obj.tauz, obj.Dz, obj.dt, obj.stimTime, obj.preTime, obj.motionSeed);
+        function xy = generateGrid(obj)
+            %cubic coordinates -- to filter on degree
+            [Q,R] = meshgrid(-obj.mosaicDegree:obj.mosaicDegree);
+            S = -Q -R; 
+            %the valid points are those where |S,Q,R| < deg
+            Q = Q(abs(S) <= obj.mosaicDegree);
+            R = R(abs(S) <= obj.mosaicDegree);
 
-            vstd = std([u; v]); % equalize velocity variance for GSM and control
-            % instead of this, std of the vector velocity
-%             m = sqrt(u.^2 + v.^2);
-%             vstd = std(m)
-            
-            x = x/vstd;
-            y = y/vstd;
-            u = u/vstd;
-            v = v/vstd;
+            %convert to square grid coordinates
+            col = Q + (R - bitand(R, 1, 'int8'))/2 + obj.mosaicDegree + 1;
+            row = R + obj.mosaicDegree + 1;
 
-            v0std = std([u0; v0]);
-            x0 = x0/v0std;
-            y0 = y0/v0std;
-            u0 = u0/v0std;
-            v0 = v0/v0std;
-
-            xstd = std([x0; y0]); % normalize by control position variance
-            x = x/xstd;
-            y = y/xstd;
-            u = u/xstd;
-            v = v/xstd;
-            x0 = x0/xstd;
-            y0 = y0/xstd;
-            u0 = u0/xstd;
-            v0 = v0/xstd;
-
-            mic = obj.RFwidth/4; % scale to microns
-            x = x*mic;
-            y = y*mic;
-            u = u*mic;
-            v = v*mic;
-            x0 = x0*mic;
-            y0 = y0*mic;
-            u0 = u0*mic;
-            v0 = v0*mic;
-            
-            x = x(1:length(t));
-            y = y(1:length(t));
-            u = u(1:length(t));
-            v = v(1:length(t));
-
-            % convert from microns to pixels
-            [~,x] = obj.um2pix(x);
-            [~,y] = obj.um2pix(y);
-            [~,u] = obj.um2pix(u);
-            [~,v] = obj.um2pix(v);
-            
-            x0 = x0(1:length(t));
-            y0 = y0(1:length(t));
-            u0 = u0(1:length(t));
-            v0 = v0(1:length(t));
-
-            % convert from microns to pixels
-            [~,x0] = obj.um2pix(x0);
-            [~,y0] = obj.um2pix(y0);
-            [~,u0] = obj.um2pix(u0);
-            [~,v0] = obj.um2pix(v0);
-
-            if strcmp(obj.motionTrajectory, 'natural')
-                obj.parameters = [x, y, u, v, t']; % has the x,y positions and x,y components of velocity for each time step
+            %convert to cartesian coordinates
+            qx = double(-obj.mosaicDegree:obj.mosaicDegree);
+            qy = qx * 3/2 / sqrt(3);
+            [QX,QY] = meshgrid(qx,qy);
+            if mod(abs(obj.mosaicDegree),2)
+                QX(1:2:end,:) = QX(1:2:end,:) + 1/2;
+            else
+                QX(2:2:end,:) = QX(2:2:end,:) + 1/2;
             end
+            linind = sub2ind(size(QX),row,col);
+            %rescale by spacing to obtain retinal coordinates
+            xy = [QX(linind),QY(linind)] * obj.mosaicSpacing;
+        end
+
+        function xy = generateParameters(obj, dt)
+            %NOTE: dt is precalculated so that this can be run offline
+            %NOTE: we add one additional frame at the end for clearing the projector
+            Nsamp = obj.preFrames + obj.stimFrames + obj.tailFrames + 1;
+            total_time = Nsamp * dt;
+            t_hex = (obj.preFrames + obj.stimFrames) * dt;
             
-            if strcmp(obj.motionTrajectory, 'control')
-                obj.parameters = [x0, y0, u0, v0, t']; % same but for the control
+            if strcmp(obj.motionTrajectory, 'natural+control')
+                xy = zeros(Nsamp, 2, obj.numSeeds * 2);
+                for i = 1:obj.numSeeds
+                    [xy(:,1,i),xy(:,2,i),~,~,~,~,xy(:,1,i+obj.numSeeds),xy(:,2,i+obj.numSeeds),~,~] ...
+                        = sa_labs.util.BMARGSM(obj.tau,obj.sigma,obj.tauz,obj.sigmaz,dt,...
+                        total_time,t_hex,obj.mosaicSpacing, i + obj.seedStartValue - 1);
+                end
+            elseif strcmp(obj.motionTrajectory, 'natural')
+                xy = zeros(Nsamp, 2, obj.numSeeds);
+                for i = 1:obj.numSeeds
+                    [xy(:,1,i),xy(:,2,i)] ...
+                        = sa_labs.util.BMARGSM(obj.tau,obj.sigma,obj.tauz,obj.sigmaz,dt,...
+                        total_time,t_hex,obj.mosaicSpacing, i + obj.seedStartValue - 1);
+                end
+            else
+                xy = zeros(Nsamp, 2, obj.numSeeds);
+                for i = 1:obj.numSeeds
+                    [~,~,~,~,~,~,xy(:,1,i),xy(:,2,i),~,~] ...
+                        = sa_labs.util.BMARGSM(obj.tau,obj.sigma,obj.tauz,obj.sigmaz,dt,...
+                        total_time,t_hex,obj.mosaicSpacing, i + obj.seedStartValue - 1);
+                end
             end
+
+            % size(obj.xy) ==  [numSamples , 2, nSeeds];
         end
         
         function prepareEpoch(obj, epoch)
-            if strcmp(obj.motionSeedChangeMode, 'repeat only')
-                seed = obj.motionSeedStart;
-            elseif strcmp(obj.motionSeedChangeMode, 'increment only')
-                seed = obj.numEpochsCompleted + obj.motionSeedStart;
-            else
-                seedIndex = obj.totalNumEpochs - obj.numEpochsPrepared;
-                seed = obj.seedlist(seedIndex);
-            end
-            obj.motionSeed = seed; 
             
-            epoch.addParameter('motionSeed', obj.motionSeed);
-            obj.generateParameters();
+            obj.tr_ = obj.translation(obj.numEpochsPrepared+1,:);
+            epoch.addParameter('cx',obj.tr_(1));
+            epoch.addParameter('cy',obj.tr_(2));
+            
+            seed = obj.seedList(obj.numEpochsPrepared+1);
+            epoch.addParameter('motionSeed', seed);
+            
+            if strcmp(obj.motionTrajectory,'natural+control')
+                mtype = obj.motionType(obj.numEpochsPrepared+1);
+                if mtype
+                    epoch.addParameter('curMotionType', 'natural');
+                else
+                    epoch.addParameter('curMotionType', 'control');
+                end
+                obj.i_ = seed - obj.seedStartValue + 1 + (1-mtype) * obj.numSeeds;
+                fprintf('Using seed %d (%s [%d]): i = %d; +(%0.02f,%0.02f)\n', seed, epoch.parameters('curMotionType'), mtype, obj.i_, obj.tr_(1),obj.tr_(2));
+            else
+                epoch.addParameter('curMotionType',obj.motionTrajectory);
+                obj.i_ = seed - obj.seedStartValue + 1;
+            end
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
-        function p = createPresentation(obj)
-            % get parameters for this epoch
-            currentx = obj.parameters(:,1);
-            currenty = obj.parameters(:,2);
-            currentu = obj.parameters(:,3);
-            currentv = obj.parameters(:,4);
-            tarray = obj.parameters(:,5);
-            
+        function p = createPresentation(obj)            
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
             object = stage.builtin.stimuli.Ellipse();
-            object.radiusX = round(obj.um2pix(obj.diameter / 2));
+            
+            [~,object.radiusX] = obj.um2pix(obj.diameter / 2);
             object.radiusY = object.radiusX;
             object.color = obj.intensity;
             object.opacity = 1;
@@ -159,32 +175,46 @@ classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
             stageDevice = obj.rig.getDevice('Stage');
             canvasSize = stageDevice.getCanvasSize();
             
-            pos_c = canvasSize / 2;
-            
+            xyi = obj.xy(:,:, obj.i_);
+            [~,tr] = obj.um2pix(obj.tr_);
+            center = canvasSize / 2 + tr;
             function pos = positionController(state)
-                currentt = state.time - obj.preTime * 1e-3; % calcs current time
-                [~,index] = min(abs(tarray-currentt)); % associates current time with the closest discrete t from the model
-                if index > 0 && index <= length(currentx)
-                    pos = [currentx(index)+obj.dt*currentu(index) + pos_c(1), currenty(index)+obj.dt*currentv(index) + pos_c(2)];
-                end
+                pos = xyi(state.frame+1,:) + center;
             end
           
-            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', @(state)positionController(state));
+            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', @positionController);
             p.addController(objectMovement);
+          
+            nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
+            function o = opacityController(state)
+                o = 1.0* ((state.frame + 1) < nFrames);
+            end
+            objectOpacity = stage.builtin.controllers.PropertyController(object, 'opacity', @opacityController);
+            p.addController(objectOpacity);
             
-            obj.setOnDuringStimController(p, object);
-            
-            % shared code for multi-pattern objects
-            obj.setColorController(p, object);
         end
 
         function totalNumEpochs = get.totalNumEpochs(obj) % sets num of epochs equal to user input value
-            totalNumEpochs = obj.numRepeats * obj.numSeeds; 
+            totalNumEpochs = obj.numRepeats * obj.numSeeds * (1 + strcmp(obj.motionTrajectory, 'natural+control')) * obj.numTranslations; 
+        end
+
+        function preTime = get.preTime(obj)
+            preTime = obj.preFrames / obj.frameRate * 1e3;
+        end
+
+        function stimTime = get.stimTime(obj)
+            stimTime = obj.stimFrames / obj.frameRate * 1e3;
+        end
+
+        function tailTime = get.tailTime(obj)
+            %add an extra frame at the end to turn off the spot during inter-trial time
+            tailTime = (obj.tailFrames + 1) / obj.frameRate * 1e3;
+        end
+
+        function numTranslations = get.numTranslations(obj)
+            numTranslations = 1 + sum(0:6:6*obj.mosaicDegree); %there is surely a more efficient way...
         end
         
-        function omega0 = get.omega0(obj) % sets omega0 equal to value associated with tau
-            omega0 = 1/(2*obj.tau); 
-        end       
     end
 end
 
