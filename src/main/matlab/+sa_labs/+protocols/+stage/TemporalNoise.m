@@ -92,6 +92,8 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3); %create presentation of specified duration
             preFrames = round(obj.frameRate * (obj.preTime/1e3));
+            stimFrames = round(obj.frameRate * (obj.stimTime/1e3));
+            
             
             % create shapes
             % checkerboard is filled from top left (is 1,1)
@@ -99,7 +101,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             spot.radiusX =  round(obj.um2pix(obj.aperture/2));
             spot.radiusY = spot.radiusX;
             spot.position = canvasSize / 2;
-            %spot.color = obj.spotMeanLevel;
+            spot.opacity = 1;
 
             p.addStimulus(spot);
             
@@ -116,18 +118,19 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             p.addController(spotIntensityController);
                        
             
-            obj.setOnDuringStimController(p, spot);
+            % obj.setOnDuringStimController(p, spot);
+
                                     
             % TODO: verify X vs Y in matrix
             
             function i = getIntensity(obj, frame)
                 persistent intensity;
-                if frame < 0 %pre frames. frame 0 starts stimPts
+                if (frame < 0) || (frame>stimFrames) %pre frames. frame 0 starts stimPts
                     intensity = obj.spotMeanLevel;
-                    intensity = clipIntensity(intensity, obj.meanLevel);
-                else %in stim frames
+                    intensity = clipIntensity(intensity, obj.spotMeanLevel);
+                else
                     if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.spotMeanLevel + obj.contrast*obj.noiseFn();
+                        intensity = obj.spotMeanLevel + obj.spotMeanLevel*obj.contrast*obj.noiseFn();
                         intensity = clipIntensity(intensity, obj.spotMeanLevel);
                     end
                 end
