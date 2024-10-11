@@ -144,6 +144,9 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             p.addController(spotBIntensity_);
             p.addController(spotBPosition);
             
+            obj.setOnDuringStimController(p, spotA);
+            obj.setOnDuringStimController(p, spotB);
+            
         end
 
         function stimTime = get.stimTime(obj)
