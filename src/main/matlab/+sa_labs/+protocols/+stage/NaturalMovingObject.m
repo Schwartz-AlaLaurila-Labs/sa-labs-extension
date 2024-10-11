@@ -39,7 +39,7 @@ classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
         tr_ = []                        % current offset
         motionTrajectoryType = symphonyui.core.PropertyType('char', 'row', {'natural', 'control', 'natural+control'})
         responsePlotMode = 'cartesian' %TODO...
-        responsePlotSplitParameter = 'motionSeed'
+        responsePlotSplitParameter = 'curMotionType'
         mosaicDegreeType = symphonyui.core.PropertyType('int8', 'scalar')
     end
     
