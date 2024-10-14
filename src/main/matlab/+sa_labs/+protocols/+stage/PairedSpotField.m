@@ -98,8 +98,8 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotPreStimPost = obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames;
             
             function xy = getSpotPosition(frame, spot)
-                if (frame < 0) || (frames >= stimFrames)
-                    xy = [0,0];
+                if (frame < 0) || (frame >= stimFrames)
+                    xy = [0;0];
                     return
                 end
                 i = min(floor(frame / spotPreStimPost) + 1, length(cx_));
@@ -109,11 +109,11 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             bg = obj.meanLevel;
             sI = obj.intensity;
             function c = getSpotIntensity(frame)
-                if (frame < 0) || (frames >= stimFrames)
+                if (frame < 0) || (frame >= stimFrames)
                     c = bg;
                     return
                 end
-                i = mod(state.frame, spotPreStimPost);
+                i = mod(frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
                     c = bg;
                 else
@@ -161,7 +161,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         end
 
         function stimTime = get.stimTime(obj)
-            stimTime = (obj.spotStimFrames + obj.spotPreFrames + obj.spotTailFrames) / obj.frameRate *1e3 * obj.numSpotsPerEpoch;
+            stimTime = (obj.spotStimFrames + obj.spotPreFrames + obj.spotTailFrames) / obj.frameRate * 1e3 * obj.numSpotsPerEpoch;
         end
         
         function spotStimTime = get.spotStimTime(obj)
