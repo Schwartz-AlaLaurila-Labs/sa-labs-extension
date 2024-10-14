@@ -92,7 +92,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             [~,cy_] = obj.um2pix(obj.cy);
             
             preFrames = obj.preTime * 1e-3 * obj.frameRate;
-            stimFrames = (obj.preTime + obj.stimTime) * 1e-3 * obj.frameRate;
+            stimFrames = obj.stimTime * 1e-3 * obj.frameRate;
             spotPre = obj.spotPreFrames;
             spotPreStim = obj.spotPreFrames + obj.spotStimFrames;
             spotPreStimPost = obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames;
