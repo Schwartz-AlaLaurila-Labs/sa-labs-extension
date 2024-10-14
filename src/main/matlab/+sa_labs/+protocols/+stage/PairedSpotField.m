@@ -40,6 +40,10 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         spotPairsType = symphonyui.core.PropertyType('denserealdouble', 'matrix')
         
     end
+
+    properties (Hidden)
+        version = 2; % fixed bug with pre and tail times
+    end
     
     properties (Hidden, Transient, Access = private)
         
@@ -87,18 +91,28 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             [~,cx_] = obj.um2pix(obj.cx);
             [~,cy_] = obj.um2pix(obj.cy);
             
+            preFrames = obj.preTime * 1e-3 * obj.frameRate;
+            stimFrames = (obj.preTime + obj.stimTime) * 1e-3 * obj.frameRate;
             spotPre = obj.spotPreFrames;
             spotPreStim = obj.spotPreFrames + obj.spotStimFrames;
             spotPreStimPost = obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames;
             
-            function xy = getSpotPosition(state, spot)
-                i = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
+            function xy = getSpotPosition(frame, spot)
+                if (frame < 0) || (frames >= stimFrames)
+                    xy = [0,0];
+                    return
+                end
+                i = min(floor(frame / spotPreStimPost) + 1, length(cx_));
                 xy = canvasSize/2 + [cx_(i, spot); cy_(i, spot)];
             end
             
             bg = obj.meanLevel;
             sI = obj.intensity;
-            function c = getSpotIntensity(state)
+            function c = getSpotIntensity(frame)
+                if (frame < 0) || (frames >= stimFrames)
+                    c = bg;
+                    return
+                end
                 i = mod(state.frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
                     c = bg;
@@ -117,9 +131,9 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotA.color = 0;
             
             spotAIntensity_ = stage.builtin.controllers.PropertyController(spotA, 'color',...
-                @(state)getSpotIntensity(state));
+                @(state)getSpotIntensity(state.frame - preFrames));
             spotAPosition = stage.builtin.controllers.PropertyController(spotA, 'position',...
-                @(state)getSpotPosition(state,1));
+                @(state)getSpotPosition(state.frame - preFrames,1));
             
             p.addStimulus(spotA);
             
@@ -135,18 +149,15 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotB.color = 0;
             
             spotBIntensity_ = stage.builtin.controllers.PropertyController(spotB, 'color',...
-                @(state)getSpotIntensity(state));
+                @(state)getSpotIntensity(state.frame - preFrames));
             spotBPosition = stage.builtin.controllers.PropertyController(spotB, 'position',...
-                @(state)getSpotPosition(state,2));
+                @(state)getSpotPosition(state.frame - preFrames,2));
             
             p.addStimulus(spotB);
             
             p.addController(spotBIntensity_);
             p.addController(spotBPosition);
-            
-            obj.setOnDuringStimController(p, spotA);
-            obj.setOnDuringStimController(p, spotB);
-            
+                        
         end
 
         function stimTime = get.stimTime(obj)
