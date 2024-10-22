@@ -89,7 +89,12 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             end
             
             % bottom left analysis over param
-            obj.axesHandlesAnalysis = [];
+            if strcmp(obj.plotMode,'polar')
+                obj.axesHandlesAnalysis = matlab.graphics.axis.PolarAxes.empty();
+            else
+                obj.axesHandlesAnalysis = matlab.graphics.axis.Axes.empty();
+            end
+            % obj.axesHandlesAnalysis = [];
             rowBoxes = [];
             plotControlBoxes = [];
             measListBoxes = [];
@@ -426,17 +431,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         % obviously we would want to call axis() and
                         % grid() at initialization time for efficiency
                         
-                        pax = polarplot(X_rad, Y, '-o','LineWidth',2, 'Color', color);
-                        set(pax,'parent',thisAxis);
-                        %plot(thisAxis, Y.*cos(X_rad), Y.*sin(X_rad), '-o','LineWidth',2, 'Color', color);
-                        
-                        %hold(thisAxis, 'on');
-                        
-                        %polarplot(thisAxis, X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
-                        %polarplot(thisAxis, X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
-                        %plot(thisAxis, (Y+Y_std).*cos(X_rad), (Y+Y_std).*sin(X_rad), '.--','LineWidth',.5, 'Color', color);
-                        %plot(thisAxis, (Y-Y_std).*cos(X_rad), (Y-Y_std).*sin(X_rad), '.--','LineWidth',.5, 'Color', color);
-                        %axis(thisAxis,'square');
+                        hold(thisAxis, 'off');
+                        polarplot(thisAxis, X_rad, Y, '-o','LineWidth',2, 'Color', color);
+                        hold(thisAxis, 'on');
+                        polarplot(thisAxis, X_rad, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                        polarplot(thisAxis, X_rad, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
                         grid(thisAxis,'on');
                         
                         title(thisAxis, sprintf('DSI: %g Angle: %g deg', dsi, dsang));
