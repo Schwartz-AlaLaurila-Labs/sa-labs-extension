@@ -47,11 +47,11 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
             end
             n_stimpoints = obj.stimTime * sample_rate / 1E3;
             random_stream = RandStream("twister", 'Seed', obj.randomSeed);
-            white_noise_wave = randn(random_stream, 1, n_stimpoints) .* obj.std + obj.amplitude;
+            white_noise_wave = sa_labs.util.randn(random_stream, 1, n_stimpoints) .* obj.std + obj.amplitude;
             down_sample_wave = downsample(white_noise_wave, rate); %this is so convoluted lol can do the other way but oh well...
             stim_wave = repelem(down_sample_wave, rate);
             if length(stim_wave) > n_stimpoints
-                stim_wave = stim_wave(0 : n_stimpoints); %may introduce bug teehee
+                stim_wave = stim_wave(1 : n_stimpoints); %may introduce bug teehee
             end
             
             totalWave = horzcat(prestim_wave, stim_wave, tailstim_wave); 
