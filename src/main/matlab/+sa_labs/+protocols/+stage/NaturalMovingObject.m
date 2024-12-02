@@ -13,7 +13,7 @@ classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
         mosaicSpacing = 168                     % distance (um) between cells in simulated mosaic
         mosaicDegree = int8(1)                 % 0: centered only, 1: centered + 6 nearest neighbors, 2: centered + 18 nearest neighbors 
         seedStartValue = 1                      % seed 
-        numSeeds = 1000                         % number of seeds to test
+        numSeeds = 100                          % number of seeds to test
         numRepeats = 1                          % number of repeats per seed
         motionTrajectory = 'natural+control'    % which kind of trajectory
     end
