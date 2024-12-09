@@ -93,18 +93,19 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state) obj.captureIntensity(state.frame, preFrames, stimFrames, totalFrames));
+                @(state) captureIntensity(state.frame, preFrames, stimFrames, totalFrames));
             
             p.addController(spotIntensityController);
         end
         
         function i = captureIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-            [i, global_intensity_log] = obj.getIntensity(frame, preFrames, stimFrames, totalFrames);
+            [i, global_intensity_log] = getIntensity(obj,frame, preFrames, stimFrames, totalFrames);
             assignin('base', 'intensity_log', global_intensity_log);
         end
 
         function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-            persistent intensity_log_internal
+            persistent intensity_log_internal;
+            persitent intensity;
             
             if isempty(intensity_log_internal)
                 intensity_log_internal = zeros(totalFrames, 1);
@@ -128,16 +129,17 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             
             if mod(frame, obj.frameDwell) == 0
                 noise = sa_labs.util.randn(obj.noiseStream, 1);
-                i = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
+                intensity = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
             end
             
-            i = obj.clipIntensity(i, obj.spotMeanLevel);
-            intensity_log_internal(frame + 1) = i;
+            intensity = clipIntensity(intensity, obj.spotMeanLevel);
+            intensity_log_internal(frame + 1) = intensity;
             intensity_log = intensity_log_internal;
+            i = intensity;
         end
         
         % Clip intensity to the range [0, 1]
-        function intensity = clipIntensity(obj, intensity, mean_level)
+        function intensity = clipIntensity(intensity, mean_level)
             intensity(intensity > mean_level * 2) = mean_level * 2;
             intensity(intensity < 0) = 0;
             intensity(intensity > 1) = 1;
