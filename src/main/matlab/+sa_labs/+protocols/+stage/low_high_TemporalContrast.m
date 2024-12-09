@@ -105,7 +105,7 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
 
         function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames, totalFrames)
             persistent intensity_log_internal;
-            persitent intensity;
+            persistent intensity;
             
             if isempty(intensity_log_internal)
                 intensity_log_internal = zeros(totalFrames, 1);
