@@ -93,7 +93,7 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state) captureIntensity(state.frame, preFrames, stimFrames, totalFrames));
+                @(state)captureIntensity(obj,state.frame, preFrames, stimFrames, totalFrames));
             
             p.addController(spotIntensityController);
         end
