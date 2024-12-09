@@ -45,10 +45,17 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         function SwitchTime = get.SwitchTime(obj)
             SwitchTime = obj.stimTime / 2e3;
         end
-        
-        function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfEpochs;
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case {'contrast'}
+                    if obj.numberOfPatterns > 1
+                        d.isHidden = true;
+                    end
+            end
         end
+        
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -77,8 +84,6 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             
             preFrames = round(obj.frameRate * (obj.preTime / 1e3));
             stimFrames = round(obj.frameRate * (obj.stimTime / 1e3));
-            totalFrames = preFrames + stimFrames + round(obj.frameRate * (obj.tailTime / 1e3));
-
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.aperture / 2));
             spot.radiusY = spot.radiusX;
@@ -88,28 +93,21 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state)captureIntensity(obj,state.frame, preFrames, stimFrames, totalFrames));
+                @(state)getIntensity(obj,state.frame - preFrames, preFrames, stimFrames));
             
             p.addController(spotIntensityController);
-            function i = captureIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-                [i, global_intensity_log] = getIntensity(obj,frame, preFrames, stimFrames, totalFrames);
-                assignin('base', 'intensity_log', global_intensity_log);
-            end
             
-            function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-                persistent intensity_log_internal
-%                 persistent i
-
-                if isempty(intensity_log_internal)
-                    intensity_log_internal = zeros(totalFrames, 1);
-                end
-
+            function i = getIntensity(obj, frame, preFrames, stimFrames)
+                persistent intensity
+%              
                 % Determine contrast based on frame position
                 if frame < preFrames % Pre-time
                     contrast = obj.lowContrast; 
+                
                 elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stimulus time
                     relative_frame = frame - preFrames;
                     blockNumber = floor((relative_frame / (obj.frameRate * (obj.stimTime / obj.SwitchTime))));
+                    
                     if mod(blockNumber, 2) == 0
                         contrast = obj.lowContrast;
                     else
@@ -122,12 +120,11 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
 
                 if mod(frame, obj.frameDwell) == 0
                     noise = sa_labs.util.randn(obj.noiseStream, 1);
-                    i = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
+                    intensity = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
                 end
 
-                i = clipIntensity(i, obj.spotMeanLevel);
-                intensity_log_internal(frame + 1) = i;
-                intensity_log = intensity_log_internal;
+                intensity = clipIntensity(intensity, obj.spotMeanLevel);
+                i= intensity;
             end
             
             function intensity = clipIntensity(intensity, mean_level)
@@ -136,6 +133,8 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
                 intensity(intensity > 1) = 1;
             end
         end
-        
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
+        end
     end
 end
