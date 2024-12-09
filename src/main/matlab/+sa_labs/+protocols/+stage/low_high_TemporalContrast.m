@@ -20,6 +20,9 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         numberOfEpochs = uint16(30) % Number of epochs to queue
     end
     
+    properties (Dependent)
+        SwitchTime
+    end
     properties (Hidden)
         version = 1;
         
@@ -39,6 +42,9 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
     end
     
     methods
+        function SwitchTime = get.SwitchTime(obj)
+            SwitchTime = obj.stimTime / 2e3;
+        end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochs;
@@ -104,7 +110,7 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
                 contrast = obj.lowContrast; 
             elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stimulus time
                 relative_frame = frame - preFrames;
-                blockNumber = floor((relative_frame / (obj.frameRate * (obj.stimTime / 2000))));
+                blockNumber = floor((relative_frame / (obj.frameRate * (obj.stimTime / obj.SwitchTime))))
                 if mod(blockNumber, 2) == 0
                     contrast = obj.lowContrast;
                 else
