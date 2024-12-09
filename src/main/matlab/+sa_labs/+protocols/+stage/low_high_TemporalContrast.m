@@ -44,6 +44,17 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             totalNumEpochs = obj.numberOfEpochs;
         end
         
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case {'contrast'}
+                    if obj.numberOfPatterns > 1
+                        d.isHidden = true;
+                    end
+            end
+        end
+        
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
