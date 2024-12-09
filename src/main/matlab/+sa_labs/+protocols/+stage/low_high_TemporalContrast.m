@@ -32,6 +32,7 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         
         noiseSeed
         noiseStream
+        frameRate
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
@@ -59,6 +60,16 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+              % Cache frame rate only once
+            if isempty(obj.frameRate)
+                try
+                    lightCrafter = obj.rig.getDevice('LightCrafter');
+                    obj.frameRate = lightCrafter.getProperty('frameRate');
+                catch
+                    warning('LightCrafter device is unavailable. Using default frame rate of 60 Hz.');
+                    obj.frameRate = 60; % Default frame rate
+                end
+            end
             
             if strcmp(obj.seedChangeMode, 'repeat only')
                 seed = obj.seedStartValue;
@@ -80,6 +91,16 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+            % Get frame rate from the cached property
+            if isempty(obj.frameRate)
+                try
+                    lightCrafter = obj.rig.getDevice('LightCrafter');
+                    obj.frameRate = lightCrafter.getProperty('frameRate');
+                catch
+                    warning('LightCrafter device is unavailable. Using default frame rate of 60 Hz.');
+                    obj.frameRate = 60; % Default frame rate
+                end
+            end
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
             preFrames = round(obj.frameRate * (obj.preTime / 1e3));
