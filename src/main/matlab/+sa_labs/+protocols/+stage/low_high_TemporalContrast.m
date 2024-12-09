@@ -1,0 +1,151 @@
+classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
+    
+    % Public properties (user-editable)
+    properties 
+        preTime = 500 % ms
+        stimTime = 30000 % ms
+        tailTime = 500 % ms
+        
+        spotMeanLevel = 0.1 % Mean intensity of the light spot
+        lowContrast = 0.08 % Low contrast value
+        highContrast = 0.36 % High contrast value
+        
+        aperture = 2000 % um diameter
+        
+        frameDwell = 1 % Frames per noise update
+        seedStartValue = 1
+        seedChangeMode = 'increment only';
+        colorNoiseMode = '1 pattern';
+        colorNoiseDistribution = 'gaussian'
+        
+        numberOfEpochs = uint16(30) % Number of epochs to queue
+    end
+    
+    % Hidden properties (internal use)
+    properties (Hidden)
+        version = 1;
+        
+        % Available options for drop-down menus
+        seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'});
+        colorNoiseModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'});
+        colorNoiseDistributionType = symphonyui.core.PropertyType('char', 'row', {'uniform', 'gaussian', 'binary'});
+        
+        % Random stream and function handles
+        noiseSeed
+        noiseStream
+        noiseFn
+        
+        % Response display properties
+        responsePlotMode = 'cartesian';
+        responsePlotSplitParameter = 'noiseSeed';
+    end
+    
+    % Dependent properties
+    properties (Dependent, Hidden)
+        totalNumEpochs
+    end
+    
+    % Methods
+    methods
+        
+        % Get total number of epochs
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
+        end
+        
+        % Prepare the epoch
+        function prepareEpoch(obj, epoch)
+            prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
+            
+            % Determine the seed logic
+            if strcmp(obj.seedChangeMode, 'repeat only')
+                seed = obj.seedStartValue;
+            elseif strcmp(obj.seedChangeMode, 'increment only')
+                seed = obj.numEpochsCompleted + obj.seedStartValue;
+            else
+                seedIndex = mod(obj.numEpochsCompleted, 3);
+                if seedIndex == 0
+                    seed = obj.seedStartValue;
+                else
+                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 3;
+                end
+            end
+            
+            obj.noiseSeed = seed;
+            obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
+            epoch.addParameter('noiseSeed', obj.noiseSeed);
+        end
+        
+        % Create the presentation for this epoch
+        function p = createPresentation(obj)
+            canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
+            
+            preFrames = round(obj.frameRate * (obj.preTime / 1e3));
+            stimFrames = round(obj.frameRate * (obj.stimTime / 1e3));
+            totalFrames = preFrames + stimFrames + round(obj.frameRate * (obj.tailTime / 1e3));
+
+            % Create the spot stimulus
+            spot = stage.builtin.stimuli.Ellipse();
+            spot.radiusX = round(obj.um2pix(obj.aperture / 2));
+            spot.radiusY = spot.radiusX;
+            spot.position = canvasSize / 2;
+            spot.opacity = 1;
+            
+            p.addStimulus(spot);
+            
+            % Add the PropertyController for the spot intensity
+            spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
+                @(state) obj.captureIntensity(state.frame, preFrames, stimFrames, totalFrames));
+            
+            p.addController(spotIntensityController);
+        end
+        
+        % Helper function to capture the intensity
+        function i = captureIntensity(obj, frame, preFrames, stimFrames, totalFrames)
+            [i, global_intensity_log] = obj.getIntensity(frame, preFrames, stimFrames, totalFrames);
+            assignin('base', 'intensity_log', global_intensity_log);
+        end
+        
+        % Calculate the intensity of the spot
+        function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames, totalFrames)
+            persistent intensity_log_internal
+            
+            if isempty(intensity_log_internal)
+                intensity_log_internal = zeros(totalFrames, 1);
+            end
+            
+            % Determine contrast based on frame position
+            if frame < preFrames % Pre-time
+                contrast = obj.lowContrast; 
+            elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stimulus time
+                relative_frame = frame - preFrames;
+                blockNumber = floor((relative_frame / (obj.frameRate * (obj.stimTime / 2000))));
+                if mod(blockNumber, 2) == 0
+                    contrast = obj.lowContrast;
+                else
+                    contrast = obj.highContrast;
+                end
+            else % Tail-time
+                contrast = obj.lowContrast;
+            end
+            
+            if mod(frame, obj.frameDwell) == 0
+                noise = sa_labs.util.randn(obj.noiseStream, 1);
+                i = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
+            end
+            
+            i = obj.clipIntensity(i, obj.spotMeanLevel);
+            intensity_log_internal(frame + 1) = i;
+            intensity_log = intensity_log_internal;
+        end
+        
+        % Clip intensity to the range [0, 1]
+        function intensity = clipIntensity(obj, intensity, mean_level)
+            intensity(intensity > mean_level * 2) = mean_level * 2;
+            intensity(intensity < 0) = 0;
+            intensity(intensity > 1) = 1;
+        end
+        
+    end
+end
