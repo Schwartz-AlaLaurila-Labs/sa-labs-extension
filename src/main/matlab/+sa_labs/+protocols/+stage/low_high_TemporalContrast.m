@@ -98,12 +98,12 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             
             function i = getIntensity(obj, frame, preFrames, stimFrames)
                 persistent intensity
-        
+                totalFrames = preFrames + stimFrames + tailFrames;
                 % Determine contrast based on frame position
                 if frame < preFrames % Pre-time
                     contrast = obj.lowContrast; 
                 
-                elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stimulus time
+                elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stims time
                     relative_frame = frame - preFrames;
                     blockNumber = floor((relative_frame/ (60*obj.SwitchTime))); %60Hz is default frame rate. Dont like hard coding it but its not accessing obj.frameRate
                     
@@ -113,10 +113,14 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
                         contrast = obj.highContrast;
                     end
 
-                else % Tail-time
-                    contrast = obj.lowContrast;
-                end
-
+                else
+                    contrast = obj.lowContrast; %tail time and beyond
+                    if frame == totalFrames - 1
+                        intensity = obj.spotMeanLevel;
+                        i = intensity;
+                        return
+                    end
+                end 
                 if mod(frame, obj.frameDwell) == 0
                     noise = sa_labs.util.randn(obj.noiseStream, 1);
                     intensity = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
