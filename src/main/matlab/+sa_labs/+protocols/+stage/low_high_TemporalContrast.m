@@ -63,20 +63,18 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
                 seed = obj.seedStartValue;
             elseif strcmp(obj.seedChangeMode, 'increment only')
                 seed = obj.numEpochsCompleted + obj.seedStartValue;
-            else
-                seedIndex = mod(obj.numEpochsCompleted, 3);
-                if seedIndex == 0
-                    seed = obj.seedStartValue;
+            else % Always repeat the first seed every 3rd epoch
+                if mod(obj.numEpochsCompleted, 3) == 2 % Every 3rd epoch, use the first seed
+                    seed = obj.seedStartValue; 
                 else
-                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 3;
+                    seed = obj.seedStartValue + obj.numEpochsCompleted; % Regular incrementing seed
                 end
-            end
-            
+            end 
+            fprintf('Using seed %d for epoch %d\n', seed, obj.numEpochsCompleted + 1);
+
             obj.noiseSeed = seed;
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
-            fprintf('Using seed %d\n', obj.noiseSeed);
-            
         end
         
         function p = createPresentation(obj)
