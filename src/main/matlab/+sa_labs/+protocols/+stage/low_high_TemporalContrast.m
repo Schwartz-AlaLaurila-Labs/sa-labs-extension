@@ -75,6 +75,8 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             obj.noiseSeed = seed;
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
+            fprintf('Using seed %d\n', obj.noiseSeed);
+            
         end
         
         function p = createPresentation(obj)
