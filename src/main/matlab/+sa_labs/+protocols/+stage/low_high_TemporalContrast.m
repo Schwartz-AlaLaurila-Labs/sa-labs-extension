@@ -94,22 +94,13 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state)captureIntensity(obj,state.frame - preFrames, preFrames, stimFrames));
+                @(state)getIntensity(obj,state.frame - preFrames, preFrames, stimFrames));
             
             p.addController(spotIntensityController);
             
-            function i = captureIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-                [i, global_intensity_log] = getIntensity(frame, preFrames, stimFrames, totalFrames);
-                assignin('base', 'intensity_log', global_intensity_log);
-            end
-            
-            function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames)
+            function i = getIntensity(obj, frame, preFrames, stimFrames)
                 persistent intensity
-                persistent intensity_log_internal
-                
-                if isempty(intensity_log_internal)
-                    intensity_log_internal = zeros(totalFrames, 1);
-                end
+        
                 % Determine contrast based on frame position
                 if frame < preFrames % Pre-time
                     contrast = obj.lowContrast; 
@@ -134,8 +125,6 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
                 end
 
                 intensity = clipIntensity(intensity, obj.spotMeanLevel);
-                intensity_log_internal(frame + 1) = intensity;
-                intensity_log = intensity_log_internal;
                 i= intensity;
             end
             
