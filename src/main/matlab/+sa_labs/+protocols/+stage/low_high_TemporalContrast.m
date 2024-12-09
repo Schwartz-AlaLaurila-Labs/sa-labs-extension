@@ -20,7 +20,7 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         numberOfEpochs = uint16(30) % Number of epochs to queue
     end
     properties (Dependent)
-        SwitchTime 
+        SwitchTime %Period of contrast stim duration
     end
     
     properties (Hidden)
@@ -43,21 +43,20 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
     methods 
         
         function switchTime = get.SwitchTime(obj)
-            switchTime = obj.stimTime / 2;
+            switchTime = obj.stimTime / 2e3;
         end
 
-        function d = getPropertyDescriptor(obj, name)
-            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
-            
-            switch name
-                case {'contrast'}
-                    if obj.numberOfPatterns > 1
-                        d.isHidden = true;
-                    end
-            end
-        end
-        
-        function prepareEpoch(obj, epoch)
+         function d = getPropertyDescriptor(obj, name)
+             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);             
+             switch name
+                 case {'contrast'}
+                     if obj.numberOfPatterns > 1
+                         d.isHidden = true;
+                     end
+             end
+         end
+         
+       function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
             if strcmp(obj.seedChangeMode, 'repeat only')
@@ -65,18 +64,19 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             elseif strcmp(obj.seedChangeMode, 'increment only')
                 seed = obj.numEpochsCompleted + obj.seedStartValue;
             else
-                seedIndex = mod(obj.numEpochsCompleted, 3);
+                seedIndex = mod(obj.numEpochsCompleted,2);
                 if seedIndex == 0
                     seed = obj.seedStartValue;
-                else
-                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 3;
+                elseif seedIndex == 1
+                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 2;
                 end
             end
-            
             obj.noiseSeed = seed;
+            
+            %at start of epoch, set random streams using this cycle's seeds
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
-        end
+       end
         
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
@@ -99,13 +99,20 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             p.addController(spotIntensityController);
         
             function i = captureIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-                [i, global_intensity_log] = getIntensity(obj,frame, preFrames, stimFrames, totalFrames);
+                [i, global_intensity_log] = getIntensity(obj,frame, preFrames, stimFrames,totalFrames);
                 assignin('base', 'intensity_log', global_intensity_log);
             end
 
-            function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames)
-    %             persistent intensity_log_internal;
+            function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames,totalFrames)
+                persistent intensity_log_internal;
                 persistent intensity
+                
+                if isempty(intensity_log_internal)
+                    intensity_log_internal = zeros(1, totalFrames); % Preallocate for speed
+                end
+                if isempty(intensity)
+                    intensity = obj.spotMeanLevel;
+                end
 
                 % Determine contrast based on frame position
                 if frame < preFrames % Pre-time
