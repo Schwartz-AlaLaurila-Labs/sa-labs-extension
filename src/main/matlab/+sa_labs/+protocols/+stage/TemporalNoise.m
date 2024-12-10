@@ -75,7 +75,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                     elseif strcmp(obj.seedChangeMode, 'increment only')
                         seed = obj.seedStartValue + i - 1; % Increment seed on every epoch
                     elseif strcmp(obj.seedChangeMode, 'repeat & increment')
-                        seedIndex = mod(i - 1, 2); % Cycle every 2 epochs
+                        seedIndex = mod(i - 1, 4); % Cycle every 2 epochs
                         if seedIndex == 0
                             seed = obj.seedStartValue;
                         else
