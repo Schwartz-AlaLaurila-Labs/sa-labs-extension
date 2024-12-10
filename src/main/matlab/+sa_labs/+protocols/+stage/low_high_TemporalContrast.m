@@ -20,6 +20,9 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         numberOfEpochs = uint16(30) % Number of epochs to queue
     end
     
+    properties (Dependent)
+        SwitchTime
+    end
     properties (Hidden)
         version = 1;
         
@@ -29,7 +32,6 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
         
         noiseSeed
         noiseStream
-        
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
     end
@@ -39,10 +41,20 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
     end
     
     methods
-        
-        function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfEpochs;
+        function SwitchTime = get.SwitchTime(obj)
+            SwitchTime = obj.stimTime / 2e3;
         end
+        function d = getPropertyDescriptor(obj, name)
+            d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
+            
+            switch name
+                case {'contrast'}
+                    if obj.numberOfPatterns > 1
+                        d.isHidden = true;
+                    end
+            end
+        end
+        
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -51,15 +63,15 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
                 seed = obj.seedStartValue;
             elseif strcmp(obj.seedChangeMode, 'increment only')
                 seed = obj.numEpochsCompleted + obj.seedStartValue;
-            else
-                seedIndex = mod(obj.numEpochsCompleted, 3);
-                if seedIndex == 0
-                    seed = obj.seedStartValue;
+            else % Always repeat the first seed every 3rd epoch
+                if mod(obj.numEpochsCompleted, 3) == 2 % Every 3rd epoch, use the first seed
+                    seed = obj.seedStartValue; 
                 else
-                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 3;
+                    seed = obj.seedStartValue + obj.numEpochsCompleted; % Regular incrementing seed
                 end
-            end
-            
+            end 
+            fprintf('Using seed %d for epoch %d\n', seed, obj.numEpochsCompleted + 1);
+
             obj.noiseSeed = seed;
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             epoch.addParameter('noiseSeed', obj.noiseSeed);
@@ -71,8 +83,6 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             
             preFrames = round(obj.frameRate * (obj.preTime / 1e3));
             stimFrames = round(obj.frameRate * (obj.stimTime / 1e3));
-            totalFrames = preFrames + stimFrames + round(obj.frameRate * (obj.tailTime / 1e3));
-
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.aperture / 2));
             spot.radiusY = spot.radiusX;
@@ -82,55 +92,52 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state) obj.captureIntensity(state.frame, preFrames, stimFrames, totalFrames));
+                @(state)getIntensity(obj,state.frame - preFrames, preFrames, stimFrames));
             
             p.addController(spotIntensityController);
-        end
-        
-        function i = captureIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-            [i, global_intensity_log] = obj.getIntensity(frame, preFrames, stimFrames, totalFrames);
-            assignin('base', 'intensity_log', global_intensity_log);
-        end
+            
+            function i = getIntensity(obj, frame, preFrames, stimFrames)
+                persistent intensity
+                totalFrames = preFrames + stimFrames + tailFrames;
+                % Determine contrast based on frame position
+                if frame < preFrames % Pre-time
+                    contrast = obj.lowContrast; 
+                
+                elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stims time
+                    relative_frame = frame - preFrames;
+                    blockNumber = floor((relative_frame/ (60*obj.SwitchTime))); %60Hz is default frame rate. Dont like hard coding it but its not accessing obj.frameRate
+                    
+                    if mod(blockNumber, 2) == 0
+                        contrast = obj.lowContrast;
+                    else
+                        contrast = obj.highContrast;
+                    end
 
-        function [i, intensity_log] = getIntensity(obj, frame, preFrames, stimFrames, totalFrames)
-            persistent intensity_log_internal
-            
-            if isempty(intensity_log_internal)
-                intensity_log_internal = zeros(totalFrames, 1);
-            end
-            
-            % Determine contrast based on frame position
-            if frame < preFrames % Pre-time
-                contrast = obj.lowContrast; 
-            elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stimulus time
-                relative_frame = frame - preFrames;
-                blockNumber = floor((relative_frame / (obj.frameRate * (obj.stimTime / 2000))));
-                if mod(blockNumber, 2) == 0
-                    contrast = obj.lowContrast;
                 else
-                    contrast = obj.highContrast;
+                    contrast = obj.lowContrast; %tail time and beyond
+                    if frame == totalFrames - 1
+                        intensity = obj.spotMeanLevel;
+                        i = intensity;
+                        return
+                    end
+                end 
+                if mod(frame, obj.frameDwell) == 0
+                    noise = sa_labs.util.randn(obj.noiseStream, 1);
+                    intensity = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
                 end
 
-            else % Tail-time
-                contrast = obj.lowContrast;
+                intensity = clipIntensity(intensity, obj.spotMeanLevel);
+                i= intensity;
             end
             
-            if mod(frame, obj.frameDwell) == 0
-                noise = sa_labs.util.randn(obj.noiseStream, 1);
-                i = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
+            function intensity = clipIntensity(intensity, mean_level)
+                intensity(intensity > mean_level * 2) = mean_level * 2;
+                intensity(intensity < 0) = 0;
+                intensity(intensity > 1) = 1;
             end
-            
-            i = obj.clipIntensity(i, obj.spotMeanLevel);
-            intensity_log_internal(frame + 1) = i;
-            intensity_log = intensity_log_internal;
         end
-        
-        % Clip intensity to the range [0, 1]
-        function intensity = clipIntensity(obj, intensity, mean_level)
-            intensity(intensity > mean_level * 2) = mean_level * 2;
-            intensity(intensity < 0) = 0;
-            intensity(intensity > 1) = 1;
+        function totalNumEpochs = get.totalNumEpochs(obj)
+            totalNumEpochs = obj.numberOfEpochs;
         end
-        
     end
 end
