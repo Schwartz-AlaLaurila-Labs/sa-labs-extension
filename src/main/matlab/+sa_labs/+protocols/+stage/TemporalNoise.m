@@ -1,4 +1,4 @@
-classdef TemporalNoise < sa_labs.protocols.StageProtocol
+classdef permuted_TemporalNoise < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 500 % ms
@@ -119,9 +119,51 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                 case 'uniform'
                     obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1;
                 case 'gaussian'
-                    obj.noiseFn = @() sa_labs.util.randn(obj.noiseStream); %@() sqrt(-2*log(obj.noiseStream.rand()))*cos(2*pi*obj.noiseStream.rand());
+                    obj.noiseFn = @() sqrt(-2*log(obj.noiseStream.rand()))*cos(2*pi*obj.noiseStream.rand());
                 case 'binary'
                     obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1;
+            end
+        end
+        
+        function p = createPresentation(obj)
+            canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
+            
+            p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
+            preFrames = round(obj.frameRate * (obj.preTime / 1e3));
+            stimFrames = round(obj.frameRate * (obj.stimTime / 1e3));
+            
+            % Create shapes
+            spot = stage.builtin.stimuli.Ellipse();
+            spot.radiusX = round(obj.um2pix(obj.aperture / 2));
+            spot.radiusY = spot.radiusX;
+            spot.position = canvasSize / 2;
+            spot.opacity = 1;
+            
+            p.addStimulus(spot);
+            
+            % Add controllers
+            spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
+                @(state) getIntensity(obj, state.frame - preFrames));
+            p.addController(spotIntensityController);
+            
+            function i = getIntensity(obj, frame)
+                persistent intensity;
+                if (frame < 0) || (frame > stimFrames)
+                    intensity = obj.spotMeanLevel;
+                    intensity = clipIntensity(intensity, obj.spotMeanLevel);
+                else
+                    if mod(frame, obj.frameDwell) == 0
+                        intensity = obj.spotMeanLevel + obj.spotMeanLevel * obj.contrast * obj.noiseFn();
+                        intensity = clipIntensity(intensity, obj.spotMeanLevel);
+                    end
+                end
+                i = intensity;
+            end
+            
+            function intensity = clipIntensity(intensity, mn)
+                intensity(intensity > mn * 2) = mn * 2;
+                intensity(intensity < 0) = 0;
+                intensity(intensity > 1) = 1;
             end
         end
         
