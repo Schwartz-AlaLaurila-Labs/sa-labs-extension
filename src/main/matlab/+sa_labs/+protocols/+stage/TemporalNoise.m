@@ -28,7 +28,7 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only'})
         colorNoiseModeType = symphonyui.core.PropertyType('char', 'row', {'1 pattern', '2 patterns'})
         colorNoiseDistributionType = symphonyui.core.PropertyType('char', 'row', {'uniform', 'gaussian', 'binary'})
-        
+        frameDwell
         noiseSeed
         noiseStream
         
