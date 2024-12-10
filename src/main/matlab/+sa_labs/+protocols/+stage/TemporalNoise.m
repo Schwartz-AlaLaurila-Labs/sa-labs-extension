@@ -37,7 +37,8 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
         
-        permutedFrameDwells % Pre-generated permutation of frame dwells (for Shuffle mode)
+        permutedFrameDwells
+        permutedSeeds
     end
     
     properties (Dependent)
@@ -60,12 +61,40 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
         function prepareRun(obj)
             % Call the superclass's prepareRun method
             prepareRun@sa_labs.protocols.StageProtocol(obj);
-            
+
             % Handle frame dwell mode selection
             if strcmp(obj.frameDwellMode, 'Shuffle')
-                % Shuffle mode: Create a list of epochs for each frame dwell and shuffle it using randperm
-                allFrameDwells = repelem(obj.frameDwells, obj.numberOfEpochsPerFrameDwell); % Repeat each frame dwell for the specified number of epochs
-                obj.permutedFrameDwells = allFrameDwells(randperm(length(allFrameDwells))); % Randomize order
+                % Step 1: Create all frame dwells
+                allFrameDwells = repelem(obj.frameDwells, obj.numberOfEpochsPerFrameDwell); 
+
+                % Step 2: Create allSeeds according to the seed change mode
+                allSeeds = zeros(size(allFrameDwells));
+                for i = 1:length(allFrameDwells)
+                    if strcmp(obj.seedChangeMode, 'repeat only')
+                        seed = obj.seedStartValue; % Same seed every time
+                    elseif strcmp(obj.seedChangeMode, 'increment only')
+                        seed = obj.seedStartValue + i - 1; % Increment seed on every epoch
+                    elseif strcmp(obj.seedChangeMode, 'repeat & increment')
+                        seedIndex = mod(i - 1, 2); % Cycle every 2 epochs
+                        if seedIndex == 0
+                            seed = obj.seedStartValue;
+                        else
+                            seed = obj.seedStartValue + floor((i + 1) / 2);
+                        end
+                    else
+                        error('Invalid seed change mode. Choose one of "repeat only", "repeat & increment", or "increment only".');
+                    end
+                    allSeeds(i) = seed;
+                end
+
+                % Step 3: Generate one permutation for both frame dwells and seeds
+                stream = RandStream('twister', 'Seed', obj.seedStartValue+20); % Use local stream
+                permutationIndices = randperm(stream, length(allFrameDwells)); % One permutation for both
+
+                % Apply the same permutation to both frame dwells and seeds
+                obj.permutedFrameDwells = allFrameDwells(permutationIndices);
+                obj.permutedSeeds = allSeeds(permutationIndices);
+
             elseif strcmp(obj.frameDwellMode, 'Constant')
                 % Constant mode: Use a single frame dwell for all epochs
                 if isempty(obj.constantFrameDwell)
@@ -75,55 +104,40 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
                 error('Invalid frame dwell mode. Choose either "Shuffle" or "Constant".');
             end
         end
+
+
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
-            
-            % Select the frameDwell based on the selected mode
-            if strcmp(obj.frameDwellMode, 'Shuffle')
-                currentEpochIndex = obj.numEpochsCompleted + 1; % Index starts at 1 in MATLAB
-                obj.frameDwell = obj.permutedFrameDwells(currentEpochIndex);
-            elseif strcmp(obj.frameDwellMode, 'Constant')
-                obj.frameDwell = obj.constantFrameDwell;
-            else
-                error('Invalid frame dwell mode.');
-            end
-            
-            % Print the current frame dwell in use
-            fprintf('Epoch %d: Frame dwell = %d\n', obj.numEpochsCompleted + 1, obj.frameDwell);
-            
-            epoch.addParameter('frameDwell', obj.frameDwell); % Track the frameDwell in the epoch
-            
-            % Seed handling
-            if strcmp(obj.seedChangeMode, 'repeat only')
-                seed = obj.seedStartValue;
-            elseif strcmp(obj.seedChangeMode, 'increment only')
-                seed = obj.numEpochsCompleted + obj.seedStartValue;
-            else
-                seedIndex = mod(obj.numEpochsCompleted, 2);
-                if seedIndex == 0
-                    seed = obj.seedStartValue;
-                elseif seedIndex == 1
-                    seed = obj.seedStartValue + (obj.numEpochsCompleted + 1) / 2;
-                end
-            end
-            
-            obj.noiseSeed = seed;
-            
-            % Set random streams using this cycle's seeds
-            obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
+            % Get the current epoch index (since MATLAB is 1-indexed)
+            currentEpochIndex = obj.numEpochsCompleted + 1;
+
+            % Select frame dwell and seed from the precomputed lists
+            obj.frameDwell = obj.permutedFrameDwells(currentEpochIndex);
+            obj.noiseSeed = obj.permutedSeeds(currentEpochIndex);
+
+            % Print the frame dwell and seed for the current epoch
+            fprintf('Epoch %d: Frame dwell = %d, Seed = %d\n', currentEpochIndex, obj.frameDwell, obj.noiseSeed);
+
+            % Track parameters for this epoch
+            epoch.addParameter('frameDwell', obj.frameDwell); 
             epoch.addParameter('noiseSeed', obj.noiseSeed);
+
+            obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
+
             
-            % Noise distribution
             switch obj.colorNoiseDistribution
                 case 'uniform'
-                    obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1;
+                    obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1; % Uniform from [-1, 1]
                 case 'gaussian'
-                    obj.noiseFn = @() sqrt(-2*log(obj.noiseStream.rand()))*cos(2*pi*obj.noiseStream.rand());
+                    obj.noiseFn = @() sa_labs.util.randn(obj.noiseStream); % Gaussian noise
                 case 'binary'
-                    obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1;
+                    obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1; % Binary {+1, -1}
+                otherwise
+                    error('Invalid color noise distribution. Choose "uniform", "gaussian", or "binary".');
             end
         end
+
         
         function p = createPresentation(obj)
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
