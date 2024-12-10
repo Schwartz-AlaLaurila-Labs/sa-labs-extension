@@ -1,4 +1,4 @@
-classdef permuted_TemporalNoise < sa_labs.protocols.StageProtocol
+classdef TemporalNoise < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 500 % ms
