@@ -166,7 +166,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
             function noise_intensity = generateOneOverFNoise(obj, stimFrames)
                 stream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
                 % Generate 1/f^beta noise in the frequency domain
-                freqs = linspace(0, obj.frame_rate/2, floor(stimFrames/2) + 1);
+                freqs = linspace(0, obj.frameRate/2, floor(stimFrames/2) + 1);
                 amplitudes = zeros(size(freqs));
                 amplitudes(2:end) = freqs(2:end) .^ (-obj.beta / 2); % Avoid divide by zero
             
@@ -183,7 +183,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
             
                 % Apply contrast scaling
                 noise_intensity_adj = obj.spotMeanLevel * (1 + obj.contrast * raw_noise);
-                noise_intensity = repelem(noise_intensity_adj, obj.frame_dwell);
+                noise_intensity = repelem(noise_intensity_adj, obj.frameDwell);
             end
         end
         
