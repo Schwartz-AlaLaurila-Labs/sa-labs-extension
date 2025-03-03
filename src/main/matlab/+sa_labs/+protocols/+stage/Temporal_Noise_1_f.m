@@ -2,12 +2,12 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
     
     properties
         preTime = 500 % ms
-        stimTime = 30000 % ms
+        stimTime = 3000 % ms
         tailTime = 500 % ms
         
         contrast = .36 % weber contrast
         spotMeanLevel = 0.5 % Mean intensity of the light spot
-        betas = [0,.5,1] % Spectral slope of the noise (0=white, 1=pink)
+        betas = [0, 1] % Spectral slope of the noise (0=white, 1=pink)
         numberOfEpochsPerBeta = uint16(30) % Number of epochs for each frame dwell
         
         aperture = 2000 % um diameter
@@ -128,7 +128,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             preFrames = round(obj.frameRate * (obj.preTime / 1e3));
             stimFrames = round(obj.frameRate * (obj.stimTime / 1e3));
-            
+            frame_rate = round(obj.frameRate);
             % Create shapes
             spot = stage.builtin.stimuli.Ellipse();
             spot.radiusX = round(obj.um2pix(obj.aperture / 2));
@@ -149,7 +149,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
                     intensity = obj.spotMeanLevel;
                 else
                     if mod(frame, obj.frameDwell) == 0
-                        noise_series = generateOneOverFNoise(obj, stimFrames);
+                        noise_series = generateOneOverFNoise(obj, frame_rate, stimFrames);
                         intensity = noise_series(frame+1);
                     end
                 end
@@ -163,12 +163,11 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
                 intensity(intensity > 1) = 1;
             end
 
-            function noise_intensity = generateOneOverFNoise(obj, stimFrames)
+            function noise_intensity = generateOneOverFNoise(obj, frame_rate, stimFrames)
                 stream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
-                disp('frame rate')
-                class(obj.frameRate);
+                disp(frame_rate);
                 % Generate 1/f^beta noise in the frequency domain
-                freqs = linspace(0, obj.frameRate/2, floor(stimFrames/2) + 1);
+                freqs = linspace(0, frame_rate/2, floor(stimFrames/2) + 1);
                 amplitudes = zeros(size(freqs));
                 amplitudes(2:end) = freqs(2:end) .^ (-obj.beta / 2); % Avoid divide by zero
             
