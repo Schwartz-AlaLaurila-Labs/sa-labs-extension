@@ -148,8 +148,8 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
                 if (frame < 0) || (frame > stimFrames)
                     intensity = obj.spotMeanLevel;
                 else
-                    if mod(frame, obj.frameDwell) == 0
-                        noise_series = generateOneOverFNoise(obj, stimFrames);
+                    if mod(frame, obj.frameDwell) == 0 %noise update
+                        noise_series = generateOneOverFNoise(obj, frame_rate, stimFrames);
                         if frame < length(noise_series) % Ensure valid indexing
                             intensity = noise_series(frame + 1);
                         else
