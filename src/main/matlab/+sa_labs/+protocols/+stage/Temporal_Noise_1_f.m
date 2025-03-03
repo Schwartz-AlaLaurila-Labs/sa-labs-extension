@@ -149,7 +149,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
                     intensity = obj.spotMeanLevel;
                 else
                     if mod(frame, obj.frameDwell) == 0
-                        noise_series = generateOneOverFNoise(obj);
+                        noise_series = generateOneOverFNoise(obj, stimFrames);
                         intensity = noise_series(frame+1);
                     end
                 end
@@ -165,6 +165,8 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
 
             function noise_intensity = generateOneOverFNoise(obj, stimFrames)
                 stream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
+                disp('frame rate')
+                class(obj.frameRate);
                 % Generate 1/f^beta noise in the frequency domain
                 freqs = linspace(0, obj.frameRate/2, floor(stimFrames/2) + 1);
                 amplitudes = zeros(size(freqs));
