@@ -188,7 +188,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = obj.numberOfEpochsPerFrameDwell * length(obj.frameDwells);
+            totalNumEpochs = obj.numberOfEpochsPerBeta * length(obj.betas);
         end
     end
 end
