@@ -110,10 +110,10 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
 
         
         function prepareEpoch(obj, epoch)
+            
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
-
             outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
-            currentEpochIndex = obj.numEpochsPrepared;
+            currentEpochIndex = obj.numEpochsPrepared ;
 %             disp(['Total Epochs Completed: ', num2str(obj.numEpochsCompleted)]);
 %             disp(['Total Epochs prepared: ', num2str(obj.numEpochsPrepared )]);
 %             disp(['Total Epochs computed: ', num2str(obj.totalNumEpochs )]);
@@ -129,6 +129,7 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
 
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
+            
             % if obj.numEpochsCompleted < obj.numEpochsPrepared
             %     pause(obj.stimTime / 1000)
             %     disp('Pausing to catch up hehe')
