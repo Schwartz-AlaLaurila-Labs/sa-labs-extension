@@ -17,7 +17,8 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
         responsePlotMode = 'cartesian'
         responsePlotSplitParameter = ''; %'pulseAmplitude';
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only',});
-        noiseSeed;
+        noiseSeed
+        noiseStream
         beta
         permutedBetas
         permutedSeeds
@@ -62,41 +63,43 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
     
 
         function stim = createAmpStimulus(obj, ampName)
-            % Create white noise with pre and tail time with chosen frequency
+            stream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             sample_rate = obj.sampleRate;
-            n_stimpoints = round(obj.stimTime * sample_rate / 1E3); % Ensure integer number of points
+            n_stimpoints = round(obj.stimTime * sample_rate / 1E3); 
             n_prestimpoints = round(obj.preTime * sample_rate / 1E3);
             n_tailstimpoints = round(obj.tailTime * sample_rate / 1E3);
-        
-            % Determine noise generation rate
-            rate = max(1, round(sample_rate / obj.frequency));  % Avoid zero or small rates
-        
-            % Generate white noise directly at the required resolution
-            stream = RandStream("twister", 'Seed', obj.noiseSeed);
-            n_noise_points = ceil(n_stimpoints / rate);
-            freqs = linspace(0, rate/2, floor(n_noise_points/2)+1);
-            amplitudes = zeros(size(freqs));
-            amplitudes(2:end) = freqs(2:end) .^ (-obj.beta / 2); % Avoid divide by zero
-            amplitudes(1) = 0; % Set DC component to zero
-            phases = exp(1i * 2 * pi *  rand(stream, 1, length(freqs)));
 
-            spectrum = [amplitudes .* phases, conj(amplitudes(end-1:-1:2) .* phases(end-1:-1:2))]; %Prevents aliasing
-            %Back to time
-            raw_noise = real(ifft(fftshift(spectrum))); 
-            raw_noise = raw_noise(1:n_stimpoints); % Ensure correct length
-            raw_noise = raw_noise / std(raw_noise,1); % Normalize to unit variance
-            
-            %Scale by std
-            % noise_intensity_adj = obj.amplitude * (1 + obj.std*raw_noise); %Using contrast
-            noise_intensity_adj = obj.amplitude + obj.std * raw_noise; %Using std
-            % Upsample using interpolation for a cleaner waveform
-            time_noise = linspace(0, obj.stimTime, n_noise_points);
+            % Determine noise generation rate
+            rate = max(1, round(sample_rate / obj.frequency));  
+            n_noise_points = ceil(n_stimpoints / rate);
+
+            % Generate 1/f^beta noise spectrum
+            freqs = linspace(0, rate/2, floor(n_noise_points/2) + 1);
+            amplitudes = zeros(size(freqs));
+            amplitudes(2:end) = freqs(2:end) .^ (-obj.beta / 2); 
+            amplitudes(1) = 0; % Avoid DC offset
+
+            % Random phase for each frequency component
+            phases = exp(1i * 2 * pi * rand(stream, 1, length(freqs)));
+
+            % Construct symmetric frequency spectrum for real-valued IFFT
+            spectrum = [amplitudes .* phases, conj(amplitudes(end-1:-1:2) .* phases(end-1:-1:2))];
+
+            % Convert to time domain & normalize
+            raw_noise = real(ifft(fftshift(spectrum), 'symmetric')); 
+            raw_noise = raw_noise / std(raw_noise, 1); 
+
+            % Upsample noise before truncation to match n_stimpoints
+            time_noise = linspace(0, obj.stimTime, length(raw_noise));
             time_interp = linspace(0, obj.stimTime, n_stimpoints);
-            stim_wave = interp1(time_noise, noise_intensity_adj, time_interp, 'linear', 'extrap'); 
-        
+            stim_wave = interp1(time_noise, raw_noise, time_interp, 'linear', 'extrap'); 
+
+            % Scale by std and amplitude
+            noise_intensity_adj = obj.amplitude + obj.std * stim_wave;
+
             % Construct full waveform
-            totalWave = [zeros(1, n_prestimpoints), stim_wave, zeros(1, n_tailstimpoints)];
-        
+            totalWave = [zeros(1, n_prestimpoints), noise_intensity_adj, zeros(1, n_tailstimpoints)];
+
             % Create waveform stimulus
             gen = symphonyui.builtin.stimuli.WaveformGenerator();
             gen.sampleRate = sample_rate;
@@ -108,22 +111,29 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
-            outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
-            currentEpochIndex = mod(obj.numEpochsCompleted, obj.totalNumEpochs) + 1;
 
+            outputAmpName = sprintf('amp%g', obj.outputAmpSelection);
+            currentEpochIndex = obj.numEpochsPrepared;
+%             disp(['Total Epochs Completed: ', num2str(obj.numEpochsCompleted)]);
+%             disp(['Total Epochs prepared: ', num2str(obj.numEpochsPrepared )]);
+%             disp(['Total Epochs computed: ', num2str(obj.totalNumEpochs )]);
             % Select frame dwell and seed from the precomputed lists
             obj.beta = obj.permutedBetas(currentEpochIndex);
             obj.noiseSeed = obj.permutedSeeds(currentEpochIndex);
 
             % Print the frame dwell and seed for the current epoch
             fprintf('Epoch %d: Beta = %d, Seed = %d\n', currentEpochIndex, obj.beta, obj.noiseSeed)
-            
             % Track parameters for this epoch
             epoch.addParameter('beta', obj.beta); 
             epoch.addParameter('noiseSeed', obj.noiseSeed);
 
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
             epoch.addStimulus(obj.rig.getDevice(outputAmpName), obj.createAmpStimulus(outputAmpName));
+            % if obj.numEpochsCompleted < obj.numEpochsPrepared
+            %     pause(obj.stimTime / 1000)
+            %     disp('Pausing to catch up hehe')
+            % end
+            
         end
         
         
