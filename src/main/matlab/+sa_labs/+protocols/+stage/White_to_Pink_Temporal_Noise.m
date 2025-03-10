@@ -101,8 +101,8 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
         
         function intensity = getIntensity(obj, frame, preFrames, stimFrames1, stimFrames2, tailFrames, stimNoise)
             if frame < preFrames % **Pre-time (using noise1)**
-                stimFrame = frame + 1;
-                intensity = stimNoise(stimFrame);
+%                 stimFrame = frame + 1;
+                intensity = obj.spotMeanLevel;
                 
             elseif frame < (preFrames + stimFrames1) % **First stimulus segment (Beta 1)**
                 stimFrame = frame - preFrames + 1;
@@ -113,8 +113,9 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
                 intensity = stimNoise(preFrames + stimFrames1 + stimFrame);
                 
             else % **Tail-Time (using noise1)**
-                stimFrame = frame - (preFrames + stimFrames1 + stimFrames2) + 1;
-                intensity = stimNoise(preFrames + stimFrames1 + stimFrames2 + stimFrame);
+%                 stimFrame = frame - (preFrames + stimFrames1 + stimFrames2) + 1;
+%                 intensity = stimNoise(preFrames + stimFrames1 + stimFrames2 + stimFrame);
+                  intensity = obj.spotMeanLevel
             end
 
             % Ensure intensity stays within valid range
