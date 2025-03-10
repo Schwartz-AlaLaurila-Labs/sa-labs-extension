@@ -23,7 +23,6 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
         % Stimulus properties
         aperture = 2000  % Spot diameter in microns
         frameDwell = 1   % Number of frames before updating the noise
-        frameRate = 60   % Frame rate (Hz)
 
         % Seed control
         seedStartValue = 1 % Initial noise seed
