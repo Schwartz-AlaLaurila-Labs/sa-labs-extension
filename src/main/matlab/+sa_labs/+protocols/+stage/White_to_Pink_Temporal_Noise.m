@@ -70,6 +70,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             preFrames = round(obj.frameRate * (obj.preTime / 1e3));
+            tailFrames = round(obj.frameRate * (obj.tailTime/1e3));
             stimFrames1 = round(obj.frameRate * (obj.time1 / 1e3));
             stimFrames2 = round(obj.frameRate * (obj.time2 / 1e3));
             frame_rate = round(obj.frameRate);
