@@ -99,7 +99,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             p.addController(spotIntensityController);
         end
         
-        function intensity = getIntensity(obj, frame, preFrames, stimFrames1, stimFrames2, tailFrames, stimNoise)
+        function intensity = getIntensity(obj, frame, preFrames, stimFrames1, stimFrames2, stimNoise)
             if frame < preFrames % **Pre-time (using noise1)**
 %                 stimFrame = frame + 1;
                 intensity = obj.spotMeanLevel;
@@ -115,7 +115,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             else % **Tail-Time (using noise1)**
 %                 stimFrame = frame - (preFrames + stimFrames1 + stimFrames2) + 1;
 %                 intensity = stimNoise(preFrames + stimFrames1 + stimFrames2 + stimFrame);
-                  intensity = obj.spotMeanLevel
+                  intensity = obj.spotMeanLevel;
             end
 
             % Ensure intensity stays within valid range
