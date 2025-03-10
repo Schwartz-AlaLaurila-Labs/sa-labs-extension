@@ -14,8 +14,8 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
         tailTime = 500  % Post-stimulus period (constant intensity)
 
         % Noise parameters
-        contrast1 = .36 % Contrast for first noise segment
-        contrast2 = .36 % Contrast for second noise segment
+        stimContrast1  = .36 % Contrast for first noise segment
+        stimContrast2 = .36 % Contrast for second noise segment
         beta1 = 0       % Spectral slope of first noise segment (0 = white noise)
         beta2 = 1       % Spectral slope of second noise segment (1 = pink noise)
         spotMeanLevel = 0.15 % Mean intensity of the light spot
@@ -76,9 +76,9 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             frame_rate = round(obj.frameRate);
 
             % Generate noise sequences
-            noise1 = generateOneOverFNoise(obj, frame_rate, stimFrames1, obj.beta1, obj.contrast1, obj.noiseSeed);
-            noise2 = generateOneOverFNoise(obj, frame_rate, stimFrames2, obj.beta2, obj.contrast2, obj.noiseSeed + 500); % Ensure independent noise
-            noise1_pre_tail = generateOneOverFNoise(obj, obj.frameRate, preFrames + tailFrames, obj.beta1, obj.contrast1, obj.noiseSeed + 200);
+            noise1 = generateOneOverFNoise(obj, frame_rate, stimFrames1, obj.beta1, obj.stimContrast1 , obj.noiseSeed);
+            noise2 = generateOneOverFNoise(obj, frame_rate, stimFrames2, obj.beta2, obj.stimContrast2, obj.noiseSeed + 500); % Ensure independent noise
+            noise1_pre_tail = generateOneOverFNoise(obj, obj.frameRate, preFrames + tailFrames, obj.beta1, obj.stimContrast1, obj.noiseSeed + 200);
 
             % Concatenate noise segments for future slicing
             stimNoise = [noise1_pre_tail, noise1, noise2, noise1_pre_tail];
