@@ -46,6 +46,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
     
     methods
         function prepareEpoch(obj, epoch)
+            disp('Preparing Epoch...');
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
             
             % Set seed based on change mode
@@ -67,6 +68,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
         end
         
         function p = createPresentation(obj)
+            disp('Creating presentation...');
             canvasSize = obj.rig.getDevice('Stage').getCanvasSize();
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             preFrames = round(obj.frameRate * (obj.preTime / 1e3));
@@ -100,6 +102,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
         end
         
         function intensity = getIntensity(obj, frame, preFrames, stimFrames1, stimFrames2, stimNoise)
+            disp(['Frame: ', num2str(frame), ' Intensity: ', num2str(intensity)]);
             if frame < preFrames % **Pre-time (using noise1)**
 %                 stimFrame = frame + 1;
                 intensity = obj.spotMeanLevel;
@@ -130,6 +133,7 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
         end
         
         function noise_intensity = generateOneOverFNoise(obj, frame_rate, stimFrames, beta, contrast, noiseSeed)
+            disp(['Generating noise with seed: ', num2str(noiseSeed)]);
             stream = RandStream('mt19937ar', 'Seed', noiseSeed);
             freqs = linspace(0, frame_rate / 2, floor(stimFrames / 2) + 1);
             
