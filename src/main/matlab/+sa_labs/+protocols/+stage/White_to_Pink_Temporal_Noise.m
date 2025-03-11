@@ -120,10 +120,9 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
 
                 % Ensure intensity stays within valid range
                 intensity = clipIntensity(intensity, obj.spotMeanLevel);
-                disp(['Frame: ', num2str(frame), ' Intensity: ', num2str(intensity)]);
             end
         
-            function intensity = clipIntensity(~, intensity, meanLevel)
+            function intensity = clipIntensity(intensity, meanLevel)
                 % Ensures the intensity stays within valid range
                 intensity(intensity > meanLevel * 2) = meanLevel * 2;
                 intensity(intensity < 0) = 0;
