@@ -32,32 +32,45 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
             allBetas = repelem(obj.betas, obj.numberOfEpochsPerBeta);
-             % Step 2: Create allSeeds according to the seed change mode
+            % Step 2: Create allSeeds according to the seed change mode
             allSeeds = zeros(size(allBetas));
+            incCounter = 0;  % keeps track of how many times we've incremented so far
+            
             for i = 1:length(allBetas)
-                if strcmp(obj.seedChangeMode, 'repeat only')
-                    seed = obj.seedStartValue; % Same seed every time
-                elseif strcmp(obj.seedChangeMode, 'increment only')
-                    seed = obj.seedStartValue + i - 1; % Increment seed on every epoch
-                elseif strcmp(obj.seedChangeMode, 'repeat & increment')
-                    seedIndex = mod(i - 1, 4); % Cycle every 2 epochs
-                    if seedIndex == 0
+                switch obj.seedChangeMode
+                    case 'repeat only'
+                        % same seed every time
                         seed = obj.seedStartValue;
-                    else
-                        seed = obj.seedStartValue + floor((i + 1) / 2);
-                    end
-                else
-                    error('Invalid seed change mode. Choose one of "repeat only", "repeat & increment", or "increment only".');
+            
+                    case 'increment only'
+                        % strictly increasing seed on every epoch
+                        seed = obj.seedStartValue + (i - 1);
+            
+                    case 'repeat & increment'
+                        % every 3rd epoch => seedStartValue
+                        % otherwise => incremented seed
+                        if mod(i, 3) == 0
+                            % on epochs 3,6,9,... use the start value again
+                            seed = obj.seedStartValue;
+                        else
+                            % on all other epochs, increment from last time
+                            seed = obj.seedStartValue + incCounter;
+                            incCounter = incCounter + 1;
+                        end
+            
+                    otherwise
+                        error('Invalid seed change mode. Choose one of "repeat only", "repeat & increment", or "increment only".');
                 end
+            
                 allSeeds(i) = seed;
             end
-            % Step 3: Generate one permutation for both frame dwells and seeds
-            stream = RandStream('twister', 'Seed', obj.seedStartValue+20); % Use local stream
-            permutationIndices = randperm(stream, length(allBetas)); % One permutation for both
-
-            % Apply the same permutation to both frame dwells and seeds
+            
+            % Step 3: Randomly permute betas and seeds together as before
+            stream = RandStream('twister', 'Seed', obj.seedStartValue+20);
+            permutationIndices = randperm(stream, length(allBetas));
             obj.permutedBetas = allBetas(permutationIndices);
             obj.permutedSeeds = allSeeds(permutationIndices);
+
         end
         
     
