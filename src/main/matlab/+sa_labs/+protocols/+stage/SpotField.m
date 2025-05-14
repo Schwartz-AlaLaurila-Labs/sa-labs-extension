@@ -14,6 +14,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
         spotTailFrames = 45
 
         spotIntensity = .5
+        n_intensities = 4; %we do this on a log scale by taking n-1 halvings of spotIntensity
 
         gridMode = 'radial'
         coverage = .9069
@@ -98,6 +99,11 @@ classdef SpotField < sa_labs.protocols.StageProtocol
 
             obj.theta = linspace(0,2*pi,11);
             obj.theta(end) = [];
+            if obj.n_intensities > 1
+                obj.intesity_vec = 2.^linspace(log2(obj.spotIntensity)-obj.n_intensities+1,log2(obj.spotIntensity),obj.n_intensities);
+            else
+                obj.intesity_vec = obj.spotIntensity;
+            end
             
             obj.numSpotsPerEpoch = floor(36 * obj.frameRate / (obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames));
             
@@ -132,9 +138,19 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 halfGrids = repmat(halfGrids, size(locs,1),1);
                 obj.grid = locs(any(abs(locs) < halfGrids, 2) | 4*sum((abs(locs)-halfGrids).^2,2) <= obj.spotSize.^2 , :);
                 
+                %repmat by n_intensities
+                obj.grid = repmat(obj.grid, obj.n_intensities, 1);
+                
+                %make intensity vec
+                grid_size = size(obj.grid,1);
+                obj.spot_intesnity_vec = repmat(obj.intesity_vec,1,ceil(grid_size/obj.n_intensities));
+                obj.spot_intesnity_vec = obj.spot_intesnity_vec(1:grid_size);
+                
                 if obj.numSpotsPerEpoch > size(obj.grid,1)
-                    obj.grid = repmat(obj.grid, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);
+                    obj.spot_intesnity_vec =  repmat(obj.spot_intesnity_vec, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);
+                    obj.grid = repmat(obj.grid, ceil(obj.numSpotsPerEpoch / size(obj.grid,1)), 1);                    
                 end
+                
             elseif strcmp(obj.gridMode,'rings')
                 N = cumsum([6, 10, 14, 8, 16, 30]);
                 R = [8, 9, 12, 22, 24, 28] / 60; % * obj.extentX;
@@ -199,18 +215,19 @@ classdef SpotField < sa_labs.protocols.StageProtocol
          end
         
         function prepareEpoch(obj, epoch)
-            if strcmp(obj.gridMode,'random')
+            si = obj.numEpochsPrepared * obj.numSpotsPerEpoch + 1 : (obj.numEpochsPrepared+1) * obj.numSpotsPerEpoch;
+            if strcmp(obj.gridMode,'random')                
                 obj.cx = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentX - obj.extentX/2;
                 obj.cy = rand(obj.randStream, obj.numSpotsPerEpoch, 1) * obj.extentY - obj.extentY/2;
-            else                %would be better to do a complete permutation...
-                si = obj.numEpochsPrepared * obj.numSpotsPerEpoch + 1 : (obj.numEpochsPrepared+1) * obj.numSpotsPerEpoch;
-                
+            else                %would be better to do a complete permutation...                
                 obj.cx = obj.grid(si,1);
                 obj.cy = obj.grid(si,2);
+                obj.current_spot_intensity = obj.spot_intesnity_vec(si);
             end
             
             epoch.addParameter('cx', obj.cx);
             epoch.addParameter('cy', obj.cy);
+            epoch.addParameter('current_spot_intensity', obj.current_spot_intensity);
 
             % Call the base method.
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
@@ -247,7 +264,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 xy = canvasSize/2 + [cx_(i); cy_(i)];
             end
             
-            sI = obj.spotIntensity;
+            sI = obj.current_spot_intensity;
             function c = getSpotIntensity(state)
                 i = mod(state.frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
