@@ -21,7 +21,7 @@ classdef SpotField < sa_labs.protocols.StageProtocol
 
         seed = -1                       % set to negative value to not use a seed, otherwise use a non-negative integer
 
-        numberOfFields = 20
+        numberOfFields = 10
 
         spotLED
     end
@@ -32,7 +32,10 @@ classdef SpotField < sa_labs.protocols.StageProtocol
         cx = [];
         cy = [];
         grid = [];
+        current_spot_intensity = 0;
 
+        intensity_vec = [];
+        spot_intensity_vec = [];
         theta = [];
 
         % responsePlotMode = 'cartesian';
