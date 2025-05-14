@@ -284,15 +284,15 @@ classdef SpotField < sa_labs.protocols.StageProtocol
                 disp('here')
                 %spot_ind = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
                 spot_ind = 1;
-                sI = current_spot_intensity(spot_ind);
-                disp(spot_ind)
-                disp(sI)
+                spot_intensity = current_spot_intensity(spot_ind);
+                %disp(spot_ind)
+                %disp(spot_intensity)
                 
                 i = mod(state.frame, spotPreStimPost);
                 if (i < spotPre) || (i >= spotPreStim)
                     c = 0;
                 else
-                    c = sI;
+                    c = spot_intensity;
                     %c = 0.1;
                 end
             end
