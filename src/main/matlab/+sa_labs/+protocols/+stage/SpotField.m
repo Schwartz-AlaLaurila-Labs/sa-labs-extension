@@ -281,9 +281,9 @@ classdef SpotField < sa_labs.protocols.StageProtocol
             %sI = obj.current_spot_intensity(1);
             current_spot_intensity = obj.current_spot_intensity;
             function c = getSpotIntensity(state)
-                disp('here')
-                %spot_ind = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
-                spot_ind = 1;
+                %disp('here')
+                spot_ind = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
+                %spot_ind = 1;
                 spot_intensity = current_spot_intensity(spot_ind);
                 %disp(spot_ind)
                 %disp(spot_intensity)
