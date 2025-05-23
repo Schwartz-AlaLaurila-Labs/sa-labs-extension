@@ -15,7 +15,9 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         
         seed = -1 %-1 to use global stream, else a non-negative integer
         
-        intensity = 1
+        numIntensities = 1
+        minIntensity = 1
+        maxIntensity = 1
         
     end
     
@@ -33,6 +35,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
     end
     
     properties (Hidden, Transient)
+        intensity = [];
         
         responsePlotMode = false;
         
@@ -42,7 +45,8 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
     end
 
     properties (Hidden)
-        version = 2; % fixed bug with pre and tail times
+%         version = 2; % fixed bug with pre and tail times
+        version = 3; % adding differing intensities
     end
     
     properties (Hidden, Transient, Access = private)
@@ -51,6 +55,9 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         cy = [];
         
         index = [];
+        iindex = [];
+        
+        intensities = [];
         
     end
     
@@ -68,18 +75,25 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             
             % create the cycles and shuffle them
             totalSpots = obj.numSpotsPerEpoch * obj.totalNumEpochs;
-            [~,i] = sort(rand(randStream, size(obj.spotPairs,1), ceil(totalSpots / size(obj.spotPairs,1))));
-            obj.index = reshape(i(1:totalSpots), obj.numSpotsPerEpoch, obj.totalNumEpochs);
+            [~,i] = sort(rand(randStream, size(obj.spotPairs,1) * obj.numIntensities, ceil(totalSpots / size(obj.spotPairs,1) / obj.numIntensities)));
+            tmp = reshape(i(1:totalSpots), obj.numSpotsPerEpoch, obj.totalNumEpochs);
+            obj.index = floor((tmp-1)/obj.numIntensities)+1;
+            obj.iindex = mod((tmp-1),obj.numIntensities)+1;
+
+%             obj.intensities = linspace(obj.minIntensity, obj.maxIntensity, obj.numIntensities);
+            obj.intensities = exp(linspace(log(obj.minIntensity), log(obj.maxIntensity), obj.numIntensities));
             
         end
         
         function prepareEpoch(obj, epoch)
             obj.cx = obj.spotPairs(obj.index(:,obj.numEpochsPrepared + 1), :, 1);
             obj.cy = obj.spotPairs(obj.index(:,obj.numEpochsPrepared + 1), :, 2);
+            obj.intensity = obj.intensities(obj.iindex(:, obj.numEpochsPrepared + 1));
             
             
             epoch.addParameter('cx', obj.cx);
             epoch.addParameter('cy', obj.cy);
+            epoch.addParameter('intensity', obj.intensity);
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj,epoch)
         end
@@ -107,17 +121,18 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             end
             
             bg = obj.meanLevel;
-            sI = obj.intensity;
+            sI = obj.intensity; %same length as cx_
             function c = getSpotIntensity(frame)
                 if (frame < 0) || (frame >= stimFrames)
                     c = bg;
                     return
                 end
-                i = mod(frame, spotPreStimPost);
-                if (i < spotPre) || (i >= spotPreStim)
+                i = min(floor(frame / spotPreStimPost) + 1, length(sI)); %spot index
+                j = mod(frame, spotPreStimPost);
+                if (j < spotPre) || (j >= spotPreStim)
                     c = bg;
                 else
-                    c = sI;
+                    c = sI(i);
                 end
             end
             
@@ -148,6 +163,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotB.opacity = 1;
             spotB.color = 0;
             
+            %TODO: consider different intensities for spot A and B
             spotBIntensity_ = stage.builtin.controllers.PropertyController(spotB, 'color',...
                 @(state)getSpotIntensity(state.frame - preFrames));
             spotBPosition = stage.builtin.controllers.PropertyController(spotB, 'position',...
@@ -177,7 +193,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
-            totalNumEpochs = ceil(size(obj.spotPairs,1) * obj.numRepeats / obj.numSpotsPerEpoch);
+            totalNumEpochs = ceil(size(obj.spotPairs,1) * obj.numRepeats / obj.numSpotsPerEpoch * obj.numIntensities);
         end
         
         function set.spotPairs(self, pairs)
