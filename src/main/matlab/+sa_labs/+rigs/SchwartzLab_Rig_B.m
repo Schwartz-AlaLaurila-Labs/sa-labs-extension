@@ -61,12 +61,12 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
             obj.daqStreams('Oscilloscope Trigger') = {'doport0', 0, 0}; %
             obj.daqStreams('Stim Time Recorder') = {'doport0', 1, 0}; %
             obj.daqStreams('Frame Timing') = {'ai3',-1, 'V'};
-            obj.daqStreams('picospritz_trigger') = {'ao1',-1,'V'};
+            %obj.daqStreams('picospritz_trigger') = {'ao1',-1,'V'};
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
             %daqStreams('Optogenetics Trigger') = {'doport1', 3, 0}; %
             %daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
-            %daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
-            %daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
+            obj.daqStreams('Excitatory conductance') = {'ao0', -1, 'V'}; %
+            obj.daqStreams('Inhibitory conductance') = {'ao1', -1, 'V'}; %
 %             obj.daqStreams('LED_blanking_signal') = {'ai3', -1, 'V'}; %
             
             % obj.daqStreams('Test DI') = {'diport0', 31, 0};
