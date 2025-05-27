@@ -10,10 +10,10 @@ classdef BrainCell < symphonyui.core.persistent.descriptions.SourceDescription
             
             obj.addProperty('notes', '', ...
                 'description', 'Notes about this recording');
-                                 
-            obj.addProperty('location',[0,0],...
-                'description', 'coordinates of the cell relative to some landmark in the brain');
-            
+                  
+            obj.addProperty('brain_region', '', ...
+                'description', 'Plain text (for now) about the brain region ');
+
             obj.addAllowableParentType('sa_labs.sources.BrainRegion');
         end
         

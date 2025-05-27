@@ -1,8 +1,8 @@
-classdef BrainRegion < symphonyui.core.persistent.descriptions.SourceDescription
+classdef BrainSlice < symphonyui.core.persistent.descriptions.SourceDescription
     
     methods
         
-        function obj = BrainRegion(parent)
+        function obj = BrainSlice(parent)
             import symphonyui.core.*;
             
             if nargin == 1
@@ -14,10 +14,7 @@ classdef BrainRegion < symphonyui.core.persistent.descriptions.SourceDescription
                     error('Parent brain needs a valid experimenter!');
                 end
             end
-                        
-            obj.addProperty('region_name', '', ...
-                'description', 'A plain text (for now) brain region name');
-            
+                                    
             obj.addAllowableParentType('sa_labs.sources.Brain');
         end
         
