@@ -14,7 +14,7 @@ classdef BrainCell < symphonyui.core.persistent.descriptions.SourceDescription
             obj.addProperty('brain_region', '', ...
                 'description', 'Plain text (for now) about the brain region ');
 
-            obj.addAllowableParentType('sa_labs.sources.BrainSlice');
+            obj.addAllowableParentType('sa_labs.sources.brain.BrainSlice');
         end
         
     end
