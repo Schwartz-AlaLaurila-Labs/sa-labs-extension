@@ -40,6 +40,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
         daq_name = 'Dev1';
+        enableDynamicClamp = false; %Santiago 05/28/2025
     end
     
     methods
@@ -59,9 +60,9 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
             obj.daqStreams('Bath Temperature Control') = {'ai3',-1,'degC'};
             obj.daqStreams('Frame Timing') = {'ai7',-1, 'V'};
             
-            % Sophia changes 12/14/21
-%             obj.daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
-%             obj.daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %
+            % Santiago Changes 05/28/2025
+             obj.daqStreams('Excitatory conductance') = {'ao0', -1, 'V'}; %
+             obj.daqStreams('Inhibitory conductance') = {'ao1', -1, 'V'}; %
             
             if nargin < 1
                 delayInit = false;
