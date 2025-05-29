@@ -14,6 +14,9 @@ classdef BrainSlice < symphonyui.core.persistent.descriptions.SourceDescription
                     error('Parent brain needs a valid experimenter!');
                 end
             end
+
+            obj.addProperty('slice_notes', '', ...
+                'description', 'Any notes about this slice');
                                     
             obj.addAllowableParentType('sa_labs.sources.Brain');
         end
