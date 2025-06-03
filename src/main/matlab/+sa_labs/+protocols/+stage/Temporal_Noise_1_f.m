@@ -92,8 +92,8 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
                     allSeeds(i) = seed;
                 end
                 
-                % Step 3: Randomly permute betas and seeds together as before
-                stream = RandStream('twister', 'Seed', obj.seedStartValue+20);
+                obj.permutationseed = now(round*1e4);
+                stream = RandStream('twister', 'Seed', obj.permutationseed); %seed should change every min or so
                 permutationIndices = randperm(stream, length(allBetas));
                 obj.permutedBetas = allBetas(permutationIndices);
                 obj.permutedSeeds = allSeeds(permutationIndices);
