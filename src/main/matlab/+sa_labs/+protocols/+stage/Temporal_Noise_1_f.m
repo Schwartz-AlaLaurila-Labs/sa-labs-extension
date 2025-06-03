@@ -31,7 +31,7 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
         
         responsePlotMode = 'cartesian';
         responsePlotSplitParameter = 'noiseSeed';
-        
+        permutationseed
         permutedBetas
         permutedSeeds
     end
