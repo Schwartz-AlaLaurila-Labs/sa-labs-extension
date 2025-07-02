@@ -93,7 +93,7 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             
             epoch.addParameter('cx', obj.cx);
             epoch.addParameter('cy', obj.cy);
-            epoch.addParameter('intensity', obj.intensity);
+            epoch.addParameter('epoch_intensity', obj.intensity);
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj,epoch)
         end
