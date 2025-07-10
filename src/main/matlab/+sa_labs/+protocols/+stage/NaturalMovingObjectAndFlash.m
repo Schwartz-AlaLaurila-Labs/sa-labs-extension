@@ -65,26 +65,55 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             else
                 nmotype = 1;
             end
-
-            nSeeds = obj.numSeeds/obj.seedBlockSize * nmotype;
-
-            nSeeds = nSeeds * obj.numTranslations;
-
-            obj.seedList = zeros(nBlocks*nSeeds, obj.numRepeats);
-            obj.motionType = zeros(nBlocks*nSeeds, obj.numRepeats);
-            obj.translation = zeros(nBlocks*nSeeds, obj.numRepeats);
-            for r=1:obj.numRepeats
-                for b = 1:nBlocks
-                    s = randperm(nSeeds);
-                    [seedsub,transsub,mosub] = ind2sub([obj.seedBlockSize obj.numTranslations nmotype],s);
-                    obj.seedList((b-1)*obj.seedBlockSize+1:b*ojb.seedBlockSize,r) ...
-                        = seedsub-1+(b-1)*obj.seedBlockSize;
-                    obj.translation((b-1)*obj.seedBlockSize+1:b*ojb.seedBlockSize,r) ...
-                        = transsub;
-                    obj.motionType((b-1)*obj.seedBlockSize+1:b*ojb.seedBlockSize,r) ...
-                        = mosub-1;
+            
+            
+%             nSeeds = obj.numSeeds/obj.seedBlockSize * nmotype;
+% 
+%             nSeeds = nSeeds * obj.numTranslations;
+%             
+%             obj.seedList = zeros(obj.seedBlockSize*nSeeds, obj.numRepeats);
+%             obj.motionType = zeros(obj.seedBlockSize*nSeeds, obj.numRepeats);
+%             obj.translation = zeros(obj.seedBlockSize*nSeeds, obj.numRepeats);
+%             for r=1:obj.numRepeats
+%                 
+%                 for b = 1:nBlocks
+%                     
+%                     
+%                     s_sub = randperm(obj.numSeeds);
+%                     [seedsub,transsub,mosub] = ind2sub([obj.seedBlockSize obj.numTranslations nmotype],s_sub);
+%                     obj.seedList(idx,r) ...
+%                         = seedsub-1+(b-1)*obj.seedBlockSize;
+%                     obj.translation(idx,r) ...
+%                         = transsub;
+%                     obj.motionType(idx,r) ...
+%                         = mosub-1;
+%                 end
+%             end
+%             
+            seed_array = [obj.seedStartValue : obj.seedStartValue + obj.numSeeds - 1];
+            n_epoch = obj.totalNumEpochs;
+            obj.seedList = zeros(n_epoch, 1);
+            obj.motionType = zeros(n_epoch, 1);
+            obj.translation = zeros(n_epoch, 1);
+            motion_type_array = sort(repmat([1:nmotype], 1, obj.numTranslations * obj.seedBlockSize));
+            translation_array = repmat([1:obj.numTranslations], nmotype * obj.seedBlockSize, 1);
+            n_epoch_per_repeat = obj.numSeeds * ...
+                (1 + strcmp(obj.motionTrajectory, 'natural+control') + ...
+                2*strcmp(obj.motionTrajectory, 'natural+control+flash')) * obj.numTranslations; 
+            for r = 1 : obj.numRepeats
+                for b = 1:nBlocks    
+                    seeds_in_block = seed_array((b-1)*obj.seedBlockSize +1 : b*obj.seedBlockSize);
+                    idx = [(b-1)*obj.seedBlockSize*obj.numTranslations*nmotype+1 : b*obj.seedBlockSize*obj.numTranslations*nmotype] ...
+                                        + (r - 1) * n_epoch_per_repeat;
+                    seeds = repmat(seeds_in_block, 1, obj.numTranslations * nmotype);
+                    seed_randperm = randperm(length(seeds));
+                    obj.seedList(idx) = seeds(seed_randperm);
+                    obj.translation(idx)= translation_array(seed_randperm);
+                    obj.motionType(idx) = motion_type_array(seed_randperm);
                 end
             end
+
+            
             if strcmp(obj.motionTrajectory, 'natural')
                 obj.motionType = obj.motionType + 1;
             end
