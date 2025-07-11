@@ -95,7 +95,7 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             obj.seedList = zeros(n_epoch, 1);
             obj.motionType = zeros(n_epoch, 1);
             obj.translation = zeros(n_epoch, 1);
-            motion_type_array = sort(repmat([1:nmotype], 1, obj.numTranslations * obj.seedBlockSize));
+            motion_type_array = sort(repmat([0:nmotype-1], 1, obj.numTranslations * obj.seedBlockSize));
             translation_array = repmat([1:obj.numTranslations], nmotype * obj.seedBlockSize, 1);
             n_epoch_per_repeat = obj.numSeeds * ...
                 (1 + strcmp(obj.motionTrajectory, 'natural+control') + ...
