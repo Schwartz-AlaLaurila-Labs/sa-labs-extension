@@ -117,7 +117,7 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             if strcmp(obj.motionTrajectory, 'natural')
                 obj.motionType = obj.motionType + 1;
             end
-            obj.seedList = obj.seedList + obj.seedStartValue;
+            %obj.seedList = obj.seedList + obj.seedStartValue;
             [~,obj.xy] = obj.um2pix(obj.generateParameters(1/obj.frameRate));
 
             grid = obj.generateGrid();
@@ -208,13 +208,16 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
                 mtype = obj.motionType(obj.numEpochsPrepared+1);
                 if mtype == 1
                     epoch.addParameter('curMotionType', 'natural');
-                    obj.i_ = seed - obj.seedStartValue + 1;
+                    %obj.i_ = seed - obj.seedStartValue + 1;
+                    obj.i_ = seed + 1;
                 elseif mtype == 0
                     epoch.addParameter('curMotionType', 'control');
-                    obj.i_ = seed - obj.seedStartValue + 1 + obj.numSeeds;
+                    %obj.i_ = seed - obj.seedStartValue + 1 + obj.numSeeds;
+                    obj.i_ = seed + 1 + obj.numSeeds;
                 else
                     epoch.addParameter('curMotionType', 'flash');
-                    obj.i_ = seed - obj.seedStartValue + 1 + 2 * obj.numSeeds;
+                    %obj.i_ = seed - obj.seedStartValue + 1 + 2 * obj.numSeeds;
+                    obj.i_ = seed + 1 + 2 * obj.numSeeds;
                 end
                 fprintf('Using seed %d (%s [%d]): i = %d; +(%0.02f,%0.02f)\n', seed, epoch.parameters('curMotionType'), mtype, obj.i_, obj.tr_(1),obj.tr_(2));
             elseif strcmp(obj.motionTrajectory,'natural+control')
@@ -224,11 +227,13 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
                 else
                     epoch.addParameter('curMotionType', 'control');
                 end
-                obj.i_ = seed - obj.seedStartValue + 1 + (1-mtype) * obj.numSeeds;
+                %obj.i_ = seed - obj.seedStartValue + 1 + (1-mtype) * obj.numSeeds;
+                obj.i_ = seed + 1 + (1-mtype) * obj.numSeeds;
                 fprintf('Using seed %d (%s [%d]): i = %d; +(%0.02f,%0.02f)\n', seed, epoch.parameters('curMotionType'), mtype, obj.i_, obj.tr_(1),obj.tr_(2));
             else
                 epoch.addParameter('curMotionType',obj.motionTrajectory);
-                obj.i_ = seed - obj.seedStartValue + 1;
+                %obj.i_ = seed - obj.seedStartValue + 1;
+                obj.i_ = seed + 1;
             end
             
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
