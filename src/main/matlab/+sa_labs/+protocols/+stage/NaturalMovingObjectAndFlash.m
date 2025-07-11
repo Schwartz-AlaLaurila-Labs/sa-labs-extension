@@ -267,11 +267,12 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             p.addController(objectMovement);
           
             nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
-            
+            mo_ = obj.mo_;
+            preFrames = obj.preFrames;
             function o = opacityController(state)
                 o = 1.0* ((state.frame + 1) < nFrames);
                 
-                if (obj.mo_ == 2) && ((state.frame+1) < obj.preFrames)
+                if (mo_ == 2) && ((state.frame+1) < preFrames)
                     o = 0;
                 end
             end
