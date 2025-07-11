@@ -117,7 +117,7 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             if strcmp(obj.motionTrajectory, 'natural')
                 obj.motionType = obj.motionType + 1;
             end
-            %obj.seedList = obj.seedList + obj.seedStartValue;
+            obj.seedList = obj.seedList + obj.seedStartValue;
             [~,obj.xy] = obj.um2pix(obj.generateParameters(1/obj.frameRate));
 
             grid = obj.generateGrid();
