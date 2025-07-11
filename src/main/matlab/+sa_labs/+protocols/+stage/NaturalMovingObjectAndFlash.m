@@ -122,7 +122,10 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
 
             grid = obj.generateGrid();
             obj.translation = grid(obj.translation,:);
+            
         end     
+
+        
 
         function xy = generateGrid(obj)
             %cubic coordinates -- to filter on degree
@@ -203,7 +206,6 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             
             mtype = obj.motionType(obj.numEpochsPrepared+1);
             obj.mo_ = mtype;
-
             if strcmp(obj.motionTrajectory,'natural+control+flash')
                 mtype = obj.motionType(obj.numEpochsPrepared+1);
                 if mtype == 1
@@ -265,7 +267,7 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             p.addController(objectMovement);
           
             nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
-            function o = opacityController(state)
+            function o = opacityController(obj, state)
                 o = 1.0* ((state.frame + 1) < nFrames);
                 if (obj.mo_ == 2) && ((state.frame+1) < obj.preFrames)
                     o = 0;
