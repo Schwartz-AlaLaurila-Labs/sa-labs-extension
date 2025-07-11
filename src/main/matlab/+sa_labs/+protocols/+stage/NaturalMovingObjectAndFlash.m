@@ -241,7 +241,7 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             prepareEpoch@sa_labs.protocols.StageProtocol(obj, epoch);
         end
         
-        function p = createPresentation(obj)            %% EDIT HERE
+        function p = createPresentation(obj)           
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
             object = stage.builtin.stimuli.Ellipse();
@@ -267,8 +267,10 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             p.addController(objectMovement);
           
             nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
-            function o = opacityController(obj, state)
+            
+            function o = opacityController(state)
                 o = 1.0* ((state.frame + 1) < nFrames);
+                
                 if (obj.mo_ == 2) && ((state.frame+1) < obj.preFrames)
                     o = 0;
                 end
