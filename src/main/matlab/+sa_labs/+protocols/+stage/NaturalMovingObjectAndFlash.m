@@ -211,15 +211,15 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
                 if mtype == 1
                     epoch.addParameter('curMotionType', 'natural');
                     %obj.i_ = seed - obj.seedStartValue + 1;
-                    obj.i_ = seed + 1;
+                    obj.i_ = seed;
                 elseif mtype == 0
                     epoch.addParameter('curMotionType', 'control');
                     %obj.i_ = seed - obj.seedStartValue + 1 + obj.numSeeds;
-                    obj.i_ = seed + 1 + obj.numSeeds;
+                    obj.i_ = seed + obj.numSeeds;
                 else
                     epoch.addParameter('curMotionType', 'flash');
                     %obj.i_ = seed - obj.seedStartValue + 1 + 2 * obj.numSeeds;
-                    obj.i_ = seed + 1 + 2 * obj.numSeeds;
+                    obj.i_ = seed + 2 * obj.numSeeds;
                 end
                 fprintf('Using seed %d (%s [%d]): i = %d; +(%0.02f,%0.02f)\n', seed, epoch.parameters('curMotionType'), mtype, obj.i_, obj.tr_(1),obj.tr_(2));
             elseif strcmp(obj.motionTrajectory,'natural+control')
