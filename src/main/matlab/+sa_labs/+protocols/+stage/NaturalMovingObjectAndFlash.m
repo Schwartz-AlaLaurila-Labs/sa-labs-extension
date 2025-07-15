@@ -1,19 +1,19 @@
 classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
     
     properties
-        preFrames = 15                          % burn-in frames
+        preFrames = 30                          % burn-in frames
         stimFrames = 30                         % frames before hexagon constraint
         tailFrames = 30                         % frames after hexagon constraint
         intensity = 1.0                         % Object light intensity (0-1)
-        tau = 0.25                              % velocity time constant (sec)
-        tauz = 0.50                             % scale time constant (sec)
-        sigma = 150                             % velocity variance (um/sec)
-        sigmaz = 2/3                            % scale variance
+        tau = 1/4                              % velocity time constant (sec)
+        tauz = 1/2                             % scale time constant (sec)
+        sigma = 200                             % velocity standard deviation (um/sec)
+        sigmaz = 3/4                            % scale standard deviation
         diameter = 30                           % spot size (um)
         Tburn = 5                               % burn-in time for stochastic motion generator
         mosaicSpacing = 168                     % distance (um) between cells in simulated mosaic
         mosaicDegree = int8(1)                  % 0: centered only, 1: centered + 6 nearest neighbors, 2: centered + 18 nearest neighbors 
-        leeway = 20                             % increase stim hex radius by this amount to account for uncertainty in centering
+        leeway = 5                             % increase stim hex radius by this amount to account for uncertainty in centering
         seedStartValue = 1                      % seed 
         numSeeds = 300                          % number of seeds to test
         seedBlockSize = 10                      % number of seeds per randomized block (must evenly divide numSeeds)
@@ -269,11 +269,17 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
             mo_ = obj.mo_;
             preFrames = obj.preFrames;
+            stimFrames = obj.stimFrames;
             function o = opacityController(state)
                 o = 1.0* ((state.frame + 1) < nFrames);
                 
-                if (mo_ == 2) && ((state.frame+1) < preFrames)
-                    o = 0;
+                if (mo_ == 2) 
+                    if (state.frame+1) <= preFrames
+                        o = 0;
+                    end
+                    if (state.frame+1) > preFrames+stimFrames
+                        o = 0;
+                    end
                 end
             end
             objectOpacity = stage.builtin.controllers.PropertyController(object, 'opacity', @opacityController);
