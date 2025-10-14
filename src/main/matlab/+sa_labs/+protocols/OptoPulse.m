@@ -3,10 +3,10 @@ classdef OptoPulse < sa_labs.protocols.BaseProtocol
     % from the rieke lab with our thanks
     
     properties
-        preTime = 500                    % Pulse leading duration (ms)
+        preTime = 1000                    % Pulse leading duration (ms)
         stimTime = 500                  % Pulse duration (ms)
-        tailTime = 500                   % Pulse trailing duration (ms)
-        numberOfEpochs = 50;
+        tailTime = 1000                   % Pulse trailing duration (ms)
+        numberOfEpochs = 75;
     end
     
     properties (Hidden)
@@ -19,6 +19,28 @@ classdef OptoPulse < sa_labs.protocols.BaseProtocol
     end
     
     methods
+
+%         function stim = createOptoStimulus(obj)
+% 
+%             pulseInterval = 1000/obj.trainFreq;      %time from the start of one pulse to the start of the next pulse (ms)
+%             intervalTime = pulseInterval - obj.pulseTime; %Inter-pulse interval duration (ms)
+% 
+% 
+%             gen = symphonyui.builtin.stimuli.PulseTrainGenerator();
+% 
+%             gen.preTime = obj.preTime;
+%             gen.pulseTime = obj.pulseTime;
+%             gen.tailTime = obj.tailTime;
+%             gen.intervalTime = intervalTime;
+%             gen.amplitude = 1;
+%             gen.numPulses = obj.numPulses;
+%             gen.mean =0;
+%             gen.sampleRate = obj.sampleRate;
+%             gen.units = obj.rig.getDevice(ampName).background.displayUnits;
+% 
+%             stim = gen.generate();
+%         end
+            
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@sa_labs.protocols.BaseProtocol(obj, epoch);
@@ -36,7 +58,8 @@ classdef OptoPulse < sa_labs.protocols.BaseProtocol
                 epoch.addStimulus(triggers{1},  gen.generate());
             else
                 disp('no opto trigger device found')
-            end
+            end 
+
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
