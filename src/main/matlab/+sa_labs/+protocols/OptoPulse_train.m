@@ -42,8 +42,6 @@ classdef OptoPulse_train < sa_labs.protocols.BaseProtocol
             gen.mean =0;
             gen.sampleRate = obj.sampleRate;
             gen.units =  Symphony.Core.Measurement.UNITLESS;
-            %gen.units = obj.rig.getDevice(1).background.displayUnits;
-
             stim = gen.generate();
         end
             

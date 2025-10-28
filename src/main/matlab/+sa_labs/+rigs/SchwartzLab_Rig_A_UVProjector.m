@@ -11,11 +11,13 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         filterWheelAttenuationValues_Green = [1e-1, 1e-2 , 1e-3 , 1.1e-4 , 1.1e-5, 1];%updated 5/26/2022 -David
         %filterWheelAttenuationValues_UV = [5.8e-02, 1.7e-03, 1.2e-04, 0.6e-5, 0.3e-6, 1];%updated 11/15/2022 -David
         filterWheelAttenuationValues_UV = [0.07947976879	0.003497109827	0.0002092485549	0.00001644508671	0.000001884393064	1]; %updated 060524 - Trung
-
+        %filterWheelAttenuationValues_UV = [0.07911764706 0.003558823529 0.000225 0.0000255 0.000001244117647 1] %updated 102725 - Trung % Julia
         fitBlue = [9.10317387691189e-18	-1.18865973635156e-14	3.85486264901338e-12	-1.66847157811571e-11];%updated 5/26/2022 -David
         fitGreen =[1.21309650979622e-18	-4.08598841738357e-16	3.78474579983637e-14	-4.17594216385694e-14];%updated 5/26/2022 -David (Green projector not modulating current and is dim)
         %fitUV =   [-1.03e-18, -1.07e-16, 1.89e-13, 1.76e-11];%updated 11/15/2022 -David
-        fitUV = 1.0e-10 * [-0.000000039305705   0.000007157074113   0.005342993520666   0.592950091514012]; %updated 060524 Trung 
+        %fitUV = 1.0e-10 * [-0.000000039305705   0.000007157074113   0.005342993520666   0.592950091514012]; %updated 060524 Trung 
+        fitUV = [215.3236e-021  -144.7493e-018   110.4158e-015    10.4941e-012]; %updated 102725 Trung & Julia
+
         micronsPerPixel = 1.3; %updated 6/1/2022 -David
         %frameTrackerPosition = [0,570]; %updated 052924 Zach
         frameTrackerSize = [60,1140]; %updated 052924 Zach
