@@ -50,7 +50,7 @@ classdef SchwartzLab_Rig_A_Opto_1channel < sa_labs.rigs.SchwartzLab_Rig_Base
             obj.daqStreams('Optogenetics Trigger') = {'doport0', 6, 0}; %
 %             obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
 %             obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
-            obj.daqStreams('Opto Trigger testing') = {'ai6', -1, 'V'};
+            %obj.daqStreams('Opto Trigger testing') = {'ai6', -1, 'V'};
             obj.daqStreams('Bath Temperature') = {'ai2',-1,'degC'};
             obj.daqStreams('Bath Temperature Control') = {'ai3',-1,'degC'};
             
