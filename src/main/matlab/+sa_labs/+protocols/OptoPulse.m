@@ -4,9 +4,9 @@ classdef OptoPulse < sa_labs.protocols.BaseProtocol
     
     properties
         preTime = 1000                    % Pulse leading duration (ms)
-        stimTime = 500                  % Pulse duration (ms)
+        stimTime = 20                  % Pulse duration (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
-        numberOfEpochs = 75;
+        numberOfEpochs = 25;
     end
     
     properties (Hidden)

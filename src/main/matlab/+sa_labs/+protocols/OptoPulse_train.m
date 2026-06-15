@@ -4,11 +4,11 @@ classdef OptoPulse_train < sa_labs.protocols.BaseProtocol
     
     properties
         preTime = 1000                    % Pulse leading duration (ms)
-        stimTime = 4000                  % Pulse duration (ms)
+        stimTime = 1000                  % Pulse duration (ms)
         pulseTime = 5                        % The duration opto is switched on (ms)
-        downtime = 495                     % The duration opto is switched off (ms)
+        downtime = 15                     % The duration opto is switched off (ms)
         tailTime = 1000                   % Pulse trailing duration (ms)
-        numberOfEpochs = 25;      % Total number of trains
+        numberOfEpochs = 20;      % Total number of trains
     end
 
     properties (Dependent)
