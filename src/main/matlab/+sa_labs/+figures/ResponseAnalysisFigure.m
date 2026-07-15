@@ -83,9 +83,16 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
             
             % top left response (w/ spike rate too)
-            obj.responseAxis = axes('Parent', leftBox);%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
+            % NOTE: axes are wrapped in a uicontainer so they are NOT direct
+            % children of the uix layout. A uix box calls set(child,'Units',...)
+            % on its direct children; if an axes is direct, the box's
+            % ChildObserver also sweeps up the axes' web toolbar buttons (which
+            % have no 'Units' property) and floods the console with errors. A
+            % plain uicontainer has 'Units' and hides the axes+toolbar from the
+            % observer. (GLT vs web axes-toolbar workaround.)
+            obj.responseAxis = axes('Parent', uicontainer('Parent', leftBox));%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
             if strcmp(obj.responseMode, 'Cell attached')
-                obj.responseAxisSpikeRate = axes('Parent', leftBox);
+                obj.responseAxisSpikeRate = axes('Parent', uicontainer('Parent', leftBox));
             end
             
             % bottom left analysis over param
@@ -106,9 +113,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 
                 switch obj.plotMode
                     case {'cartesian', 'autocenter'}
-                        obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
+                        obj.axesHandlesAnalysis(measi) = axes('Parent', uicontainer('Parent', rowBoxes(measi)));
                     case 'polar'
-                        obj.axesHandlesAnalysis(measi) = polaraxes('Parent', rowBoxes(measi));
+                        obj.axesHandlesAnalysis(measi) = polaraxes('Parent', uicontainer('Parent', rowBoxes(measi)));
                         %obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
                 end
                 
@@ -491,7 +498,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 
             % add a new plot to the end if we need one
             while length(obj.signalAxes) < length(X)
-                newAxis = axes('Parent', obj.rightBox);
+                newAxis = axes('Parent', uicontainer('Parent', obj.rightBox));
                 obj.signalAxes(end+1) = newAxis;
             end
 
@@ -558,5 +565,3 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         end
     end
 end
-
-

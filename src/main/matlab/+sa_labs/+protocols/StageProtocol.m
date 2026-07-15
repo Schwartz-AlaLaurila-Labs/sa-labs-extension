@@ -416,27 +416,32 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     
         % shared controller setup code for multi-pattern objects
         function setColorController(obj, p, stageObject)
-            
-            function c = patternSelect(state, activePatternNumber)
-                c = 1 * (state.pattern == activePatternNumber - 1);
-            end
-            
+            % Controller closures are serialized and shipped to the Stage
+            % server. Capture plain VALUES (not obj), and use an ANONYMOUS
+            % patternSelect rather than a nested function: a nested function
+            % shares this method's workspace, so any closure referencing it
+            % would capture obj too -- which drags the protocol's .NET-backed
+            % object graph across netbox and fails on the server side.
+            patternSelect = @(state, n) 1 * (state.pattern == n - 1);
+
             if obj.numberOfPatterns > 1
-                % replace mode uses the intensity value and 
+                intensity = obj.intensity;   %#ok<*PROP>
+                meanLevel = obj.meanLevel;
+                % replace mode uses the intensity value and
                 % puts the object on a separate pattern, with 0 on the background pattern
                 if strcmp(obj.colorCombinationMode, 'replace')
                     pattern = obj.primaryObjectPattern;
                     patternController = stage.builtin.controllers.PropertyController(stageObject, 'color', ...
-                        @(s)(obj.intensity * patternSelect(s, pattern)));
+                        @(s)(intensity * patternSelect(s, pattern)));
                     p.addController(patternController);
-                    
+
                 % add mode uses the intensity value on one pattern,
-                % but keeps the object on at the meanLevel at the other pattern    
+                % but keeps the object on at the meanLevel at the other pattern
                 elseif strcmp(obj.colorCombinationMode, 'add')
                     pattern = obj.primaryObjectPattern;
                     bgPattern = obj.backgroundPattern;
                     patternController = stage.builtin.controllers.PropertyController(stageObject, 'color', ...
-                        @(s)(obj.intensity * patternSelect(s, pattern) + obj.meanLevel * patternSelect(s, bgPattern)));
+                        @(s)(intensity * patternSelect(s, pattern) + meanLevel * patternSelect(s, bgPattern)));
                     p.addController(patternController);
                 else
                     % two-color contrast mode has separate intensity values as weber contrast of the mean
@@ -447,17 +452,20 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                     p.addController(patternController);
                 end
             else
-                stageObject.color = obj.intensity; % wasn't life simpler back then?
+                stageObject.color = obj.intensity; % single pattern: set directly, no controller
             end
         end
         
         function setOnDuringStimController(obj, p, stageObject)
-            function c = onDuringStim(state, preTime, stimTime)
-                c = 1 * (state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3);
-            end
-            
+            % Capture pre/stim times as VALUES and inline the predicate as a
+            % plain anonymous function so the closure shipped to the Stage
+            % server holds only doubles -- not obj (which would serialize the
+            % whole protocol, drag .NET handles over netbox, and break on the
+            % server as "Dot indexing is not supported for variables of this type").
+            preTime  = obj.preTime;
+            stimTime = obj.stimTime;
             controller = stage.builtin.controllers.PropertyController(stageObject, 'opacity', ...
-                @(s)onDuringStim(s, obj.preTime, obj.stimTime));
+                @(s) 1 * (s.time > preTime*1e-3 && s.time <= (preTime + stimTime)*1e-3));
             p.addController(controller);
         end
         
@@ -742,4 +750,3 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
 
 
 end
-
