@@ -76,8 +76,8 @@ while abs(q)>sqrt(3)/2 || q < sqrt(3)*(abs(p)-1) || q > sqrt(3)*(1-abs(p))
     q = 2*rand(s)-1;
 end
 
-xhex = radius*p;
-yhex = radius*q;
+xhex = radius*q;
+yhex = radius*p;
 
 x = x+xhex;
 y = y+yhex;

@@ -1,8 +1,8 @@
-classdef SchwartzLab_Rig_A_Opto < sa_labs.rigs.SchwartzLab_Rig_Base
+classdef SchwartzLab_Rig_A_Opto_1channel < sa_labs.rigs.SchwartzLab_Rig_Base
     
     properties
         % properties not accessible here; have to be fed into a device to work
-        rigName = 'Schwartz Lab Rig A Opto';
+        rigName = 'Schwartz Lab Rig A Opto 1 channel';
         testMode = false;
         filterWheelNdfValues = [1, 2, 3, 4, 5, 0];
         filterWheelDefaultValue = 5;
@@ -30,7 +30,8 @@ classdef SchwartzLab_Rig_A_Opto < sa_labs.rigs.SchwartzLab_Rig_Base
         spectralOverlap_UV = [9.68180413015343e+17	1.31761176294673e+18	1.12668172298288e+18];%updated 5/26/2022 -David
         
         projectorColorMode = 'uv2'; % Rig A has MkII projector
-        numberOfAmplifiers = 2;
+        numberOfAmplifiers = 1;
+        daq_name = 'Dev1';
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
@@ -38,7 +39,7 @@ classdef SchwartzLab_Rig_A_Opto < sa_labs.rigs.SchwartzLab_Rig_Base
     
     methods
         
-        function obj = SchwartzLab_Rig_A_Opto(delayInit)
+        function obj = SchwartzLab_Rig_A_Opto_1channel(delayInit)
             %{Port, bit number, unit} for any datastreams. 
             % unit = 0 for unitless.  
             % bit number = -1 for analog.
@@ -49,9 +50,11 @@ classdef SchwartzLab_Rig_A_Opto < sa_labs.rigs.SchwartzLab_Rig_Base
             obj.daqStreams('Optogenetics Trigger') = {'doport0', 6, 0}; %
 %             obj.daqStreams('Scanhead Trigger') = {'doport1', 2, 0}; %
 %             obj.daqStreams('ScanImageShutter') = {'diport0', 2, 0};
+            %obj.daqStreams('Opto Trigger testing') = {'ai6', -1, 'V'};
             obj.daqStreams('Bath Temperature') = {'ai2',-1,'degC'};
             obj.daqStreams('Bath Temperature Control') = {'ai3',-1,'degC'};
-            %obj.daqStreams('Opto Trigger testing') = {'ai6', -1, 'V'};
+            
+            
             % Sophia changes 12/14/21
 %             obj.daqStreams('Excitatory conductance') = {'ao2', -1, 'V'}; %
 %             obj.daqStreams('Inhibitory conductance') = {'ao3', -1, 'V'}; %

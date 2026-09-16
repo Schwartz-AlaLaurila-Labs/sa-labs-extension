@@ -298,14 +298,15 @@ classdef LightCrafterDevice < symphonyui.core.Device
 %                 @(s) s.time < trackerDuration);% && s.time < (presentation.duration - (1/frameRate))); % mod(s.frame, 2) &&
 %             presentation.addController(trackerOpacity);
 
-            trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
-                @(s) 1.0*(s.time < (presentation.duration - (1/frameRate))));
             
 %             trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
 %                 @(s) 1.0);
+
+            trackerOpacity = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
+                @(s) 1.0*(s.time < (presentation.duration - (1/frameRate))));
             
             presentation.addController(trackerOpacity);
-            
+%             
             % trackerSize = stage.builtin.controllers.PropertyController(tracker, 'opacity', ...
             %     @(s) (s.frame == 0)*.75 + (mod(s.frame,4)==0)*.25 + (mod(s.frame,4)==3)*.125 + (mod(s.frame,4)==3)*.375);
             
@@ -320,7 +321,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
                     % else
                     %     sz = [0, 0];                
                     % end
-                    sc = (m==1) * .5 + (m==2) * .025 + (m==3) * .075;
+                    sc = (m==1) * .95 + (m==2) * .025 + (m==3) * .075; %% TODO: this should be [.5,.25,.75]!!
                     sz = [frameTrackerSize(1), frameTrackerSize(2) * sc];
                 end
             end
