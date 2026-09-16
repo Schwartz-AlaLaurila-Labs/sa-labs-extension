@@ -27,7 +27,7 @@ classdef SchwartzLab_Rig_B < sa_labs.rigs.SchwartzLab_Rig_Base
         frameTrackerSize = [80, 400]; %updated 9/1/22 David
         canvasTranslation = [117, 0]; %updated 6/9/22 Zach
        
-        filterWheelComPort = 'COM5';
+        filterWheelComPort = 'COM10'; %trung 090126 for some reason rig B is crazy
         orientation = [false, true]; %[flip Y, flip X]
         angleOffset = 180; %Does not actually change presentation.  Is saved in epoch data so it could be used in analysis, but it isn't used now.
         
