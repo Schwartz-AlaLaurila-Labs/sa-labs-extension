@@ -690,6 +690,9 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
         
         function setBlanking(obj, colors, levels)
+            if ischar(colors) || isstring(colors)
+                colors = {char(colors)};   % Calibration calls setBlanking('blue', ...)
+            end
             obj.rig.getDevice('BlankingCircuit').blank(obj.getLEDNumber(colors), levels);
         end
 
