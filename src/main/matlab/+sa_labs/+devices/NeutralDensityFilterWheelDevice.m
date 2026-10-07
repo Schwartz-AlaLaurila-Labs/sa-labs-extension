@@ -122,13 +122,21 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
             end
         end
 
-        function delete(obj)
+        function close(obj)
+            % Release the COM port. Rig.close calls this when the app quits or
+            % re-initializes the rig, so the next rig in the same MATLAB
+            % session can open the wheel again.
             if ~isempty(obj.serialPortObject)
                 try
                     delete(obj.serialPortObject);
                 catch
                 end
+                obj.serialPortObject = [];
             end
+        end
+
+        function delete(obj)
+            obj.close();
         end
     end
 

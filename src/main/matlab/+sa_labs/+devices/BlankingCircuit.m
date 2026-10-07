@@ -58,16 +58,18 @@ classdef BlankingCircuit < symphonyui.core.Device
         end
 
         function close(obj)
-            % Kept for callers of the old API; serialport closes on delete.
-        end
-
-        function delete(obj)
+            % Release the COM port (Rig.close calls this on quit / re-initialize).
             if ~isempty(obj.serialPortObject)
                 try
                     delete(obj.serialPortObject);
                 catch
                 end
+                obj.serialPortObject = [];
             end
+        end
+
+        function delete(obj)
+            obj.close();
         end
     end
 
