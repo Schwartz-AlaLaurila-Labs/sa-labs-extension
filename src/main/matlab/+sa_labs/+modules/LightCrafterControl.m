@@ -1,12 +1,19 @@
 classdef LightCrafterControl < symphonyui.ui.Module
     % LED enables and pattern rate of the LightCrafter projector.
     % Symphony 3 hosts modules in a uifigure, so this uses uigridlayout /
-    % uicheckbox / uidropdown (no GUI Layout Toolbox, no uicontrol).
+    % uicheckbox (no GUI Layout Toolbox, no uicontrol).
+    %
+    % The pattern rate on the LightCrafter 4500 is number of patterns times
+    % the projector refresh rate and is set by the protocol's bitDepth /
+    % numberOfPatterns parameters (LightCrafterDevice.setPatternAttributes),
+    % so it is shown read-only here. (The original module's pattern-rate
+    % dropdown called availablePatternRates / setPatternRate, which the lab's
+    % LightCrafterDevice never implemented, so that part never worked.)
 
     properties (Access = private)
         lightCrafter
         ledEnablesCheckboxes
-        patternRateDropdown
+        patternRateLabel
     end
 
     methods
@@ -14,10 +21,10 @@ classdef LightCrafterControl < symphonyui.ui.Module
         function createUi(obj, figureHandle)
             set(figureHandle, ...
                 'Name', 'LightCrafter Control', ...
-                'Position', appbox.screenCenter(360, 90));
+                'Position', appbox.screenCenter(380, 90));
 
-            grid = uigridlayout(figureHandle, [2 2]);
-            grid.ColumnWidth = {90, '1x'};
+            grid = uigridlayout(figureHandle, [2 3]);
+            grid.ColumnWidth = {90, '1x', 70};
             grid.RowHeight = {24, 24};
             grid.Padding = [11 11 11 11];
             grid.RowSpacing = 7;
@@ -27,7 +34,7 @@ classdef LightCrafterControl < symphonyui.ui.Module
             l1.Layout.Row = 1; l1.Layout.Column = 1;
 
             ledRow = uigridlayout(grid, [1 4]);
-            ledRow.Layout.Row = 1; ledRow.Layout.Column = 2;
+            ledRow.Layout.Row = 1; ledRow.Layout.Column = [2 3];
             ledRow.Padding = [0 0 0 0];
             ledRow.ColumnSpacing = 3;
             ledRow.ColumnWidth = {'1x', '1x', '1x', '1x'};
@@ -43,12 +50,13 @@ classdef LightCrafterControl < symphonyui.ui.Module
             l2 = uilabel(grid, 'Text', 'Pattern rate:');
             l2.Layout.Row = 2; l2.Layout.Column = 1;
 
-            obj.patternRateDropdown = uidropdown(grid, ...
-                'Items', {' '}, ...
-                'ItemsData', {[]}, ...
-                'ValueChangedFcn', @(~,~) obj.onSelectedPatternRate());
-            obj.patternRateDropdown.Layout.Row = 2;
-            obj.patternRateDropdown.Layout.Column = 2;
+            obj.patternRateLabel = uilabel(grid, 'Text', '');
+            obj.patternRateLabel.Layout.Row = 2;
+            obj.patternRateLabel.Layout.Column = 2;
+
+            b = uibutton(grid, 'push', 'Text', 'Refresh', ...
+                'ButtonPushedFcn', @(~,~) obj.refresh());
+            b.Layout.Row = 2; b.Layout.Column = 3;
         end
 
     end
@@ -61,14 +69,17 @@ classdef LightCrafterControl < symphonyui.ui.Module
                 error('No LightCrafter device found');
             end
             obj.lightCrafter = devices{1};
-
-            obj.populateLedEnablesCheckboxes();
-            obj.populatePatternRateList();
+            obj.refresh();
         end
 
     end
 
     methods (Access = private)
+
+        function refresh(obj)
+            obj.populateLedEnablesCheckboxes();
+            obj.populatePatternRate();
+        end
 
         function populateLedEnablesCheckboxes(obj)
             [auto, red, green, blue] = obj.lightCrafter.getLedEnables();
@@ -86,21 +97,14 @@ classdef LightCrafterControl < symphonyui.ui.Module
             obj.lightCrafter.setLedEnables(auto, red, green, blue);
         end
 
-        function populatePatternRateList(obj)
-            rates = obj.lightCrafter.availablePatternRates();
-            if ~iscell(rates), rates = num2cell(rates); end
-            names = cellfun(@(r)[num2str(r) ' Hz'], rates, 'UniformOutput', false);
-            obj.patternRateDropdown.Items = names;
-            obj.patternRateDropdown.ItemsData = rates;
-            current = obj.lightCrafter.getPatternRate();
-            idx = find(cellfun(@(r) isequal(r, current), rates), 1);
-            if isempty(idx), idx = 1; end
-            obj.patternRateDropdown.Value = rates{idx};
-        end
-
-        function onSelectedPatternRate(obj)
-            rate = obj.patternRateDropdown.Value;
-            obj.lightCrafter.setPatternRate(rate);
+        function populatePatternRate(obj)
+            try
+                rate = obj.lightCrafter.getPatternRate();
+                [bitDepth, ~, numPatterns] = obj.lightCrafter.getPatternAttributes();
+                obj.patternRateLabel.Text = sprintf('%g Hz  (%d pattern(s), %d-bit)', rate, numPatterns, bitDepth);
+            catch e
+                obj.patternRateLabel.Text = ['unavailable: ' e.message];
+            end
         end
 
     end
