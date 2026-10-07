@@ -40,6 +40,7 @@ classdef SchwartzLab_Rig_A_UVProjector < sa_labs.rigs.SchwartzLab_Rig_Base
         numberOfAmplifiers = 1;
         
         host = '192.168.0.3'; %What is the ip address to connect to the stage computer?  If Stage is running on this computer, use 'localhost'.
+        port = 5679; %Stage 3 server port on the Stage PC (old Stage Server for Symphony 2 keeps 5678). LightCrafterDevice reads this.
         daq_type = 'NI'; %What brand data aquisition board is being used?  'Heka' or 'NI'
         daq_name = 'Dev1';
         enableDynamicClamp = false; %Santiago 05/28/2025
