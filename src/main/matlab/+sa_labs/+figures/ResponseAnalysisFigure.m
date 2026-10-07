@@ -73,14 +73,19 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         
         function createUi(obj)
             import appbox.*;
+            % Layout uses sa_labs.util.ui (plain uipanels) instead of GUI Layout
+            % Toolbox. createUi is also called by the reset/redraw buttons, so
+            % drop any previous layout first.
+            delete(obj.figureHandle.Children);
+            obj.signalAxes = [];
             
             set(obj.figureHandle, 'Name', 'Response Analysis Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
-            leftBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
+            fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing', 10);
+            leftBox = sa_labs.util.ui.vbox('Parent', fullBox, 'Spacing', 10);
             
             % top left response (w/ spike rate too)
             % NOTE: axes are wrapped in a uicontainer so they are NOT direct
@@ -109,7 +114,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             for measi = 1:numel(obj.activeFunctionNames)
                 funcName = obj.activeFunctionNames{measi};
                 
-                rowBoxes(measi) = uix.HBox('Parent',leftBox);
+                rowBoxes(measi) = sa_labs.util.ui.hbox('Parent', leftBox);
                 
                 switch obj.plotMode
                     case {'cartesian', 'autocenter'}
@@ -119,7 +124,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         %obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
                 end
                 
-                plotControlBoxes(measi) = uix.VBox('Parent',rowBoxes(measi));
+                plotControlBoxes(measi) = sa_labs.util.ui.vbox('Parent', rowBoxes(measi));
                 
                 thisFuncIndex = find(not(cellfun('isempty', strfind(obj.activeFunctionNames, funcName))), 1);
                 
@@ -132,10 +137,10 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 
 %                 set(plotControlBoxes(measi), 'Heights', [-1, 30])
                 
-                set(rowBoxes(measi), 'Widths', [-3 80]);
+                sa_labs.util.ui.setSizes(rowBoxes(measi), [-3 80]);
             end
             
-            buttonArea = uix.HButtonBox('Parent',leftBox,'ButtonSize', [100, 30]);
+            buttonArea = sa_labs.util.ui.buttonbox('horizontal', 'Parent', leftBox, 'ButtonSize', [100, 30]);
 %             newPlotButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'new plot','Callback',@obj.addPlotCallback);
             redrawButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'redraw','Callback',@obj.redrawPlotCallback);
             resetDataButton = uicontrol('Style','pushbutton', 'Parent', buttonArea, 'String', 'reset plot','Callback',@obj.resetDataCallback);
@@ -145,12 +150,12 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             else
                 boxHeights = -1;
             end
-            set(leftBox, 'Heights', horzcat(boxHeights, -1 * ones(1,length(obj.activeFunctionNames)), 30))
+            sa_labs.util.ui.setSizes(leftBox, horzcat(boxHeights, -1 * ones(1,length(obj.activeFunctionNames)), 30));
             
             % right side signals over time for each param value
-            obj.rightBox = uix.VBox('Parent', fullBox);
+            obj.rightBox = sa_labs.util.ui.vbox('Parent', fullBox);
             obj.signalAxes = [];
-            set(fullBox, 'Widths', [-1, -.5]);
+            sa_labs.util.ui.setSizes(fullBox, [-1, -.5]);
         end
         
         function refreshUi(obj)
