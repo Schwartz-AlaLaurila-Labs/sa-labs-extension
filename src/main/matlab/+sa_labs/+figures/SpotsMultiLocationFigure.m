@@ -109,12 +109,12 @@ classdef SpotsMultiLocationFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            fullBox = uix.VBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
-            topBox = uix.HBox('Parent', fullBox, 'Spacing', 10);
-            restBox = uix.VBoxFlex('Parent', fullBox, 'Spacing', 10);
+            fullBox = sa_labs.util.ui.vbox('Parent', obj.figureHandle, 'Spacing',10);
+            topBox = sa_labs.util.ui.hbox('Parent', fullBox, 'Spacing', 10);
+            restBox = sa_labs.util.ui.vbox('Parent', fullBox, 'Spacing', 10);
             
-            middleBox = uix.HBox('Parent', restBox, 'Spacing', 10);
-            bottomBox = uix.HBox('Parent', restBox, 'Spacing', 10);
+            middleBox = sa_labs.util.ui.hbox('Parent', restBox, 'Spacing', 10);
+            bottomBox = sa_labs.util.ui.hbox('Parent', restBox, 'Spacing', 10);
             
             
             

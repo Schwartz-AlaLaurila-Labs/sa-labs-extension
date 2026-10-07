@@ -76,8 +76,8 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            obj.figureBox = uix.VBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
-%             leftBox = uix.VBox('Parent', fullBox, 'Spacing', 10);
+            obj.figureBox = sa_labs.util.ui.vbox('Parent', obj.figureHandle, 'Spacing',10);
+%             leftBox = sa_labs.util.ui.vbox('Parent', fullBox, 'Spacing', 10);
                         
 %             uicontrol(leftBox, 'Style','text','String','Times:')
 %             obj.timePointsBox = uicontrol(leftBox, 'Style','edit','String','','Callback',@obj.cbSetPoints);
@@ -203,7 +203,7 @@ classdef IsoResponseFigure < symphonyui.core.FigureHandler
             % add new rows if needed
             while size(obj.allSettings, 1) > length(obj.displayBoxes)
                 n = length(obj.displayBoxes) + 1
-                obj.displayBoxes(n) = uix.HBoxFlex('Parent',obj.figureBox);
+                obj.displayBoxes(n) = sa_labs.util.ui.hbox('Parent',obj.figureBox);
                 
                 ax = axes('Parent', obj.displayBoxes(n));
                 obj.inputPlots(n) = ax;   

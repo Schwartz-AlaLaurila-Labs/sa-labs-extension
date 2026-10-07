@@ -51,16 +51,16 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
                 obj.modeFigure = obj.showFigure('symphonyui.builtin.figures.CustomFigure', @null);
                 f = obj.modeFigure.getFigureHandle();
                 set(f, 'Name', 'Mode');
-                layout = uix.VBox('Parent', f);
-                uix.Empty('Parent', layout);
+                layout = sa_labs.util.ui.vbox('Parent', f);
+                sa_labs.util.ui.empty('Parent', layout);
                 obj.modeFigure.userData.text = uicontrol( ...
                     'Parent', layout, ...
                     'Style', 'text', ...
                     'FontSize', 24, ...
                     'HorizontalAlignment', 'center', ...
                     'String', '');
-                uix.Empty('Parent', layout);
-                set(layout, 'Height', [-1 42 -1]);
+                sa_labs.util.ui.empty('Parent', layout);
+                sa_labs.util.ui.setSizes(layout, [-1 42 -1]);
             end
             
             if isvalid(obj.modeFigure)

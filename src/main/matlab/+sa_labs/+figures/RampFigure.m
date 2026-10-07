@@ -59,7 +59,7 @@ classdef RampFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
+            fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);
             obj.responseAxis = axes('Parent', fullBox);%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
             
 

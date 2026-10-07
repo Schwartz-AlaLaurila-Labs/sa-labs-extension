@@ -60,7 +60,12 @@ classdef LightCrafterDevice < symphonyui.core.Device
             %% Set up Lightcrafter
             obj.orientation = settings('orientation');
             
-            monitorRefreshRate = obj.stageClient.getMonitorRefreshRate();
+            % Stage 3 reports the measured refresh rate (e.g. 60.03 Hz); Stage 2 returned
+            % GLFW's integer rate (60). The lab's protocols and figures compute frame
+            % counts from this value and need an integer, so keep Stage 2 semantics
+            % here and record the measured value alongside it.
+            measuredRefreshRate = obj.stageClient.getMonitorRefreshRate();
+            monitorRefreshRate = round(measuredRefreshRate);
             
             fprintf('init proj color %s\n', settings('projectorColorMode'))
             
@@ -77,6 +82,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('frameTrackerBackgroundSize', settings('frameTrackerBackgroundSize'));
             obj.addConfigurationSetting('frameTrackerPosition', settings('frameTrackerPosition'));
             obj.addConfigurationSetting('monitorRefreshRate', monitorRefreshRate, 'isReadOnly', true);
+            obj.addConfigurationSetting('monitorRefreshRateMeasured', measuredRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false);
             obj.addConfigurationSetting('micronsPerPixel', settings('micronsPerPixel'));
             obj.addConfigurationSetting('canvasTranslation', settings('canvasTranslation'));

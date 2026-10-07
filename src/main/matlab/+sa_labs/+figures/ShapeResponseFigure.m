@@ -64,8 +64,8 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            fullBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
-            leftBox = uix.VBox('Parent', fullBox, 'Spacing', 10);
+            fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);
+            leftBox = sa_labs.util.ui.vbox('Parent', fullBox, 'Spacing', 10);
             
             uicontrol(leftBox, 'Style','text','String','Plot mode:')
             displayModeSelectionControl = uicontrol(leftBox, 'Style', 'popupmenu');
@@ -82,8 +82,8 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
 %             obj.displayBox = uix.Panel('Parent',fullBox);
             obj.displayBox = uipanel('Parent',fullBox);
 
-            fullBox.Widths = [160, -1];
-            leftBox.Heights = [20,20,20,20];
+            sa_labs.util.ui.setSizes(fullBox, [160, -1]);
+            sa_labs.util.ui.setSizes(leftBox, [20,20,20,20]);
         end
         
         function cbModeSelection(obj, hObject, ~)

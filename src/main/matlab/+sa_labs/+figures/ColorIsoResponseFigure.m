@@ -99,9 +99,9 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
-            obj.handles.figureBox = uix.HBoxFlex('Parent', obj.figureHandle, 'Spacing',10);
+            obj.handles.figureBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);
             
-            obj.handles.measurementDataBox = uix.VBoxFlex('Parent', obj.handles.figureBox, 'Spacing', 10);
+            obj.handles.measurementDataBox = sa_labs.util.ui.vbox('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.nextStimulusTable = uitable('Parent', obj.handles.measurementDataBox, ...
                                     'ColumnName', {'contrast 1', 'contrast 2'});            
             obj.handles.dataTable = uitable('Parent', obj.handles.measurementDataBox, ...
@@ -115,13 +115,13 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
 
             obj.handles.epochSelectionAxes = axes('Parent', obj.handles.measurementDataBox);
             obj.handles.epochReponseAxes = axes('Parent', obj.handles.measurementDataBox);
-            obj.handles.measurementDataBox.Heights = [-1, -2, -.5, -1, -1];
+            sa_labs.util.ui.setSizes(obj.handles.measurementDataBox, [-1, -2, -.5, -1, -1]);
             
-            obj.handles.isoDataBox = uix.VBox('Parent', obj.handles.figureBox, 'Spacing', 10);
+            obj.handles.isoDataBox = sa_labs.util.ui.vbox('Parent', obj.handles.figureBox, 'Spacing', 10);
             obj.handles.isoAxes = axes('Parent', obj.handles.isoDataBox, ...
                         'ButtonDownFcn', @obj.clickIsoPlot);
             
-            obj.handles.actionButtonBox = uix.VButtonBox('Parent', obj.handles.figureBox, ...
+            obj.handles.actionButtonBox = sa_labs.util.ui.buttonbox('vertical', 'Parent', obj.handles.figureBox, ...
                         'Spacing', 12, 'ButtonSize', [180, 30]);
             uicontrol('Style', 'pushbutton', ...
                         'String', 'New Point',...
@@ -191,7 +191,7 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
                         'Parent', obj.handles.actionButtonBox,...
                         'Callback', @(a,b) obj.resumeProtocol());
                     
-            obj.handles.figureBox.Widths = [300, -1, 100];
+            sa_labs.util.ui.setSizes(obj.handles.figureBox, [300, -1, 100]);
             
             % menu bar
             obj.handles.menuPointLoading = uimenu(obj.figureHandle, 'Label','Point loading');

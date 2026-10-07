@@ -19,8 +19,8 @@ classdef TextureNoisePreview < symphonyui.core.ProtocolPreview
         function createUi(self)
             import appbox.*;
              
-            self.hbox = uix.HBox('Parent', self.panel);
-            self.vbox = uix.VBox('Parent', self.hbox);
+            self.hbox = sa_labs.util.ui.hbox('Parent', self.panel);
+            self.vbox = sa_labs.util.ui.vbox('Parent', self.hbox);
             self.ftax = axes( ...
                 'Parent', self.vbox, ...
                 'FontName', get(self.vbox, 'DefaultUicontrolFontName'), ...
