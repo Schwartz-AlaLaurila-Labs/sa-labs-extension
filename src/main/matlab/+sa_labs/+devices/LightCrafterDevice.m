@@ -5,6 +5,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
         lightCrafter
         orientation
         baseTranslation = [0,0]
+        lastPresentationDuration = 0   % seconds, for the getPlayInfo wait limit
     end
     
     methods
@@ -346,6 +347,7 @@ classdef LightCrafterDevice < symphonyui.core.Device
             else
                 player.setCompositor(sa_labs.util.ExactPatternCompositor());
             end
+            obj.lastPresentationDuration = presentation.duration;
             obj.stageClient.play(player);
         end
         
@@ -354,7 +356,9 @@ classdef LightCrafterDevice < symphonyui.core.Device
         end
         
         function i = getPlayInfo(obj)
-            i = obj.stageClient.getPlayInfo();
+            % Wait for the presentation to finish, but not forever: a wedged
+            % Stage server used to freeze Symphony here with no way out.
+            i = obj.stageClient.getPlayInfo(obj.lastPresentationDuration + 30);
         end
         
         function clearMemory(obj)

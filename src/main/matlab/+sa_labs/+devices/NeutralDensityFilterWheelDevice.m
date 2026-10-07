@@ -29,25 +29,43 @@ classdef NeutralDensityFilterWheelDevice < symphonyui.core.Device
         end
 
         function position = getPosition(obj)
+            % The first query after the port is opened can come back empty;
+            % retry once before reporting NaN.
+            position = obj.queryPosition();
+            if isnan(position)
+                position = obj.queryPosition();
+            end
+        end
+
+        function position = queryPosition(obj)
             sp = obj.serialPortObject;
             flush(sp);
             writeline(sp, 'pos?');
-            pause(0.2);
 
-            % The wheel answers with the position and then a '>' prompt. Read
-            % whatever has arrived and take the last token before the prompt,
-            % exactly as the fscanf loop did with the old serial interface.
-            data = '';
-            n = sp.NumBytesAvailable;
-            if n > 0
-                raw = char(read(sp, n, 'uint8'));
-                tokens = regexp(raw, '\S+', 'match');
-                for i = 1:numel(tokens)
-                    if strcmp(tokens{i}, '>')
+            % The wheel echoes the command, then answers with the position and
+            % a '>' prompt, e.g. "pos?\r3\r> ". Accumulate bytes until the
+            % prompt arrives (up to 1.5 s) and take the last token before it,
+            % as the fscanf loop did with the old serial interface.
+            raw = '';
+            t0 = tic;
+            while toc(t0) < 1.5
+                n = sp.NumBytesAvailable;
+                if n > 0
+                    raw = [raw, char(read(sp, n, 'uint8'))]; %#ok<AGROW>
+                    if contains(raw, '>')
                         break;
                     end
-                    data = tokens{i};
                 end
+                pause(0.02);
+            end
+
+            data = '';
+            tokens = regexp(raw, '\S+', 'match');
+            for i = 1:numel(tokens)
+                if strcmp(tokens{i}, '>')
+                    break;
+                end
+                data = tokens{i};
             end
 
             position = str2double(data);
