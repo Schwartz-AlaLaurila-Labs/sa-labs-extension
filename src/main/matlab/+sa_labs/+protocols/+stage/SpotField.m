@@ -269,34 +269,22 @@ classdef SpotField < sa_labs.protocols.StageProtocol
             spotPre = obj.spotPreFrames;
             spotPreStim = obj.spotPreFrames+ obj.spotStimFrames;
             spotPreStimPost = obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames;
-                        
-            function xy = getSpotPosition(state)
-                i = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
-                % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
-                
-                % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
-                xy = canvasSize/2 + [cx_(i); cy_(i)];
-            end
-            
+
+            % Controller closures are serialized to the Stage server: they
+            % must be anonymous functions over plain values (no nested
+            % functions, which share this workspace and drag obj along).
+            % The per-frame logic lives in the package functions
+            % sa_labs.controllers.SpotField_spotPosition / _spotIntensityAtFrame
+            % (plain functions, so the Stage server never loads this classdef).
+            nSpots = length(cx_);
+            getSpotPosition = @(state) sa_labs.controllers.SpotField_spotPosition( ...
+                state.frame, spotPreStimPost, nSpots, canvasSize, cx_, cy_);
+
             %sI = obj.current_spot_intensity(1);
             current_spot_intensity = obj.current_spot_intensity;
-            function c = getSpotIntensity(state)
-                %disp('here')
-                spot_ind = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
-                %spot_ind = 1;
-                spot_intensity = current_spot_intensity(spot_ind);
-                %disp(spot_ind)
-                %disp(spot_intensity)
-                
-                i = mod(state.frame, spotPreStimPost);
-                if (i < spotPre) || (i >= spotPreStim)
-                    c = 0;
-                else
-                    c = spot_intensity;
-                    %c = 0.1;
-                end
-            end
-            
+            getSpotIntensity = @(state) sa_labs.controllers.SpotField_spotIntensityAtFrame( ...
+                state.frame, spotPreStimPost, nSpots, spotPre, spotPreStim, current_spot_intensity);
+
             p = stage.core.Presentation(36);
 
                 spot = stage.builtin.stimuli.Ellipse();
@@ -366,5 +354,5 @@ classdef SpotField < sa_labs.protocols.StageProtocol
         end
 
     end
-    
+
 end

@@ -140,13 +140,17 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             epoch.addParameter('noiseSeed', obj.noiseSeed);
             epoch.addParameter('offsetSeed', obj.offsetSeed);
             
+            % noiseFn is captured by the image controller closure, which is
+            % serialized to the Stage server: build it over the RandStream
+            % handle itself (which serializes), never over obj.
+            stream = obj.noiseStream;
             switch obj.colorNoiseDistribution
                 case 'uniform'
-                    obj.noiseFn = @(x) 2 * obj.noiseStream.rand(x) - 1;
+                    obj.noiseFn = @(x) 2 * stream.rand(x) - 1;
                 case 'gaussian'
-                    obj.noiseFn = @(x) obj.noiseStream.randn(x);
+                    obj.noiseFn = @(x) stream.randn(x);
                 case 'binary'
-                    obj.noiseFn = @(x) 2 * (obj.noiseStream.rand(x) > .5) - 1;
+                    obj.noiseFn = @(x) 2 * (stream.rand(x) > .5) - 1;
             end
         end
         
@@ -166,100 +170,50 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
             p.addStimulus(checkerboard);
             
             % add controllers
-            % dimensions are swapped correctly
+            % Controller closures are serialized to the Stage server: they
+            % capture plain values and the RandStream handles only (never
+            % obj, and no nested functions, which share this workspace and
+            % drag obj along). Per-frame logic is in the package functions
+            % sa_labs.controllers.SpatialNoise_noiseImage / _noiseImage2Pattern /
+            % _noiseOffset; the noise comes from the same stream as before via
+            % noiseFn, which prepareEpoch built over obj.noiseStream.
+            dimensions = [obj.resolutionY, obj.resolutionX]; % dimensions are swapped correctly
+            frameDwell = obj.frameDwell;
+            noiseFn = obj.noiseFn;
             if strcmp(obj.colorNoiseMode, '1 pattern')
+                meanLevel = obj.meanLevel;   %#ok<*PROP>
+                contrast = obj.contrast;
                 checkerboardImageController = stage.builtin.controllers.PropertyController(checkerboard, 'imageMatrix',...
-                    @(state)getImageMatrix(obj, state.frame - preFrames, [obj.resolutionY, obj.resolutionX]));
+                    @(state) sa_labs.controllers.SpatialNoise_noiseImage( ...
+                    state.frame - preFrames, dimensions, frameDwell, meanLevel, contrast, noiseFn));
             else
                 % 2 pattern controller:
+                meanLevel1 = obj.meanLevel1;
+                contrast1 = obj.contrast1;
+                meanLevel2 = obj.meanLevel2;
+                contrast2 = obj.contrast2;
                 checkerboardImageController = stage.builtin.controllers.PropertyController(checkerboard, 'imageMatrix',...
-                    @(state)getImageMatrix2Pattern(obj, state.frame - preFrames, state.pattern + 1, [obj.resolutionY, obj.resolutionX]));
+                    @(state) sa_labs.controllers.SpatialNoise_noiseImage2Pattern( ...
+                    state.frame - preFrames, state.pattern + 1, dimensions, frameDwell, meanLevel1, contrast1, meanLevel2, contrast2, noiseFn));
             end
             p.addController(checkerboardImageController);
-            
-            if (obj.subsampleX ~= 1) && ((obj.subsampleY ~= 1))
-                offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
-                    @(state) getPosition(obj, state.frame - preFrames, state.pattern));
-                p.addController(offsetController);
-            end
-            
-            
-            obj.setOnDuringStimController(p, checkerboard);
-            
+
             ppm = 1./ obj.rig.getDevice('Stage').getConfigurationSetting('micronsPerPixel');
-            
+
             ss = double([obj.subsampleX, obj.subsampleY]);
             pFactor = [obj.sizeX ./ obj.resolutionX ./ ss(1), obj.sizeY ./ obj.resolutionY ./ ss(2)];
-            
-            function p = getPosition(obj, frame, pattern)
-                persistent position;
-                if frame<0 %pre frames. frame 0 starts stimPts
-                    position = canvasSize/2;
-                elseif pattern == 0 %only want to move once per update?
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        % position = canvasSize/2 + ppm*...
-                        %     (obj.offsetDelta * obj.offsetStream.randi(2*obj.maxOffset/obj.offsetDelta,1,2) - obj.maxOffset);
-                        
-                        position = canvasSize/2 + ppm.*pFactor.*[obj.offsetStream.randi(2*ss(1) - 1) - ss(1), obj.offsetStream.randi(2*ss(2) - 1) - ss(2)];
-                    end
-                end
-                p = position;
+
+            if (obj.subsampleX ~= 1) && ((obj.subsampleY ~= 1))
+                offsetStream = obj.offsetStream;
+                offsetController = stage.builtin.controllers.PropertyController(checkerboard,'position',...
+                    @(state) sa_labs.controllers.SpatialNoise_noiseOffset( ...
+                    state.frame - preFrames, state.pattern, canvasSize, frameDwell, ppm, pFactor, ss, offsetStream));
+                p.addController(offsetController);
             end
-            
-            % TODO: verify X vs Y in matrix
-            
-            function i = getImageMatrix(obj, frame, dimensions)
-                persistent intensity;
-                if frame < 0 %pre frames. frame 0 starts stimPts
-                    intensity = obj.meanLevel;
-                    intensity = clipIntensity(intensity, obj.meanLevel);
-                else %in stim frames
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.meanLevel + ...
-                            obj.contrast * obj.meanLevel * obj.noiseFn(dimensions);
-                        intensity = clipIntensity(intensity, obj.meanLevel);
-                    end
-                end
-                %                 intensity = imgaussfilt(intensity, 1);
-                i = intensity;
-            end
-            
-            
-            function i = getImageMatrix2Pattern(obj, frame, pattern, dimensions)
-                persistent intensity;
-                if isempty(intensity)
-                    intensity = cell(2,1);
-                end
-                if pattern == 1
-                    mn = obj.meanLevel1;
-                    c = obj.contrast1;
-                else
-                    mn = obj.meanLevel2;
-                    c = obj.contrast2;
-                end
-                
-                if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity{pattern} = mn;
-                    intensity{pattern} = clipIntensity(intensity{pattern}, mn);
-                else %in stim frames
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity{pattern} = mn + c * mn * obj.noiseFn(dimensions);
-                        intensity{pattern} = clipIntensity(intensity{pattern}, mn);
-                    end
-                    
-                end
-                
-                i = intensity{pattern};
-            end
-            
-            
-            function intensity = clipIntensity(intensity, mn)
-                intensity(intensity < 0) = 0;
-                intensity(intensity > mn * 2) = mn * 2;
-                intensity(intensity > 1) = 1;
-                intensity = uint8(255 * intensity);
-            end
-            
+
+
+            obj.setOnDuringStimController(p, checkerboard);
+
         end
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochs;
@@ -274,6 +228,7 @@ classdef SpatialNoise < sa_labs.protocols.StageProtocol
         function pixelWidth = get.pixelHeight(obj)
             pixelWidth = obj.sizeY / obj.resolutionY;
         end
-        
+
     end
+
 end

@@ -281,56 +281,32 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
             [~,cx_] = obj.um2pix(obj.cx);
             [~,cy_] = obj.um2pix(obj.cy);
             
-            nFrames = numel(obj.chirpPattern);            
+            % Controller closures are serialized to the Stage server: they
+            % must be anonymous functions over plain values (no nested
+            % functions, which share this workspace and drag obj along).
+            % The per-frame logic lives in the package functions
+            % sa_labs.controllers.SpotFieldAndChirpAndBars_spotPosition /
+            % _spotIntensityAtFrame / _barIntensityAtFrame / _barPosition (plain
+            % functions, so the Stage server never loads this classdef).
+            nFrames = numel(obj.chirpPattern);
             chirpPattern_ = obj.chirpPattern;
-            function i = getChirpIntensity(state)
-                %clip the time axis to [1, T]
-                frame=max(1, min(state.frame+1, nFrames));
-                i = chirpPattern_(frame);
-            end
+            %clip the time axis to [1, T]
+            getChirpIntensity = @(state) chirpPattern_(max(1, min(state.frame+1, nFrames)));
 
             spotPre = obj.spotPreFrames;
             spotPreStim = obj.spotPreFrames+ obj.spotStimFrames;
             spotPreStimPost = obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames;
-            function xy = getSpotPosition(state)
-                i = min(floor(state.frame / spotPreStimPost) + 1, length(cx_));
-                % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
-                
-                % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
-                xy = canvasSize/2 + [cx_(i); cy_(i)];
-            end
-            
+            nSpots = length(cx_);
+            getSpotPosition = @(state) sa_labs.controllers.SpotFieldAndChirpAndBars_spotPosition( ...
+                state.frame, spotPreStimPost, nSpots, canvasSize, cx_, cy_);
+
             sI = obj.spotIntensity;
-            function c = getSpotIntensity(state)
-                if state.frame >= (nFrames - 1)
-                    c = 0;
-                    return
-                end
-                
-                i = mod(state.frame, spotPreStimPost);
+            getSpotIntensity = @(state) sa_labs.controllers.SpotFieldAndChirpAndBars_spotIntensityAtFrame( ...
+                state.frame, nFrames, spotPreStimPost, spotPre, spotPreStim, sI);
 
-                if (i < spotPre) || (i >= spotPreStim)
-                    c = 0;
-                else
-                    c = sI;
-                end
-            end
-            
             bI = obj.barIntensity;
-            function c = getBarIntensity(state)
-                if state.frame >= (nFrames - 1)
-                    c = 0;
-                    return
-                end
-
-                i = mod(state.frame, 210); % TODO: this assumes frame rate of 60
-                if (i < 15) || (i >= 195)
-                    c = 0;
-                else
-                    c = bI;
-                end
-
-            end
+            getBarIntensity = @(state) sa_labs.controllers.SpotFieldAndChirpAndBars_barIntensityAtFrame( ...
+                state.frame, nFrames, bI);
 
             [~, pixelSpeed] = obj.um2pix(obj.barSpeed); %pix/s
             pixelDistance = pixelSpeed * 3; %pix, assumes 3 seconds
@@ -341,24 +317,13 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
 
             xStartPos = canvasSize(1)/2 - (pixelDistance / 2) * cos(obj.theta);
             yStartPos = canvasSize(2)/2 - (pixelDistance / 2) * sin(obj.theta);
-           
 
-            function xy = getBarPosition(state)
-                xy = [NaN, NaN];
 
-                i = mod(state.frame, 210); % TODO: this assumes frame rate of 60
-                t = floor(state.frame / 210) + 1;
+            getBarPosition = @(state) sa_labs.controllers.SpotFieldAndChirpAndBars_barPosition( ...
+                state.frame, xStartPos, yStartPos, xStep, yStep);
 
-                if i >= 15 && i < 195 %i.e., 3sec per bar
-                    xy = [xStartPos(t) + (i-15) * xStep(t), yStartPos(t) + (i-15) * yStep(t)];
-                end
-            end
-            
             theta_ = rad2deg(obj.theta);
-            function th = getBarOrientation(state)
-                t = floor(state.frame / 210) + 1;
-                th = theta_(t);
-            end
+            getBarOrientation = @(state) theta_(floor(state.frame / 210) + 1); % TODO: this assumes frame rate of 60
 
             p = stage.core.Presentation(35);
 
@@ -502,5 +467,5 @@ classdef SpotFieldAndChirpAndBars < sa_labs.protocols.StageProtocol
         end
 
     end
-    
+
 end

@@ -111,34 +111,28 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
             [~,cy_] = obj.um2pix(obj.cy);
             
                        
-            function i = getChirpIntensity(obj, state)
-                %clip the time axis to [1, T]
-                frame=max(1, min(state.frame+1, numel(obj.chirpPattern)));
-                i = obj.chirpPattern(frame);
-            end
+            % Controller closures are serialized to the Stage server: they
+            % must be anonymous functions over plain values (no nested
+            % functions and no obj). Per-epoch values are captured here and
+            % the per-frame logic lives in the package functions
+            % sa_labs.controllers.SpotGridAndChirp_spotPosition / _spotIntensityAtFrame
+            % (plain functions, so the Stage server never loads this classdef).
+            chirpPattern = obj.chirpPattern;
+            nFrames = numel(chirpPattern);
+            %clip the time axis to [1, T]
+            getChirpIntensity = @(state) chirpPattern(max(1, min(state.frame+1, nFrames)));
 
-            function xy = getSpotPosition(obj, state)
-                i = min(floor(state.frame / (obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames)) + 1, length(obj.cx));
-                % i = min(mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames) + 1, length(obj.cx));
-                
-                % canvasSize / 2 + self.um2pix(self.currSpot(1:2));
-                xy = canvasSize/2 + [obj.cx(i); obj.cy(i)];
-            end
-            
-            function c = getSpotIntensity(obj, state)
-                if state.frame >= numel(obj.chirpPattern) - 1
-                    c = 0;
-                    return
-                end
-                
-                i = mod(state.frame, obj.spotPreFrames+ obj.spotStimFrames + obj.spotTailFrames);
+            spotPre = obj.spotPreFrames;
+            spotPreStim = obj.spotPreFrames + obj.spotStimFrames;
+            spotPreStimPost = obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames;
+            cx = obj.cx;   % NB: the original positions the spot with obj.cx/obj.cy, not the um2pix'd cx_/cy_
+            cy = obj.cy;
+            getSpotPosition = @(state) sa_labs.controllers.SpotGridAndChirp_spotPosition( ...
+                state.frame, spotPreStimPost, canvasSize, cx, cy);
 
-                if i < obj.spotPreFrames || i >=(obj.spotPreFrames + obj.spotStimFrames)
-                    c = 0;
-                else
-                    c = obj.spotIntensity;
-                end
-            end
+            sI = obj.spotIntensity;
+            getSpotIntensity = @(state) sa_labs.controllers.SpotGridAndChirp_spotIntensityAtFrame( ...
+                state.frame, nFrames, spotPreStimPost, spotPre, spotPreStim, sI);
 
             spot = stage.builtin.stimuli.Ellipse();
             p = stage.core.Presentation(35);
@@ -148,11 +142,11 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 spot.radiusY = spot.radiusX;
                 spot.opacity = 1;
                 spot.color = 0;
-                
+
                 spotIntensity_ = stage.builtin.controllers.PropertyController(spot, 'color',...
-                    @(state)getSpotIntensity(obj, state));
+                    @(state)getSpotIntensity(state));
                 spotPosition = stage.builtin.controllers.PropertyController(spot, 'position',...
-                    @(state)getSpotPosition(obj, state));
+                    @(state)getSpotPosition(state));
                 
                 p.addStimulus(spot);
 
@@ -165,7 +159,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
                 spot.color = 0;
                 spot.position = canvasSize/2;
                 spotIntensity_ = stage.builtin.controllers.PropertyController(spot, 'color',...
-                    @(state)getChirpIntensity(obj, state));                    
+                    @(state)getChirpIntensity(state));
                 
                 p.addStimulus(spot);
                 p.addController(spotIntensity_);
@@ -201,7 +195,7 @@ classdef SpotGridAndChirp < sa_labs.protocols.StageProtocol
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfChirps + obj.numberOfGrids;
         end
-        
+
     end
-    
+
 end

@@ -125,14 +125,17 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
 
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
 
-            
+            % noiseFn is captured by the intensity controller closure, which
+            % is serialized to the Stage server: build it over the RandStream
+            % handle itself (which serializes), never over obj.
+            stream = obj.noiseStream;
             switch obj.colorNoiseDistribution
                 case 'uniform'
-                    obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1; % Uniform from [-1, 1]
+                    obj.noiseFn = @() 2 * stream.rand() - 1; % Uniform from [-1, 1]
                 case 'gaussian'
-                    obj.noiseFn = @() sa_labs.util.randn(obj.noiseStream); % Gaussian noise
+                    obj.noiseFn = @() sa_labs.util.randn(stream); % Gaussian noise
                 case 'binary'
-                    obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1; % Binary {+1, -1}
+                    obj.noiseFn = @() 2 * (stream.rand() > .5) - 1; % Binary {+1, -1}
                 otherwise
                     error('Invalid color noise distribution. Choose "uniform", "gaussian", or "binary".');
             end
@@ -156,33 +159,25 @@ classdef TemporalNoise < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             % Add controllers
+            % The controller closure is serialized to the Stage server: it
+            % captures plain values and noiseFn (built by prepareEpoch over
+            % the RandStream handle, so the noise sequence is unchanged),
+            % never obj or a nested function (which shares this workspace
+            % and drags obj along). Per-frame logic is in the package function
+            % sa_labs.controllers.TemporalNoise_noiseIntensity.
+            frameDwell = obj.frameDwell;
+            spotMeanLevel = obj.spotMeanLevel;
+            contrast = obj.contrast;
+            noiseFn = obj.noiseFn;
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state) getIntensity(obj, state.frame - preFrames));
+                @(state) sa_labs.controllers.TemporalNoise_noiseIntensity( ...
+                state.frame - preFrames, stimFrames, frameDwell, spotMeanLevel, contrast, noiseFn));
             p.addController(spotIntensityController);
-            
-            function i = getIntensity(obj, frame)
-                persistent intensity;
-                if (frame < 0) || (frame > stimFrames)
-                    intensity = obj.spotMeanLevel;
-                    intensity = clipIntensity(intensity, obj.spotMeanLevel);
-                else
-                    if mod(frame, obj.frameDwell) == 0
-                        intensity = obj.spotMeanLevel + obj.spotMeanLevel * obj.contrast * obj.noiseFn();
-                        intensity = clipIntensity(intensity, obj.spotMeanLevel);
-                    end
-                end
-                i = intensity;
-            end
-            
-            function intensity = clipIntensity(intensity, mn)
-                intensity(intensity > mn * 2) = mn * 2;
-                intensity(intensity < 0) = 0;
-                intensity(intensity > 1) = 1;
-            end
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochsPerFrameDwell * length(obj.frameDwells);
         end
     end
+
 end

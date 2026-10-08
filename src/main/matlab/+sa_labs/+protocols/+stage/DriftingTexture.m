@@ -238,68 +238,26 @@ classdef DriftingTexture < sa_labs.protocols.StageProtocol
             end
            
             
-            % drift controller
-            function pos = movementController(state, stimTime, preTime, movementDelay, pixelSpeed, angle, center, randomMotion, motionPath, movementSensitivity, sensitivityStep)
-                t = state.time;
-                duration = stimTime / 1000;
-                shapeOnTime = preTime / 1000;
-                startMovementTime = shapeOnTime + movementDelay/1000;
-                endMovementTime = startMovementTime + stimTime/1000;
-                
-                if randomMotion
-
-                    % random motion
-                    if state.frame < 1
-                        frame = 1;
-                    else
-                        frame = state.frame;
-                    end
-                    if size(motionPath,2) == 1
-                        y = sind(angle) * pixelSpeed * motionPath(frame);
-                        x = cosd(angle) * pixelSpeed * motionPath(frame);
-                    else
-                        y = sind(angle) * pixelSpeed * motionPath(frame, 1);
-                        x = cosd(angle) * pixelSpeed * motionPath(frame, 2);
-                    end
-                    pos = [x,y] + center;
-                    
-                elseif movementSensitivity
-                    disp(sensitivityStep)
-                    if t < shapeOnTime
-                        pos = [NaN, NaN];
-                    elseif t < startMovementTime
-                        pos = center;
-                    elseif t < endMovementTime
-                        x = cosd(angle) * sensitivityStep;
-                        y = sind(angle) * sensitivityStep;
-                        pos = [x,y] + center;
-                    else
-                        pos = [nan,nan];
-                    end
-                else % standard drift mode
-                    if t < shapeOnTime
-                        pos = [NaN, NaN];
-                    elseif t < startMovementTime
-                        y = pixelSpeed * sind(angle) * (0 - duration/2);
-                        x = pixelSpeed * cosd(angle) * (0 - duration/2);
-                        pos = [x,y] + center;
-                        %                 else
-                    elseif t < endMovementTime
-                        timeFromStartMovement = t - startMovementTime;
-                        y = pixelSpeed * sind(angle) * (timeFromStartMovement - duration/2);
-                        x = pixelSpeed * cosd(angle) * (timeFromStartMovement - duration/2);
-                        pos = [x,y] + center;
-                    else
-                        pos = [NaN, NaN];
-                    end
-                end
-            end
+            % drift controller. Controller closures are serialized to the
+            % Stage server: capture plain values and call the package function
+            % sa_labs.controllers.DriftingTexture_movementController,
+            % never obj or a nested function (which shares this workspace and
+            % drags obj along).
             pixelSpeed = -1*obj.um2pix(obj.speed);
+            stimTime = obj.stimTime; %#ok<*PROP>
+            preTime = obj.preTime;
+            movementDelay = obj.movementDelay;
+            angle = obj.curAngle;
+            center = canvasSize/2;
+            randomMotion = obj.randomMotion;
+            motionPath = obj.motionPath;
+            movementSensitivity = obj.movementSensitivity;
+            sensitivityStep = obj.curSensitivityStep;
             controller = stage.builtin.controllers.PropertyController(im, ...
-                'position', @(s)movementController(s, obj.stimTime, obj.preTime, ...
-                obj.movementDelay, pixelSpeed, obj.curAngle, canvasSize/2, ...
-                obj.randomMotion, obj.motionPath,...
-                obj.movementSensitivity, obj.curSensitivityStep));
+                'position', @(s)sa_labs.controllers.DriftingTexture_movementController(s, stimTime, preTime, ...
+                movementDelay, pixelSpeed, angle, center, ...
+                randomMotion, motionPath, ...
+                movementSensitivity, sensitivityStep));
             p.addController(controller);
             
             %             obj.addFrameTracker(p);

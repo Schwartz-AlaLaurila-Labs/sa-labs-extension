@@ -138,144 +138,64 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
                 
             
             % add controllers
+            %
+            % Controller closures are serialized to the Stage server, so they
+            % must capture plain values only: not obj, and not a nested
+            % function (which shares this workspace and drags obj along,
+            % failing on the server with no frames drawn). The former nested
+            % controllers drew one randn per call from this epoch's RandStream
+            % and held the value between noise updates in a persistent
+            % variable. Here the same draws are taken up front, in call order
+            % (frames in sequence, patterns in order within each frame, one
+            % call per pattern), and the package function
+            % sa_labs.controllers.CenterSurroundNoise_noiseIntensity indexes
+            % them, so the per-frame values are identical.
+            preTimeS = obj.preTime * 1e-3;
+            stimEndS = (obj.preTime + obj.stimTime) * 1e-3;
+            numPatterns = obj.numberOfPatterns;
+            frameDwell = obj.frameDwell;   %#ok<*PROP>
+            % noise updates from stimulus onset to the end of the presentation,
+            % with a second of margin (the helper holds the last value beyond it)
+            numUpdates = floor((ceil(obj.frameRate * (obj.stimTime + obj.tailTime) / 1e3) + ceil(obj.frameRate)) / frameDwell) + 1;
             if strcmp(obj.colorNoiseMode, '1 pattern')
-                if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
-                    surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
-                        @(state)getSurroundIntensity(obj, state.frame - preFrames));
-                    p.addController(surroundSpotIntensity);
-                    % hide during pre & post
-                    surroundSpotVisibleController = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
-                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
-                    p.addController(surroundSpotVisibleController);
-                end
-
-                if or(strcmp(obj.currentStimulus, 'Center'), strcmp(obj.currentStimulus, 'Center-Surround'))
-                    centerSpotIntensityController = stage.builtin.controllers.PropertyController(centerSpot, 'color',...
-                        @(state)getCenterIntensity(obj, state.frame - preFrames));
-                    p.addController(centerSpotIntensityController);
-                    % hide during pre & post
-                    centerSpotVisibleController = stage.builtin.controllers.PropertyController(centerSpot, 'visible', ...
-                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
-                    p.addController(centerSpotVisibleController);
-                end
+                meanLevels = repmat(obj.meanLevel, 1, numPatterns);
+                contrasts = repmat(obj.contrast, 1, numPatterns);
             else
-                
-                % 2 pattern controllers:
-                                
+                % 2 pattern mode: pattern 0 uses meanLevel1/contrast1, every other pattern meanLevel2/contrast2
+                meanLevels = [obj.meanLevel1, repmat(obj.meanLevel2, 1, numPatterns - 1)];
+                contrasts = [obj.contrast1, repmat(obj.contrast2, 1, numPatterns - 1)];
+
                 % mask spot
                 if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                    maskColors = [obj.meanLevel1, obj.meanLevel2];
                     maskSpotColorController = stage.builtin.controllers.PropertyController(maskSpot, 'color',...
-                        @(s) colorPatternLookup(s, [obj.meanLevel1, obj.meanLevel2]));
+                        @(s) maskColors(s.pattern + 1));
                     p.addController(maskSpotColorController);
                 end
-                
-                % surround
-                if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
-                    surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
-                        @(state)getSurroundIntensity2Pattern(obj, state.frame - preFrames, state.pattern));
-                    p.addController(surroundSpotIntensity);
-                    % hide during pre & post
-                    surroundSpotVisibleController = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
-                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
-                    p.addController(surroundSpotVisibleController);
-                end
-                
-                % center
-                if or(strcmp(obj.currentStimulus, 'Center'), strcmp(obj.currentStimulus, 'Center-Surround'))
-                    centerSpotIntensityController = stage.builtin.controllers.PropertyController(centerSpot, 'color',...
-                        @(state)getCenterIntensity2Pattern(obj, state.frame - preFrames, state.pattern));
-                    p.addController(centerSpotIntensityController);
-                    % hide during pre & post
-                    centerSpotVisibleController = stage.builtin.controllers.PropertyController(centerSpot, 'visible', ...
-                        @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
-                    p.addController(centerSpotVisibleController);
-                end
-            end
-            
-            function c = colorPatternLookup(state, colors)
-                c = colors(state.pattern + 1);
-            end
-                        
-            function i = getCenterIntensity(obj, frame)
-                persistent intensity;
-                if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity = obj.meanLevel;
-                else %in stim frames
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.meanLevel + ... 
-                            obj.contrast * obj.meanLevel * obj.centerNoiseStream.randn;
-                    end
-                end
-                
-                i = clipIntensity(intensity, obj.meanLevel);
-            end
-            
-            function i = getSurroundIntensity(obj, frame)
-                persistent intensity;
-                if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity = obj.meanLevel;
-                else %in stim frames
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = obj.meanLevel + ... 
-                            obj.contrast * obj.meanLevel * obj.surroundNoiseStream.randn;
-                    end
-                end
-          
-                i = clipIntensity(intensity, obj.meanLevel);
-            end
-            
-            
-            function i = getCenterIntensity2Pattern(obj, frame, pattern)
-                persistent intensity;
-                if pattern == 0
-                    mn = obj.meanLevel1;
-                    c = obj.contrast1;
-                else
-                    mn = obj.meanLevel2;
-                    c = obj.contrast2;
-                end
-                
-                if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity = mn;
-                else %in stim frames
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = mn + c * mn * obj.centerNoiseStream.randn;
-                    end
-                end
-          
-                i = clipIntensity(intensity, mn);
-            end
-            
-            function i = getSurroundIntensity2Pattern(obj, frame, pattern)
-                persistent intensity;
-                if pattern == 0
-                    mn = obj.meanLevel1;
-                    c = obj.contrast1;
-                else
-                    mn = obj.meanLevel2;
-                    c = obj.contrast2;
-                end
-                
-                if frame<0 %pre frames. frame 0 starts stimPts
-                    intensity = mn;
-                else %in stim frames
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        intensity = mn + c * mn * obj.surroundNoiseStream.randn;
-                    end
-                end
-          
-                i = clipIntensity(intensity, mn);
             end
 
-            
-            function intensity = clipIntensity(intensity, mn)
-                if intensity < 0
-                    intensity = 0;
-                elseif intensity > mn * 2
-                    intensity = mn * 2; % probably important to be symmetrical to whiten the stimulus
-                elseif intensity > 1
-                    intensity = 1;
-                end    
+            % surround
+            if or(strcmp(obj.currentStimulus, 'Surround'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                surroundNoise = obj.surroundNoiseStream.randn(numPatterns, numUpdates);
+                surroundSpotIntensity = stage.builtin.controllers.PropertyController(surroundSpot, 'color',...
+                    @(state)sa_labs.controllers.CenterSurroundNoise_noiseIntensity(state.frame - preFrames, state.pattern, frameDwell, surroundNoise, meanLevels, contrasts));
+                p.addController(surroundSpotIntensity);
+                % hide during pre & post
+                surroundSpotVisibleController = stage.builtin.controllers.PropertyController(surroundSpot, 'visible', ...
+                    @(state)state.time >= preTimeS && state.time < stimEndS);
+                p.addController(surroundSpotVisibleController);
+            end
+
+            % center
+            if or(strcmp(obj.currentStimulus, 'Center'), strcmp(obj.currentStimulus, 'Center-Surround'))
+                centerNoise = obj.centerNoiseStream.randn(numPatterns, numUpdates);
+                centerSpotIntensityController = stage.builtin.controllers.PropertyController(centerSpot, 'color',...
+                    @(state)sa_labs.controllers.CenterSurroundNoise_noiseIntensity(state.frame - preFrames, state.pattern, frameDwell, centerNoise, meanLevels, contrasts));
+                p.addController(centerSpotIntensityController);
+                % hide during pre & post
+                centerSpotVisibleController = stage.builtin.controllers.PropertyController(centerSpot, 'visible', ...
+                    @(state)state.time >= preTimeS && state.time < stimEndS);
+                p.addController(centerSpotVisibleController);
             end
 
         end
@@ -283,5 +203,5 @@ classdef CenterSurroundNoise < sa_labs.protocols.StageProtocol
             totalNumEpochs = obj.numberOfEpochs;
         end
     end
-    
+
 end

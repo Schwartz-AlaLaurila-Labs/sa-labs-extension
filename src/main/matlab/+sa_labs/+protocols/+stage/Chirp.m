@@ -103,16 +103,15 @@ classdef Chirp < sa_labs.protocols.StageProtocol
             spot.opacity = 1;
             spot.position = canvasSize/2;
             p.addStimulus(spot);
-            
-           
-            function i = getIntensityFromPattern(obj, state)
-                %clip the time axis to [1, T]
-                frame=max(1, min(state.frame, numel(obj.chirpPattern)));
-                i = obj.chirpPattern(frame);
-            end
-            
+
+            % Controller closures are serialized to the Stage server: capture
+            % the pattern as a plain vector, never obj or a nested function
+            % (which shares this workspace and drags obj along).
+            chirpPattern = obj.chirpPattern;   %#ok<*PROP>
+            numPatternFrames = numel(chirpPattern);
+            % clip the time axis to [1, T]
             spotIntensity = stage.builtin.controllers.PropertyController(spot, 'color',...
-                @(state)getIntensityFromPattern(obj, state));
+                @(state)chirpPattern(max(1, min(state.frame, numPatternFrames))));
             p.addController(spotIntensity);
         end
         

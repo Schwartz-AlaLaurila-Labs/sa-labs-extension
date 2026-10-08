@@ -122,21 +122,23 @@ classdef SplitField < sa_labs.protocols.StageProtocol
             rect2.orientation = obj.curAngle;
             p.addStimulus(rect2);
             
-            function c = onDuringStim(state, preTime, stimTime, contrast, meanLevel)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    c = meanLevel + meanLevel * contrast;
-                else
-                    c = meanLevel;
-                end
-            end
-            
-            
+            % Controller closures are serialized to the Stage server, so they
+            % are anonymous functions over plain values only (never obj or a
+            % nested function, which shares this workspace and drags obj along).
+            % Color is meanLevel * (1 + contrast) during the stim, meanLevel otherwise.
+            preTime = obj.preTime;   %#ok<*PROP>
+            stimTime = obj.stimTime;
+            meanLevel = obj.meanLevel;
+            contrastSide1 = obj.contrastSide1;
+            contrastSide2 = obj.contrastSide2;
+            onDuringStim = @(s, contrast) meanLevel + meanLevel * contrast * (s.time>preTime*1e-3 && s.time<=(preTime+stimTime)*1e-3);
+
             if obj.curBlackSide
-                controller1 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide1, obj.meanLevel));
-                controller2 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide2, obj.meanLevel));
+                controller1 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, contrastSide1));
+                controller2 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, contrastSide2));
             else
-                controller1 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide1, obj.meanLevel));
-                controller2 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.contrastSide2, obj.meanLevel));
+                controller1 = stage.builtin.controllers.PropertyController(rect1, 'color', @(s)onDuringStim(s, contrastSide1));
+                controller2 = stage.builtin.controllers.PropertyController(rect2, 'color', @(s)onDuringStim(s, contrastSide2));
             end
             
             p.addController(controller1);    

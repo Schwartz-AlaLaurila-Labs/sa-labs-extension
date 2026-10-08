@@ -249,8 +249,12 @@ classdef TextureMatrix < sa_labs.protocols.StageProtocol
                 %                 centerCircleController = stage.builtin.controllers.PropertyController(spot, 'opacity', @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.tailTime));
                 %                 p.addController(centerCircleController);
             end
+            % The controller closure is serialized to the Stage server, so it
+            % captures plain values rather than obj.
+            preTime = obj.preTime;   %#ok<*PROP>
+            stimTime = obj.stimTime;
             imVisible = stage.builtin.controllers.PropertyController(im, 'opacity', ...
-                @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                @(state)state.time >= preTime * 1e-3 && state.time < (preTime + stimTime) * 1e-3);
             p.addController(imVisible);
         end
         

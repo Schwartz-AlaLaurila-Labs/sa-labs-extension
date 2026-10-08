@@ -12,7 +12,7 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
         
         motionSeedStart = 10;
         motionSeedChangeMode = 'increment only';
-        motionStandardDeviation = 500; % µm
+        motionStandardDeviation = 500; % ï¿½m
         motionLowpassFilterPassband = 3; % Hz
         
         numberOfEpochs = 300;
@@ -108,21 +108,14 @@ classdef RandomMotionObject < sa_labs.protocols.StageProtocol
             p.addStimulus(ob);
             
             % random motion controller
-            function pos = movementController(state, center, motionPathPixels)
-                
-                if state.frame < 1
-                    frame = 1;
-                else
-                    frame = state.frame;
-                end
-                y = motionPathPixels(frame, 2);
-                x = motionPathPixels(frame, 1);
-                pos = [x,y] + center;
-                    
-            end
+            % The controller closure is serialized to the Stage server, so it
+            % is an anonymous function over plain values (never a nested
+            % function, which shares this workspace and drags obj along).
+            % Frames before 1 show the first path sample.
             motionPathPixels = obj.um2pix(obj.motionPath);
+            center = canvasSize/2;
             controller = stage.builtin.controllers.PropertyController(ob, ...
-                'position', @(s)movementController(s, canvasSize/2, motionPathPixels));
+                'position', @(s) motionPathPixels(max(s.frame, 1), [1 2]) + center);
             p.addController(controller);
             
         end

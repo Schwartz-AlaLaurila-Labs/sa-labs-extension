@@ -133,8 +133,12 @@ classdef ContrastResponse < sa_labs.protocols.StageProtocol
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
+            % Controller closures are serialized to the Stage server: capture
+            % plain values, never obj (which does not survive the trip).
+            preTimeS = obj.preTime * 1e-3;
+            stimEndS = (obj.preTime + obj.stimTime) * 1e-3;
             spotVisible = stage.builtin.controllers.PropertyController(spot, 'opacity', ...
-                @(state)state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3);
+                @(state)state.time >= preTimeS && state.time < stimEndS);
             p.addController(spotVisible);
             
 %             obj.addFrameTracker(p);

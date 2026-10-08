@@ -17,7 +17,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         angleOffset = 0;
         
         motionSeed = 1;
-        motionStandardDeviation = 400; % µm
+        motionStandardDeviation = 400; % ï¿½m
         motionLowpassFilterPassband = 5; % Hz
         
         numberOfCycles = 3;
@@ -116,25 +116,15 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
             end
             
             % random motion controller
-            function pos = movementController(state, angle, center, motionPath)
-                
-                if state.frame < 1
-                    frame = 1;
-                else
-                    frame = state.frame;
-                end
-                if size(motionPath,2) == 1
-                    y = sind(angle) * (motionPath(frame) + edgeOffsetForSingleEdgeMode);
-                    x = cosd(angle) * (motionPath(frame) + edgeOffsetForSingleEdgeMode);
-                else
-                    y = sind(angle) * motionPath(frame, 1);
-                    x = cosd(angle) * motionPath(frame, 2);
-                end
-                pos = [x,y] + center;
-                    
-            end
+            % The controller closure is serialized to the Stage server, so it
+            % captures plain values only (never obj or a nested function,
+            % which shares this workspace and drags obj along).
+            curAngle = obj.curAngle;
+            motionPath = obj.motionPath;
+            center = canvasSize/2;
             controller = stage.builtin.controllers.PropertyController(bar, ...
-                'position', @(s)movementController(s, obj.curAngle, canvasSize/2, obj.motionPath));
+                'position', @(s) sa_labs.controllers.RandomMotionEdge_motionPosition( ...
+                s.frame, curAngle, center, motionPath, edgeOffsetForSingleEdgeMode));
             p.addController(controller);
             
         end
@@ -148,7 +138,7 @@ classdef RandomMotionEdge < sa_labs.protocols.StageProtocol
         function motionLowpassFilterStopband = get.motionLowpassFilterStopband(obj)
             motionLowpassFilterStopband = obj.motionLowpassFilterPassband * 1.2;
         end
-        
+
     end
-    
+
 end

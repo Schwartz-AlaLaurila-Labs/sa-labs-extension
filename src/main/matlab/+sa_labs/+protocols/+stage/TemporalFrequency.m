@@ -75,22 +75,16 @@ classdef TemporalFrequency < sa_labs.protocols.StageProtocol
             spot.position = canvasSize / 2;
             p.addStimulus(spot);
             
-             function c = sineWaveStim(state, preTime, stimTime, contrast, meanLevel, freq)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    timeVal = state.time - preTime*1e-3; %s
-                    %inelegant solution for zero mean
-                    if meanLevel < 0.05
-                        c = contrast * sin(2*pi*timeVal*freq);
-                        if c<0, c = 0; end %rectify
-                    else
-                        c = meanLevel + meanLevel * contrast * sin(2*pi*timeVal*freq);
-                    end
-                else
-                    c = meanLevel;
-                end
-            end
-            
-            controller = stage.builtin.controllers.PropertyController(spot, 'color', @(s)sineWaveStim(s, obj.preTime, obj.stimTime, obj.contrast, obj.meanLevel, obj.curFrequency));
+            % The controller closure is serialized to the Stage server, so it
+            % captures plain values only (never obj or a nested function,
+            % which shares this workspace and drags obj along).
+            preTime = obj.preTime;   %#ok<*PROP>
+            stimTime = obj.stimTime;
+            contrast = obj.contrast;
+            meanLevel = obj.meanLevel;
+            curFrequency = obj.curFrequency;
+            controller = stage.builtin.controllers.PropertyController(spot, 'color', ...
+                @(s) sa_labs.controllers.TemporalFrequency_sineWaveStim(s.time, preTime, stimTime, contrast, meanLevel, curFrequency));
             p.addController(controller);
 
         end
@@ -99,8 +93,8 @@ classdef TemporalFrequency < sa_labs.protocols.StageProtocol
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfCycles * obj.numberOfFrequencySteps;
         end
-        
-        
+
+
     end
-    
+
 end

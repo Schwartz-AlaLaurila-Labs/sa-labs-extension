@@ -105,25 +105,7 @@ classdef CenterSurround < sa_labs.protocols.StageProtocol
             spotInner.color = 0;%TEMP
             spotInner.position = canvasSize / 2;
             p.addStimulus(spotInner);
-            
-            function c = onDuringStim(state, preTime, stimTime, intensity, activePatternNumber, backgroundPatternNumber, meanLevel)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    if state.pattern == activePatternNumber
-                        c = intensity;
-                    elseif state.pattern == backgroundPatternNumber
-                        c = meanLevel;
-                    else
-                        c = 0;
-                    end
-                else
-                    if state.pattern == backgroundPatternNumber
-                        c = meanLevel;
-                    else
-                        c = 0;
-                    end
-                end
-            end
-            
+
             if obj.patternM(obj.curPattern, 1) == 0
                 obj.surroundIntensity = obj.intensityGreen;
             elseif obj.patternM(obj.curPattern, 1) == 1
@@ -141,16 +123,30 @@ classdef CenterSurround < sa_labs.protocols.StageProtocol
             
             fprintf('INTENSITY: center: %g, surround: %g, background: %g\n', obj.centerPatternIndex, obj.surroundPatternIndex, obj.backgroundPatternIndex);
 
-            
+            % Controller closures are serialized to the Stage server: capture
+            % plain values and call the package function
+            % sa_labs.controllers.CenterSurround_onDuringStim (not a class method,
+            % so the Stage server never has to load this classdef), never obj
+            % or a nested function (which shares this workspace and drags obj
+            % along, failing on the server with no frames drawn).
+            preTime = obj.preTime;   %#ok<*PROP>
+            stimTime = obj.stimTime;
+            meanLevel = obj.meanLevel;
+            backgroundPattern = obj.patternM(obj.curPattern, 3);
+            centerIntensity = obj.centerIntensity;
+            centerPattern = obj.centerPatternIndex;
+            surroundIntensity = obj.surroundIntensity;
+            surroundPattern = obj.surroundPatternIndex;
+
             controllerBackground = stage.builtin.controllers.PropertyController(spotBorder, 'color', ...
-                @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.meanLevel, obj.patternM(obj.curPattern,3), obj.patternM(obj.curPattern,3), obj.meanLevel));
-            
+                @(s)sa_labs.controllers.CenterSurround_onDuringStim(s, preTime, stimTime, meanLevel, backgroundPattern, backgroundPattern, meanLevel));
+
             controllerInner = stage.builtin.controllers.PropertyController(spotInner, 'color', ...
-                @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.centerIntensity, obj.centerPatternIndex, obj.patternM(obj.curPattern,3), obj.meanLevel));
-            
+                @(s)sa_labs.controllers.CenterSurround_onDuringStim(s, preTime, stimTime, centerIntensity, centerPattern, backgroundPattern, meanLevel));
+
             controllerOuter = stage.builtin.controllers.PropertyController(spotOuter, 'color',...
-                @(s)onDuringStim(s, obj.preTime, obj.stimTime, obj.surroundIntensity, obj.surroundPatternIndex, obj.patternM(obj.curPattern,3), obj.meanLevel));
-            
+                @(s)sa_labs.controllers.CenterSurround_onDuringStim(s, preTime, stimTime, surroundIntensity, surroundPattern, backgroundPattern, meanLevel));
+
             p.addController(controllerBackground);
             p.addController(controllerOuter);
             p.addController(controllerInner);
@@ -160,8 +156,8 @@ classdef CenterSurround < sa_labs.protocols.StageProtocol
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfCycles * size(obj.patternM, 1);
         end
-        
-        
+
+
     end
-    
+
 end

@@ -91,53 +91,30 @@ classdef low_high_TemporalContrast < sa_labs.protocols.StageProtocol
             
             p.addStimulus(spot);
             
+            % The controller closure is serialized to the Stage server: it
+            % captures plain values and the RandStream handle only (the
+            % noise is drawn from the same stream as before), never obj or a
+            % nested function (which shares this workspace and drags obj
+            % along). Per-frame logic is in the package function
+            % sa_labs.controllers.low_high_TemporalContrast_noiseIntensity.
+            % tailFrames was previously referenced but never defined.
+            tailFrames = round(obj.frameRate * (obj.tailTime / 1e3));
+            frameDwell = obj.frameDwell;
+            spotMeanLevel = obj.spotMeanLevel;
+            lowContrast = obj.lowContrast;
+            highContrast = obj.highContrast;
+            switchTime = obj.SwitchTime;
+            stream = obj.noiseStream;
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state)getIntensity(obj,state.frame - preFrames, preFrames, stimFrames));
-            
+                @(state) sa_labs.controllers.low_high_TemporalContrast_noiseIntensity( ...
+                state.frame - preFrames, preFrames, stimFrames, tailFrames, frameDwell, ...
+                spotMeanLevel, lowContrast, highContrast, switchTime, stream));
+
             p.addController(spotIntensityController);
-            
-            function i = getIntensity(obj, frame, preFrames, stimFrames)
-                persistent intensity
-                totalFrames = preFrames + stimFrames + tailFrames;
-                % Determine contrast based on frame position
-                if frame < preFrames % Pre-time
-                    contrast = obj.lowContrast; 
-                
-                elseif frame >= preFrames && frame < (preFrames + stimFrames) % Stims time
-                    relative_frame = frame - preFrames;
-                    blockNumber = floor((relative_frame/ (60*obj.SwitchTime))); %60Hz is default frame rate. Dont like hard coding it but its not accessing obj.frameRate
-                    
-                    if mod(blockNumber, 2) == 0
-                        contrast = obj.lowContrast;
-                    else
-                        contrast = obj.highContrast;
-                    end
-
-                else
-                    contrast = obj.lowContrast; %tail time and beyond
-                    if frame == totalFrames - 1
-                        intensity = obj.spotMeanLevel;
-                        i = intensity;
-                        return
-                    end
-                end 
-                if mod(frame, obj.frameDwell) == 0
-                    noise = sa_labs.util.randn(obj.noiseStream, 1);
-                    intensity = obj.spotMeanLevel + obj.spotMeanLevel * contrast * noise;
-                end
-
-                intensity = clipIntensity(intensity, obj.spotMeanLevel);
-                i= intensity;
-            end
-            
-            function intensity = clipIntensity(intensity, mean_level)
-                intensity(intensity > mean_level * 2) = mean_level * 2;
-                intensity(intensity < 0) = 0;
-                intensity(intensity > 1) = 1;
-            end
         end
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochs;
         end
     end
+
 end

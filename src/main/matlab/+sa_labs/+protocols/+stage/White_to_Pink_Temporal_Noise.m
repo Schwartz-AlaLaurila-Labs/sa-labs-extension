@@ -94,40 +94,16 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             % Add intensity controller
-            
+            % The controller closure is serialized to the Stage server: it
+            % captures plain values only, never obj or a nested function
+            % (which shares this workspace and drags obj along). Per-frame
+            % logic is in the package function
+            % sa_labs.controllers.White_to_Pink_Temporal_Noise_noiseIntensity.
+            spotMeanLevel = obj.spotMeanLevel;
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state) getIntensity(obj, state.frame, preFrames, stimFrames1, stimFrames2, stimNoise));
+                @(state) sa_labs.controllers.White_to_Pink_Temporal_Noise_noiseIntensity( ...
+                state.frame, preFrames, stimFrames1, stimFrames2, stimNoise, spotMeanLevel));
             p.addController(spotIntensityController);
-        
-            function intensity = getIntensity(obj, frame, preFrames, stimFrames1, stimFrames2, stimNoise)
-                if frame < preFrames % **Pre-time (using noise1)**
-    %                 stimFrame = frame + 1;
-                    intensity = obj.spotMeanLevel;
-
-                elseif frame < (preFrames + stimFrames1) % **First stimulus segment (Beta 1)**
-                    stimFrame = frame - preFrames + 1;
-                    intensity = stimNoise(preFrames + stimFrame);
-
-                elseif frame < (preFrames + stimFrames1 + stimFrames2) % **Second stimulus segment (Beta 2)**
-                    stimFrame = frame - preFrames - stimFrames1 + 1;
-                    intensity = stimNoise(preFrames + stimFrames1 + stimFrame);
-
-                else % **Tail-Time (using noise1)**
-    %                 stimFrame = frame - (preFrames + stimFrames1 + stimFrames2) + 1;
-    %                 intensity = stimNoise(preFrames + stimFrames1 + stimFrames2 + stimFrame);
-                      intensity = obj.spotMeanLevel;
-                end
-
-                % Ensure intensity stays within valid range
-                intensity = clipIntensity(intensity, obj.spotMeanLevel);
-            end
-        
-            function intensity = clipIntensity(intensity, meanLevel)
-                % Ensures the intensity stays within valid range
-                intensity(intensity > meanLevel * 2) = meanLevel * 2;
-                intensity(intensity < 0) = 0;
-                intensity(intensity > 1) = 1;
-            end
         end
         
         
@@ -144,7 +120,15 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             
             % Convert noise from frequency to time domain
             spectrum = amplitudes .* phases;
-            raw_noise = real(ifft([spectrum, conj(spectrum(end-1:-1:2))]));
+            % The mirrored half must give exactly stimFrames samples: for odd
+            % stimFrames the Nyquist bin is absent, so mirror from the last bin
+            % (the old form was one sample short and indexed out of range).
+            if mod(stimFrames, 2) == 0
+                fullSpectrum = [spectrum, conj(spectrum(end-1:-1:2))];
+            else
+                fullSpectrum = [spectrum, conj(spectrum(end:-1:2))];
+            end
+            raw_noise = real(ifft(fullSpectrum));
             raw_noise = raw_noise(1:stimFrames);
             raw_noise = raw_noise / std(raw_noise, 1);
 
@@ -161,4 +145,5 @@ classdef White_to_Pink_Temporal_Noise < sa_labs.protocols.StageProtocol
             stimTime = obj.time1 + obj.time2;
         end
     end
+
 end

@@ -364,42 +364,29 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             patternCenter.setMask(centerMask);
             
             
-            function im = imageMovementController(state, startMotionTime, imageMatrix, scale, motionPath)
-                if state.time < startMotionTime / 1000
-                    frame = 1;
-                else
-                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
-                end
-
-                im = circshift(imageMatrix, round(motionPath(frame) * scale), 2); % second dim
-            end
-
-            function pos = objectMovementController(state, startMotionTime, center, angle, motionPathPixels)
-
-                if state.time < startMotionTime / 1000
-                    frame = 1;
-                else
-                    frame = 1+round(state.frame - 60 * (startMotionTime / 1000));
-                end
-                
-                y = sind(angle) * motionPathPixels(frame);
-                x = cosd(angle) * motionPathPixels(frame);
-                pos = [x,y] + center;
-                    
-            end
-
-            % Motion controllers
+            % Motion controllers. Controller closures are serialized to the
+            % Stage server: capture plain values and call the package functions
+            % sa_labs.controllers.ObjectMotionSensitivity_imageMovementController /
+            % _objectMovementController, never obj or a nested function (which shares this
+            % workspace and drags obj along).
+            startMotionTime = obj.startMotionTime + obj.preTime; %#ok<*PROP>
+            motionAngle = obj.motionAngle;
+            imageMatrixCenter = obj.imageMatrixCenter;
+            imageMatrixSurround = obj.imageMatrixSurround;
+            motionPathCenter = obj.motionPathCenter;
+            motionPathSurround = obj.motionPathSurround;
+            center = canvasSize/2;
             
             % center
             motionScale = obj.imageMatrixDimensions(1) / obj.patternSizeMicrons(1); % convert image pixel shift to world um shift
             switch obj.figureBackgroundMode
                 case 'aperture'
                     controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                        'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixCenter, motionScale, obj.motionPathCenter));
+                        'imageMatrix', @(s)sa_labs.controllers.ObjectMotionSensitivity_imageMovementController(s, startMotionTime, imageMatrixCenter, motionScale, motionPathCenter));
                 case 'object'
                     motionPathPixels = obj.um2pix(obj.motionPathCenter);
                     controllerCenter = stage.builtin.controllers.PropertyController(patternCenter, ...
-                        'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
+                        'position', @(s)sa_labs.controllers.ObjectMotionSensitivity_objectMovementController(s, startMotionTime, center, motionAngle, motionPathPixels));
             end
             p.addController(controllerCenter);
             
@@ -407,13 +394,13 @@ classdef ObjectMotionSensitivity < sa_labs.protocols.StageProtocol
             if annulusEnabled && strcmp(obj.figureBackgroundMode, 'object')
                 motionPathPixels = obj.um2pix(obj.motionPathCenter);
                 controllerAnnulus = stage.builtin.controllers.PropertyController(annulus, ...
-                    'position', @(s)objectMovementController(s, obj.startMotionTime+obj.preTime, canvasSize/2, obj.motionAngle, motionPathPixels));
+                    'position', @(s)sa_labs.controllers.ObjectMotionSensitivity_objectMovementController(s, startMotionTime, center, motionAngle, motionPathPixels));
                 p.addController(controllerAnnulus);
             end
             
             % surround
             controllerSurround = stage.builtin.controllers.PropertyController(patternSurround, ...
-                'imageMatrix', @(s)imageMovementController(s, obj.startMotionTime+obj.preTime, obj.imageMatrixSurround, motionScale, obj.motionPathSurround));
+                'imageMatrix', @(s)sa_labs.controllers.ObjectMotionSensitivity_imageMovementController(s, startMotionTime, imageMatrixSurround, motionScale, motionPathSurround));
             p.addController(controllerSurround);
             
             

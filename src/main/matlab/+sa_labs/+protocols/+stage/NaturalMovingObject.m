@@ -178,18 +178,16 @@ classdef NaturalMovingObject < sa_labs.protocols.StageProtocol
             xyi = obj.xy(:,:, obj.i_);
             [~,tr] = obj.um2pix(obj.tr_);
             center = canvasSize / 2 + tr;
-            function pos = positionController(state)
-                pos = xyi(state.frame+1,:) + center;
-            end
-          
-            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', @positionController);
+            % Controller closures are serialized to the Stage server: anonymous
+            % functions over plain values, not nested functions (which share
+            % this workspace and drag obj along).
+            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', ...
+                @(state) xyi(state.frame+1,:) + center);
             p.addController(objectMovement);
-          
+            
             nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
-            function o = opacityController(state)
-                o = 1.0* ((state.frame + 1) < nFrames);
-            end
-            objectOpacity = stage.builtin.controllers.PropertyController(object, 'opacity', @opacityController);
+            objectOpacity = stage.builtin.controllers.PropertyController(object, 'opacity', ...
+                @(state) 1.0* ((state.frame + 1) < nFrames));
             p.addController(objectOpacity);
             
         end

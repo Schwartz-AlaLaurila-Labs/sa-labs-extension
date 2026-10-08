@@ -116,8 +116,12 @@ classdef ColorIsoResponse < sa_labs.protocols.StageProtocol
                 centerMask.radiusY = centerMask.radiusX;
                 centerMask.position = canvasSize / 2;
                 p.addStimulus(centerMask);
+                % Controller closures are serialized to the Stage server:
+                % capture plain values, never obj (which does not survive the trip).
+                meanLevel1 = obj.meanLevel1;   %#ok<*PROP>
+                meanLevel2 = obj.meanLevel2;
                 centerMaskColorController = stage.builtin.controllers.PropertyController(centerMask, 'color',...
-                  @(state)(obj.meanLevel1 * (state.pattern == 0) + obj.meanLevel2 * (state.pattern == 1)));
+                  @(state)(meanLevel1 * (state.pattern == 0) + meanLevel2 * (state.pattern == 1)));
                 
                 p.addController(centerMaskColorController);
             end

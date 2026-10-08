@@ -119,14 +119,16 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
 
             obj.noiseStream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
 
-            
+            % Built over the RandStream handle rather than obj so the handle
+            % stays serializable (see createPresentation).
+            stream = obj.noiseStream;
             switch obj.colorNoiseDistribution
                 case 'uniform'
-                    obj.noiseFn = @() 2 * obj.noiseStream.rand() - 1; % Uniform from [-1, 1]
+                    obj.noiseFn = @() 2 * stream.rand() - 1; % Uniform from [-1, 1]
                 case 'gaussian'
-                    obj.noiseFn = @() sa_labs.util.randn(obj.noiseStream); % Gaussian noise
+                    obj.noiseFn = @() sa_labs.util.randn(stream); % Gaussian noise
                 case 'binary'
-                    obj.noiseFn = @() 2 * (obj.noiseStream.rand() > .5) - 1; % Binary {+1, -1}
+                    obj.noiseFn = @() 2 * (stream.rand() > .5) - 1; % Binary {+1, -1}
                 otherwise
                     error('Invalid color noise distribution. Choose "uniform", "gaussian", or "binary".');
             end
@@ -150,60 +152,64 @@ classdef Temporal_Noise_1_f < sa_labs.protocols.StageProtocol
             p.addStimulus(spot);
             
             % Add controllers
+            % The controller closure is serialized to the Stage server: it
+            % captures plain values only, never obj or a nested function
+            % (which shares this workspace and drags obj along). The 1/f
+            % series is a deterministic function of the seed, so it is
+            % generated once here instead of on every noise update; the
+            % values are identical. Per-frame logic is in the package function
+            % sa_labs.controllers.Temporal_Noise_1_f_noiseIntensity.
+            frameDwell = obj.frameDwell;
+            spotMeanLevel = obj.spotMeanLevel;
+            noise_series = sa_labs.protocols.stage.Temporal_Noise_1_f.generateOneOverFNoise( ...
+                obj.noiseSeed, obj.beta, spotMeanLevel, obj.contrast, frameDwell, frame_rate, stimFrames);
             spotIntensityController = stage.builtin.controllers.PropertyController(spot, 'color', ...
-                @(state) getIntensity(obj, state.frame - preFrames));
+                @(state) sa_labs.controllers.Temporal_Noise_1_f_noiseIntensity( ...
+                state.frame - preFrames, stimFrames, frameDwell, spotMeanLevel, noise_series));
             p.addController(spotIntensityController);
-            
-            function i = getIntensity(obj, frame)
-                persistent intensity;
-                if (frame < 0) || (frame > stimFrames)
-                    intensity = obj.spotMeanLevel;
-                else
-                    if mod(frame, obj.frameDwell) == 0 %noise update
-                        noise_series = generateOneOverFNoise(obj, frame_rate, stimFrames);
-                        if frame < length(noise_series) % Ensure valid indexing
-                            intensity = noise_series(frame + 1);
-                        else
-                            intensity = noise_series(end); % Prevent out-of-bounds error
-                        end
-                    end
-                end
-                i = intensity;
-                intensity = clipIntensity(intensity, obj.spotMeanLevel);
-            end
-            
-            function intensity = clipIntensity(intensity, mn)
-                intensity(intensity > mn * 2) = mn * 2;
-                intensity(intensity < 0) = 0;
-                intensity(intensity > 1) = 1;
-            end
-
-            function noise_intensity = generateOneOverFNoise(obj, frame_rate, stimFrames)
-                stream = RandStream('mt19937ar', 'Seed', obj.noiseSeed);
-                % Generate 1/f^beta noise in the frequency domain
-                freqs = linspace(0, frame_rate/2, floor(stimFrames/2) + 1);
-                amplitudes = zeros(size(freqs));
-                amplitudes(2:end) = freqs(2:end) .^ (-obj.beta / 2); % Avoid divide by zero
-            
-                % Generate random phases
-                phases = exp(1i * 2 * pi *  rand(stream, 1, length(freqs)));
-            
-                % Construct spectrum
-                spectrum = amplitudes .* phases;
-            
-                % Convert back to time domain
-                raw_noise = real(ifft([spectrum, conj(spectrum(end-1:-1:2))]));
-                raw_noise = raw_noise(1:stimFrames); % Ensure correct length
-                raw_noise = raw_noise / std(raw_noise,1); % Normalize to unit variance
-            
-                % Apply contrast scaling
-                noise_intensity_adj = obj.spotMeanLevel * (1 + obj.contrast * raw_noise);
-                noise_intensity = repelem(noise_intensity_adj, obj.frameDwell);
-            end
         end
         
         function totalNumEpochs = get.totalNumEpochs(obj)
             totalNumEpochs = obj.numberOfEpochsPerBeta * length(obj.betas);
+        end
+    end
+
+    methods (Static)
+        % Protocol-side precompute of the 1/f noise series, called from
+        % createPresentation (never from a controller closure, so it may
+        % stay a class method). The per-frame controller logic is in the
+        % package functions sa_labs.controllers.Temporal_Noise_1_f_noiseIntensity
+        % and Temporal_Noise_1_f_clipIntensity.
+
+        function noise_intensity = generateOneOverFNoise(noiseSeed, beta, spotMeanLevel, contrast, frameDwell, frame_rate, stimFrames)
+            stream = RandStream('mt19937ar', 'Seed', noiseSeed);
+            % Generate 1/f^beta noise in the frequency domain
+            freqs = linspace(0, frame_rate/2, floor(stimFrames/2) + 1);
+            amplitudes = zeros(size(freqs));
+            amplitudes(2:end) = freqs(2:end) .^ (-beta / 2); % Avoid divide by zero
+
+            % Generate random phases
+            phases = exp(1i * 2 * pi *  rand(stream, 1, length(freqs)));
+
+            % Construct spectrum
+            spectrum = amplitudes .* phases;
+
+            % Convert back to time domain. The mirrored half must give exactly
+            % stimFrames samples: for odd stimFrames the Nyquist bin is absent,
+            % so mirror from the last bin (the old form was one sample short
+            % and indexed out of range for odd frame counts).
+            if mod(stimFrames, 2) == 0
+                fullSpectrum = [spectrum, conj(spectrum(end-1:-1:2))];
+            else
+                fullSpectrum = [spectrum, conj(spectrum(end:-1:2))];
+            end
+            raw_noise = real(ifft(fullSpectrum));
+            raw_noise = raw_noise(1:stimFrames); % Ensure correct length
+            raw_noise = raw_noise / std(raw_noise,1); % Normalize to unit variance
+
+            % Apply contrast scaling
+            noise_intensity_adj = spotMeanLevel * (1 + contrast * raw_noise);
+            noise_intensity = repelem(noise_intensity_adj, frameDwell);
         end
     end
 end

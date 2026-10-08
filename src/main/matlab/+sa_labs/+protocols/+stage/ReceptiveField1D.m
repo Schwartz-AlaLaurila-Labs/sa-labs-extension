@@ -104,27 +104,17 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             rect.position = [obj.curPosXPx, obj.curPosYPx];
             p.addStimulus(rect);
             
-            function c = stimWave(state, preTime, stimTime, conOrInt, meanLevel, freq)
-                if state.time>preTime*1e-3 && state.time<=(preTime+stimTime)*1e-3
-                    if obj.sineWave
-                        timeVal = state.time - preTime*1e-3; %s
-                        %inelegant solution for zero mean
-                        if meanLevel < 0.05
-                            c = conOrInt * sin(2*pi*timeVal*freq);
-                            if c<0, c = 0; end %rectify
-                        else
-                            c = meanLevel + meanLevel * conOrInt * sin(2*pi*timeVal*freq);
-                        end
-
-                    else
-                        c = conOrInt;
-                    end
-                else
-                    c = meanLevel;
-                end
-            end
-            
-            controller = stage.builtin.controllers.PropertyController(rect, 'color', @(s)stimWave(s, obj.preTime, obj.stimTime, obj.contrastOrIntensity, obj.meanLevel, obj.frequency));
+            % The controller closure is serialized to the Stage server, so it
+            % captures plain values only (never obj or a nested function,
+            % which shares this workspace and drags obj along).
+            preTime = obj.preTime;   %#ok<*PROP>
+            stimTime = obj.stimTime;
+            contrastOrIntensity = obj.contrastOrIntensity;
+            meanLevel = obj.meanLevel;
+            frequency = obj.frequency;
+            sineWave = obj.sineWave;
+            controller = stage.builtin.controllers.PropertyController(rect, 'color', ...
+                @(s) sa_labs.controllers.ReceptiveField1D_stimWave(s.time, preTime, stimTime, contrastOrIntensity, meanLevel, frequency, sineWave));
             p.addController(controller);
         end
         
@@ -136,5 +126,5 @@ classdef ReceptiveField1D < sa_labs.protocols.StageProtocol
             stimTime = 1E3*(obj.numberOfPulses/obj.frequency);
         end
     end
-    
+
 end

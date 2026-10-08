@@ -259,30 +259,21 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
             xyi = obj.xy(:,:, obj.i_);
             [~,tr] = obj.um2pix(obj.tr_);
             center = canvasSize / 2 + tr;
-            function pos = positionController(state)
-                pos = xyi(state.frame+1,:) + center;
-            end
-          
-            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', @positionController);
+            % Controller closures are serialized to the Stage server: anonymous
+            % functions over plain values (and the package function
+            % sa_labs.controllers.NaturalMovingObjectAndFlash_opacityController),
+            % not nested
+            % functions (which share this workspace and drag obj along).
+            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', ...
+                @(state) xyi(state.frame+1,:) + center);
             p.addController(objectMovement);
-          
+            
             nFrames = obj.preFrames + obj.stimFrames + obj.tailFrames;
             mo_ = obj.mo_;
-            preFrames = obj.preFrames;
+            preFrames = obj.preFrames; %#ok<*PROP>
             stimFrames = obj.stimFrames;
-            function o = opacityController(state)
-                o = 1.0* ((state.frame + 1) < nFrames);
-                
-                if (mo_ == 2) 
-                    if (state.frame+1) <= preFrames
-                        o = 0;
-                    end
-                    if (state.frame+1) > preFrames+stimFrames
-                        o = 0;
-                    end
-                end
-            end
-            objectOpacity = stage.builtin.controllers.PropertyController(object, 'opacity', @opacityController);
+            objectOpacity = stage.builtin.controllers.PropertyController(object, 'opacity', ...
+                @(state) sa_labs.controllers.NaturalMovingObjectAndFlash_opacityController(state, nFrames, mo_, preFrames, stimFrames));
             p.addController(objectOpacity);
             
         end
@@ -311,5 +302,6 @@ classdef NaturalMovingObjectAndFlash < sa_labs.protocols.StageProtocol
         end
         
     end
+    
 end
 

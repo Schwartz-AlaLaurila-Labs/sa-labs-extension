@@ -93,17 +93,15 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
                 grat.setMask(mask);
             end
             
-            % Gratings drift controller
-            function pos = posController(state, duration, preTime, tailTime, centerPos)
-                if state.time<=preTime/1E3 || state.time>duration-tailTime/1E3 %in pre or tail time
-                    %off screen
-                    pos = [NaN, NaN];
-                else
-                    %on screen
-                    pos = centerPos;
-                end
-            end
-            posControllerFunc = stage.builtin.controllers.PropertyController(grat, 'position', @(s)posController(s, p.duration, obj.preTime, obj.tailTime, centerPos));
+            % Gratings drift controller: off screen during the pre and tail
+            % time. Controller closures are serialized to the Stage server:
+            % capture plain values and call the package function
+            % sa_labs.controllers.DriftingGratings_gratingPosition, never obj or a
+            % nested function (which shares this workspace and drags obj along).
+            onTime = obj.preTime/1E3;
+            offTime = p.duration - obj.tailTime/1E3;
+            posControllerFunc = stage.builtin.controllers.PropertyController(grat, 'position', ...
+                @(s) sa_labs.controllers.DriftingGratings_gratingPosition(s.time, onTime, offTime, centerPos));
             p.addController(posControllerFunc);
             
             % Controller closures are serialized to the Stage server: an

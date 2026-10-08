@@ -110,32 +110,20 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
             spotPre = obj.spotPreFrames;
             spotPreStim = obj.spotPreFrames + obj.spotStimFrames;
             spotPreStimPost = obj.spotPreFrames + obj.spotStimFrames + obj.spotTailFrames;
-            
-            function xy = getSpotPosition(frame, spot)
-                if (frame < 0) || (frame >= stimFrames)
-                    xy = [0;0];
-                    return
-                end
-                i = min(floor(frame / spotPreStimPost) + 1, length(cx_));
-                xy = canvasSize/2 + [cx_(i, spot); cy_(i, spot)];
-            end
-            
+
+            % Controller closures are serialized to the Stage server: they
+            % must be anonymous functions over plain values (no nested
+            % functions, which share this workspace and drag obj along).
+            % The per-frame logic lives in the package functions
+            % sa_labs.controllers.PairedSpotField_spotPosition / _spotIntensityAtFrame
+            % (plain functions, so the Stage server never loads this classdef).
             bg = obj.meanLevel;
             sI = obj.intensity; %same length as cx_
-            function c = getSpotIntensity(frame)
-                if (frame < 0) || (frame >= stimFrames)
-                    c = bg;
-                    return
-                end
-                i = min(floor(frame / spotPreStimPost) + 1, length(sI)); %spot index
-                j = mod(frame, spotPreStimPost);
-                if (j < spotPre) || (j >= spotPreStim)
-                    c = bg;
-                else
-                    c = sI(i);
-                end
-            end
-            
+            getSpotPosition = @(frame, spot) sa_labs.controllers.PairedSpotField_spotPosition( ...
+                frame, spot, stimFrames, spotPreStimPost, canvasSize, cx_, cy_);
+            getSpotIntensity = @(frame) sa_labs.controllers.PairedSpotField_spotIntensityAtFrame( ...
+                frame, stimFrames, spotPre, spotPreStim, spotPreStimPost, bg, sI);
+
             p = stage.core.Presentation((obj.preTime + obj.stimTime + obj.tailTime) * 1e-3);
             
             spotA = stage.builtin.stimuli.Ellipse();
@@ -201,5 +189,5 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         end
 
     end
-    
+
 end

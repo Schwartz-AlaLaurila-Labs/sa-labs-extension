@@ -311,53 +311,26 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
             col_endTime = not(cellfun('isempty', strfind(obj.shapeDataColumns, 'endTime')));
             col_flickerFrequency = not(cellfun('isempty', strfind(obj.shapeDataColumns, 'flickerFrequency')));
             
-            
-            % GENERIC controller
-            function c = shapeController(state, preTime, baseLevel, startTime, endTime, shapeData_someColumns, controllerIndex)
-                % controllerIndex is to have multiple shapes simultaneously
-                t = state.time - preTime * 1e-3;
-                activeNow = (t > startTime & t < endTime);
-                if any(activeNow)
-                    actives = find(activeNow);
-                    if controllerIndex <= length(actives)
-                        c = shapeData_someColumns(actives(controllerIndex),:);
-                    else
-                        c = baseLevel;
-                    end
-                else
-                    c = baseLevel;
-                end
-            end
-            
-            % Custom controllers
-            % flicker
-            function c = shapeFlickerController(state, preTime, baseLevel, startTime, endTime, shapeData_someColumns, controllerIndex)
-                % controllerIndex is to have multiple shapes simultaneously
-                t = state.time - preTime * 1e-3;
-                activeNow = (t > startTime & t < endTime);
-                if any(activeNow)
-                    actives = find(activeNow);
-                    if controllerIndex <= length(actives)
-                        myActive = actives(controllerIndex);
-                        vals = shapeData_someColumns(myActive,:);
-                        % [intensity, frequency, start]
-                        c = vals(1) * (cos(2 * pi * (t - vals(3)) * vals(2)) > 0);
-                    else
-                        c = baseLevel;
-                    end
-                else
-                    c = baseLevel;
-                end
-            end
-            
-            function c = patternSelect(state, activePatternNumber)
-                c = 1 * (state.pattern == activePatternNumber - 1);
-            end
-      
-            
+
+            % The generic shape controller and the flicker controller are the
+            % package functions sa_labs.controllers.AutoCenter_shapeController and
+            % AutoCenter_shapeFlickerController (plain functions, so the Stage
+            % server never has to load this classdef). Controller closures are
+            % serialized to the Stage server, so
+            % they must capture plain values only: a nested function here would
+            % share this workspace and drag obj (the whole protocol with its
+            % .NET handles) along, failing on the server with no frames drawn.
+
             %             TODO: change epoch property shapeData to shapeDataMatrix in
             %             analysis
-            
+
+            % per-epoch values captured by the controller closures
+            preTime = obj.preTime;   %#ok<*PROP>
+            meanLevel = obj.meanLevel;
+            startTimes = obj.shapeDataMatrix(:,col_startTime);
+            endTimes = obj.shapeDataMatrix(:,col_endTime);
+            radii = obj.shapeDataMatrix(:,col_diameter) / 2;
+
             % setup stimulus objects
             numCircles = obj.runConfig.numShapes; % these are in order of shapes being detected in the active shape set from the start & end times
             circles = cell(numCircles, 1);
@@ -365,64 +338,55 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
                 circ = stage.builtin.stimuli.Ellipse();
                 circles{ci} = circ;
                 p.addStimulus(circles{ci});
-                
+
                 % intensity now handled by flicker controller
                 %                 controllerIntensity = stage.builtin.controllers.PropertyController(circ, 'color', @(s)shapeController(s, obj.preTime, obj.meanLevel, ...
                 %                     obj.shapeDataMatrix(:,col_startTime), ...
                 %                     obj.shapeDataMatrix(:,col_endTime), ...
                 %                     obj.shapeDataMatrix(:,col_intensity), ci));
                 %                 presentation.addController(controllerIntensity);
-                
+
                 % diameter X
-                controllerDiameterX = stage.builtin.controllers.PropertyController(circ, 'radiusX', @(s)shapeController(s, obj.preTime, 100, ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
-                    obj.shapeDataMatrix(:,col_diameter) / 2, ci));
+                controllerDiameterX = stage.builtin.controllers.PropertyController(circ, 'radiusX', ...
+                    @(s)sa_labs.controllers.AutoCenter_shapeController(s, preTime, 100, startTimes, endTimes, radii, ci));
                 p.addController(controllerDiameterX);
-                
+
                 % diameter Y
-                controllerDiameterY = stage.builtin.controllers.PropertyController(circ, 'radiusY', @(s)shapeController(s, obj.preTime, 100, ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
-                    obj.shapeDataMatrix(:,col_diameter) / 2, ci));
+                controllerDiameterY = stage.builtin.controllers.PropertyController(circ, 'radiusY', ...
+                    @(s)sa_labs.controllers.AutoCenter_shapeController(s, preTime, 100, startTimes, endTimes, radii, ci));
                 p.addController(controllerDiameterY);
-                
+
                 % position
                 poscols = not(cellfun('isempty', strfind(obj.shapeDataColumns, 'X'))) | ...
                     not(cellfun('isempty', strfind(obj.shapeDataColumns, 'Y')));
                 positions = obj.shapeDataMatrix(:,poscols);
                 positions_transformed = [obj.um2pix(positions(:,1)) + canvasSize(1)/2, obj.um2pix(positions(:,2)) + canvasSize(2)/2];
-                controllerPosition = stage.builtin.controllers.PropertyController(circ, 'position', @(s)shapeController(s, obj.preTime, [nan, nan], ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
-                    positions_transformed, ci));
+                controllerPosition = stage.builtin.controllers.PropertyController(circ, 'position', ...
+                    @(s)sa_labs.controllers.AutoCenter_shapeController(s, preTime, [nan, nan], startTimes, endTimes, positions_transformed, ci));
                 p.addController(controllerPosition);
-                
+
                 % flicker
                 sdm_intflicstart = obj.shapeDataMatrix(:,[find(col_intensity), find(col_flickerFrequency), find(col_startTime)]);
-                controllerFlicker = stage.builtin.controllers.PropertyController(circ, 'color', @(s)shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
-                    obj.shapeDataMatrix(:,col_startTime), ...
-                    obj.shapeDataMatrix(:,col_endTime), ...
-                    sdm_intflicstart, ci));
-                
+                controllerFlicker = stage.builtin.controllers.PropertyController(circ, 'color', ...
+                    @(s)sa_labs.controllers.AutoCenter_shapeFlickerController(s, preTime, meanLevel, startTimes, endTimes, sdm_intflicstart, ci));
 
-                
+
+
                 if obj.numberOfPatterns > 1 % run it in contrast mode
                     intensity1 = obj.meanLevel1 * (1 + obj.contrast1);
-                    intensity2 = obj.meanLevel2 * (1 + obj.contrast2);           
-                    
+                    intensity2 = obj.meanLevel2 * (1 + obj.contrast2);
+
+                    % pattern n is selected when s.pattern == n - 1
                     controllerFlickerWithPattern = stage.builtin.controllers.PropertyController(circ, 'color', @(s) ...
-                        ((intensity1 * patternSelect(s, 1) + intensity2 * patternSelect(s, 2)) * shapeFlickerController(s, obj.preTime, obj.meanLevel, ...
-                        obj.shapeDataMatrix(:,col_startTime), ...
-                        obj.shapeDataMatrix(:,col_endTime), ...
-                        sdm_intflicstart, ci)));
+                        ((intensity1 * (s.pattern == 0) + intensity2 * (s.pattern == 1)) * ...
+                        sa_labs.controllers.AutoCenter_shapeFlickerController(s, preTime, meanLevel, startTimes, endTimes, sdm_intflicstart, ci)));
                     p.addController(controllerFlickerWithPattern);
                 else
-                    p.addController(controllerFlicker); 
+                    p.addController(controllerFlicker);
                 end
-                
+
             end % circle loop
-            
+
         end
         
         function stimTime = get.stimTime(obj)
@@ -449,8 +413,8 @@ classdef AutoCenter < sa_labs.protocols.StageProtocol
         function tf = shouldContinueRun(obj)
             tf = obj.autoContinueRun;
         end
-        
+
     end
-    
+
 end
 

@@ -82,7 +82,7 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             % workspace and drags obj along).
             preTimeS = obj.preTime * 1e-3;
             stimTimeS = obj.stimTime * 1e-3;
-            movementController = @(state) sa_labs.protocols.StageProtocol.linearPosition( ...
+            movementController = @(state) sa_labs.controllers.linearPosition( ...
                 state.time - preTimeS, stimTimeS, xStartPos, yStartPos, xStep, yStep);
             barMovement = stage.builtin.controllers.PropertyController(bar, 'position', movementController);
             p.addController(barMovement);
