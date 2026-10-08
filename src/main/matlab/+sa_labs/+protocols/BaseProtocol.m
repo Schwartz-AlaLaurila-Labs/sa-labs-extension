@@ -61,9 +61,17 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
     
     methods
         
+        function set.chan1Mode(obj, mode)
+            % The sample rate follows the recording mode of the primary
+            % channel: 10 kHz cell attached, 50 kHz whole cell / perforated.
+            obj.chan1Mode = mode;
+            obj.sampleRate = sa_labs.protocols.BaseProtocol.sampleRateForMode(mode); %#ok<MCSUP>
+        end
+
         function didSetRig(obj)
-            didSetRig@symphonyui.core.Protocol(obj);
-            
+            didSetRig@symphonyui.core.Protocol(obj);   % sets sampleRate from the rig
+            obj.sampleRate = sa_labs.protocols.BaseProtocol.sampleRateForMode(obj.chan1Mode);
+
             obj.ampList = horzcat({'None'}, obj.rig.getDeviceNames('Amp'));
             
             obj.chan1Type = symphonyui.core.PropertyType('char', 'row', obj.ampList(2:end)); % first channel should always be filled
@@ -291,6 +299,20 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
         end
 
     end
-    
+
+    methods (Static)
+
+        function rate = sampleRateForMode(mode)
+            % 10 kHz for cell-attached recordings, 50 kHz for whole-cell and
+            % perforated-patch recordings (lab convention).
+            if strcmpi(strtrim(char(mode)), 'Cell attached')
+                rate = 10000;
+            else
+                rate = 50000;
+            end
+        end
+
+    end
+
 end
 
