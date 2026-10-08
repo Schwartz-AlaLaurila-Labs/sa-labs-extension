@@ -23,7 +23,15 @@ classdef SealAndLeak < sa_labs.protocols.BaseProtocol
     end
     
     methods
-        
+
+        function obj = SealAndLeak()
+            obj@sa_labs.protocols.BaseProtocol();
+            % The amp stimulus repeats indefinitely, so the finite Stim Time
+            % Recorder pulse can never match its duration ("All Epoch stimuli
+            % must have equal duration"). Off by default here.
+            obj.stimTimeRecord = false;
+        end
+
         function s = get.ampHoldSignal(obj)
             if strcmpi(obj.mode, 'seal')
                 s = 0;

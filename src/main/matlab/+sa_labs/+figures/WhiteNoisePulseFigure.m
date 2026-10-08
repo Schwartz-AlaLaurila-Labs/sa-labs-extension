@@ -56,7 +56,6 @@ classdef WhiteNoisePulseFigure < symphonyui.core.FigureHandler
             
             set(obj.figureHandle, 'Name', 'Ramp Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
-            set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
             fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);

@@ -61,7 +61,6 @@ classdef ShapeResponseFigure < symphonyui.core.FigureHandler
             import appbox.*;
             
             set(obj.figureHandle, 'MenuBar', 'none');
-            set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
             fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);

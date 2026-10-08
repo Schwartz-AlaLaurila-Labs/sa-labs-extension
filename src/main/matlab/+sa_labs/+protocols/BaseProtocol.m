@@ -151,7 +151,13 @@ classdef (Abstract) BaseProtocol < symphonyui.core.Protocol
                     'spikeThreshold', obj.spikeThreshold, ...
                     'spikeDetectorMode', obj.spikeDetectorMode);
             end
-            
+
+            % Protocols that drive the amplifier directly also get the
+            % delivered stimulus plotted above the response.
+            if obj.responsePlotMode ~= false && ismethod(obj, 'createAmpStimulus') && ~isempty(obj.devices)
+                obj.showFigure('sa_labs.figures.StimulusResponseFigure', obj.devices);
+            end
+
         end
         
         function prepareEpoch(obj, epoch)

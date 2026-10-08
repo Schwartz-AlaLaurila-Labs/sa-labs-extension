@@ -56,7 +56,6 @@ classdef RampFigure < symphonyui.core.FigureHandler
             
             set(obj.figureHandle, 'Name', 'Ramp Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
-            set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
             fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);
@@ -113,7 +112,17 @@ classdef RampFigure < symphonyui.core.FigureHandler
 
             %if spikeTimes is 0 -> preTime
             % if spikes Times is preTime -> current = 0
-            spikeCurrents = (spikeTimes - obj.analysisRegion(1)) * obj.slope;
+            % Ramp v2 varies the slope per epoch (currentRampSlope); fall back
+            % to the constructor slope for single-slope runs.
+            epochSlope = obj.slope(1);
+            try
+                p = epoch.parameters;
+                if p.isKey('currentRampSlope')
+                    epochSlope = p('currentRampSlope');
+                end
+            catch
+            end
+            spikeCurrents = (spikeTimes - obj.analysisRegion(1)) * epochSlope;
             
             
             if ~isempty(spikeCurrents)
@@ -133,7 +142,7 @@ classdef RampFigure < symphonyui.core.FigureHandler
             histogram(obj.responseAxis, firstSpikeCurrents,'numbins',20);
 
             
-            xlim(obj.responseAxis, [0, (obj.analysisRegion(2) - obj.analysisRegion(1))*obj.slope]);
+            xlim(obj.responseAxis, [0, (obj.analysisRegion(2) - obj.analysisRegion(1))*max(obj.slope)]);
 
             titleStr = sprintf('Mean: %0.02f, Median: %0.02f, Mode: %0.02f', nanmean(firstSpikeCurrents), nanmedian(firstSpikeCurrents), mode(firstSpikeCurrents));
             title(obj.responseAxis, titleStr);

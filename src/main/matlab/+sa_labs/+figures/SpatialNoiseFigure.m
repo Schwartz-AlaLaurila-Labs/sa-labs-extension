@@ -167,7 +167,6 @@ classdef SpatialNoiseFigure < symphonyui.core.FigureHandler
             set(obj.figureHandle, 'Name', sprintf('Spatial Noise Figure: %s', obj.device.name));
             
             set(obj.figureHandle, 'MenuBar', 'none');
-            set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
             fullBox = sa_labs.util.ui.vbox('Parent', obj.figureHandle, 'Spacing',10);

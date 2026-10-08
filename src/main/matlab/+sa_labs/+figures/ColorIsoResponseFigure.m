@@ -96,7 +96,6 @@ classdef ColorIsoResponseFigure < symphonyui.core.FigureHandler
             
             set(obj.figureHandle, 'Name', 'Color Response Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
-            set(obj.figureHandle, 'GraphicsSmoothing', 'on');
             set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
             
             obj.handles.figureBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing',10);
