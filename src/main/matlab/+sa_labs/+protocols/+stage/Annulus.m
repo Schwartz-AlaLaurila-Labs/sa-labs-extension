@@ -1,16 +1,16 @@
 classdef Annulus < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 250                   % Annulus leading duration (ms)
+        preTime = 500                   % Annulus leading duration (ms)
         stimTime = 1000                 % Annulus duration (ms)
-        tailTime = 500                 % Annulus trailing duration (ms)
-        intensity = 1.0                 % Annulus light intensity (0-1)
+        tailTime = 1000                 % Annulus trailing duration (ms)
+        intensity = 0.2                 % Annulus light intensity (0-1)
         minInnerDiam = 10               % Minimum inner diameter of annulus (um)
         minOuterDiam = 200              % Minimum outer diameter of annulus  (um)
         maxInnerDiam = 400              % Maximum Inner diamater (um)
-        numberOfSizeSteps = 10          % Number of steps
-        numberOfCycles = 2              % Number of cycles through all annuli
-        keepConstant = 'area'           % keep area (or) thickness as constant
+        numberOfSizeSteps = 12          % Number of steps
+        numberOfCycles = 3              % Number of cycles through all annuli
+        keepConstant = 'thickness'           % keep area (or) thickness as constant
     end
     
     properties (Hidden)

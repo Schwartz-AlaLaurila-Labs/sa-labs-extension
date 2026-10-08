@@ -15,8 +15,8 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
         
         seed = -1 %-1 to use global stream, else a non-negative integer
         
-        numIntensities = 1
-        minIntensity = 1
+        numIntensities = 4
+        minIntensity = 0.2
         maxIntensity = 1
         
     end

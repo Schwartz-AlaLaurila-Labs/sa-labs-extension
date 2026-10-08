@@ -1,19 +1,19 @@
 classdef ContrastResponse < sa_labs.protocols.StageProtocol
     
     properties
-        preTime = 250                   % Spot leading duration (ms)
-        stimTime = 500                  % Spot duration (ms)
+        preTime = 500                   % Spot leading duration (ms)
+        stimTime = 1000                  % Spot duration (ms)
         tailTime = 1000                 % Spot trailing duration (ms)
         numberOfContrastSteps = 5       % Number of contrast steps (doubled for 'both' directions)
         minContrast = 0.02              % Minimum contrast (0-1)
         maxContrast = 1                 % Maximum contrast (0-1)
-        contrastDirection = 'positive'  % Direction of contrast
+        contrastDirection = 'both'  % Direction of contrast
         shape = 'ellipse'               % The shape of the stimulus (circle or square)
         uniformXY = true                % Should the X and Y size be uniform (eg. circle or ellipse)
         spotDiameter = 200              % Spot diameter (um)
         sizeY = 200                     % Length of Y (um)
         sizeX = 200                     % Length of Y (um)
-        numberOfCycles = 2              % Number of cycles through all contrasts
+        numberOfCycles = 4              % Number of cycles through all contrasts
         
     end
     

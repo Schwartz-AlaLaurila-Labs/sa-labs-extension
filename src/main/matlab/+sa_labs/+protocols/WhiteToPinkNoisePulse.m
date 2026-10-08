@@ -2,15 +2,15 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
     properties
         outputAmpSelection = 1
         preTime = 500
-        stimTime = 1000
+        stimTime = 5000
         tailTime = 500
         amplitude = 0 %pA
         std = 20 %pA
         frequency = 100 %Hz
-        betas = [0,1] % Spectral slope of the noise (0=white, 1=pink)
-        numberOfEpochsPerBeta = uint16(5) % Number of epochs for each Beta value
+        betas = [0, 0.5, 1] % Spectral slope of the noise (0=white, 1=pink)
+        numberOfEpochsPerBeta = uint16(6) % Number of epochs for each Beta value
         seedStartValue = 1
-        seedChangeMode = 'increment only';
+        seedChangeMode = 'repeat & increment';
     end
     
     properties (Hidden)

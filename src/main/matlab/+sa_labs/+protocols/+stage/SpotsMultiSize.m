@@ -6,7 +6,7 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
         tailTime = 1000	% Spot trailing duration (ms)
         
         %mean (bg) and amplitude of pulse
-        intensity = 0.5;
+        intensity = 0.2;
         
         %Option to pick specific spot sizes
         pickSpecificSizes = false;
