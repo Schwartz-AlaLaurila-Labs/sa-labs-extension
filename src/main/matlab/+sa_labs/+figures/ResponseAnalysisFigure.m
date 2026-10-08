@@ -6,7 +6,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         numChannels
         activeFunctionNames
         epochData
-        allMeasurementNames = {'mean','var','max','min','sum','std'};
+        allMeasurementNames = {'mean','var','max','min','sum','std','amplitude','spikeCount'};
         plotMode
         responseAxis
         responseAxisSpikeRate
@@ -21,17 +21,29 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
         spikeThreshold
         spikeDetectorMode
         spikeRateBinLength
+
+        % Whole cell only. 'spikes': count spikes found by a simple absolute
+        % threshold on upward crossings (wholeCellSpikeThreshold, mV) and plot
+        % spike rate, like cell-attached. 'amplitude': blank the spikes, subtract
+        % the pre-stimulus baseline and report the signed peak deviation
+        % ('amplitude' measurement). '' = pick from the units of the first epoch
+        % (mV -> spikes, pA -> amplitude). A radio button in the figure switches.
+        wholeCellMode = ''
+        wholeCellSpikeThreshold = -10
     end
-    
+
     properties % not private access
-        
+
     end
-    
+
     properties (Access = private)
         axesHandlesAnalysis
-        
+
         markers
         spikeDetector
+        modeGroup           % uibuttongroup with the whole-cell mode radios
+        thresholdEdit       % edit box for wholeCellSpikeThreshold
+        measListBoxes       % measurement list boxes, one per analysis row
     end
     
     methods
@@ -49,7 +61,11 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             ip.addParameter('spikeRateBinLength', 0.05, @(x)isnumeric(x));
             ip.addParameter('totalNumEpochs',1,@(x)isnumeric(x));
             ip.addParameter('analysisRegion',[0,inf]);
+            ip.addParameter('wholeCellMode', '', @(x)ischar(x));
+            ip.addParameter('wholeCellSpikeThreshold', -10, @(x)isnumeric(x) && isscalar(x));
             ip.parse(varargin{:});
+            obj.wholeCellMode = ip.Results.wholeCellMode;
+            obj.wholeCellSpikeThreshold = ip.Results.wholeCellSpikeThreshold;
             
             obj.devices = devices;
             obj.numChannels = length(obj.devices);
@@ -97,6 +113,26 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             obj.responseAxis = axes('Parent', uicontainer('Parent', leftBox));%, 'Units', 'normalized','Position',[.1 .1 .5 .5]);
             if strcmp(obj.responseMode, 'Cell attached')
                 obj.responseAxisSpikeRate = axes('Parent', uicontainer('Parent', leftBox));
+            end
+
+            % whole cell: response-variable mode radios + spike threshold
+            obj.modeGroup = [];
+            obj.thresholdEdit = [];
+            if strcmp(obj.responseMode, 'Whole cell')
+                modeRow = sa_labs.util.ui.hbox('Parent', leftBox, 'Spacing', 6);
+                obj.modeGroup = uibuttongroup('Parent', modeRow, 'BorderType', 'none', ...
+                    'SelectionChangedFcn', @(~, ev)obj.modeChangedCallback(ev));
+                uicontrol(obj.modeGroup, 'Style', 'radiobutton', 'String', 'Spike count', ...
+                    'Tag', 'spikes', 'Units', 'normalized', 'Position', [0.02 0.1 0.38 0.8]);
+                uicontrol(obj.modeGroup, 'Style', 'radiobutton', 'String', 'Amplitude (spikes removed)', ...
+                    'Tag', 'amplitude', 'Units', 'normalized', 'Position', [0.42 0.1 0.56 0.8]);
+                obj.applyModeToRadios();
+                uicontrol('Style', 'text', 'Parent', modeRow, 'String', 'spike threshold (mV)', ...
+                    'HorizontalAlignment', 'right');
+                obj.thresholdEdit = uicontrol('Style', 'edit', 'Parent', modeRow, ...
+                    'String', num2str(obj.wholeCellSpikeThreshold), 'Back', 'w', ...
+                    'Callback', @(h, ~)obj.thresholdChangedCallback(h));
+                sa_labs.util.ui.setSizes(modeRow, [-1 130 60]);
             end
             
             % bottom left analysis over param
@@ -147,8 +183,9 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             if strcmp(obj.responseMode, 'Cell attached')
                 boxHeights = [-.6, -.5];
             else
-                boxHeights = -1;
+                boxHeights = [-1, 26];   % response axes + mode row
             end
+            obj.measListBoxes = measListBoxes;
             sa_labs.util.ui.setSizes(leftBox, horzcat(boxHeights, -1 * ones(1,length(obj.activeFunctionNames)), 30));
             
             % right side signals over time for each param value
@@ -177,6 +214,164 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             index_selected = get(hObject,'Value');
             item_selected = items{index_selected};
             obj.activeFunctionNames{measi} = item_selected;
+        end
+
+        function modeChangedCallback(obj, ev)
+            % Whole-cell radio: spikes <-> amplitude. Reprocess everything
+            % recorded so far from the raw signals and redraw.
+            try
+                obj.wholeCellMode = get(ev.NewValue, 'Tag');
+            catch
+                return;
+            end
+            obj.selectDefaultMeasureForMode();
+            obj.reprocessAllEpochs();
+            obj.redrawPlots();
+        end
+
+        function thresholdChangedCallback(obj, h)
+            v = str2double(get(h, 'String'));
+            if isnan(v)
+                set(h, 'String', num2str(obj.wholeCellSpikeThreshold));
+                return;
+            end
+            obj.wholeCellSpikeThreshold = v;
+            obj.reprocessAllEpochs();
+            obj.redrawPlots();
+        end
+
+        function applyModeToRadios(obj)
+            if isempty(obj.modeGroup) || ~isvalid(obj.modeGroup) || isempty(obj.wholeCellMode)
+                return;
+            end
+            r = findobj(obj.modeGroup, 'Tag', obj.wholeCellMode);
+            if ~isempty(r)
+                obj.modeGroup.SelectedObject = r(1);
+            end
+        end
+
+        function selectDefaultMeasureForMode(obj)
+            % The protocol's default measure is 'mean'; in whole-cell mode the
+            % natural response variables are spikeCount / amplitude. Only
+            % replace the default, never a measure the user picked.
+            if ~strcmp(obj.responseMode, 'Whole cell') || isempty(obj.wholeCellMode)
+                return;
+            end
+            if strcmp(obj.wholeCellMode, 'spikes')
+                want = 'spikeCount';
+                other = 'amplitude';
+            else
+                want = 'amplitude';
+                other = 'spikeCount';
+            end
+            changed = false;
+            for i = 1:numel(obj.activeFunctionNames)
+                if any(strcmp(obj.activeFunctionNames{i}, {'mean', other}))
+                    obj.activeFunctionNames{i} = want;
+                    changed = true;
+                end
+            end
+            if changed
+                for i = 1:numel(obj.measListBoxes)
+                    try
+                        set(obj.measListBoxes(i), 'Value', find(strcmp(obj.allMeasurementNames, obj.activeFunctionNames{i}), 1));
+                    catch
+                    end
+                end
+            end
+        end
+
+        function reprocessAllEpochs(obj)
+            for ei = 1:numel(obj.epochData)
+                for ci = 1:numel(obj.epochData{ei})
+                    e = obj.epochData{ei}{ci};
+                    if isempty(e), continue; end
+                    obj.epochData{ei}{ci} = obj.processChannel(e);
+                end
+            end
+        end
+
+        function e = processChannel(obj, e)
+            % Turn e.rawSignal into e.signal / e.spikeTimes / e.measurements
+            % according to the recording mode (and, for whole cell, the
+            % selected response-variable mode).
+            msToPts = @(ms) max(1, round(ms * 1e-3 * e.sampleRate));
+            e.spikeTimes = [];
+            if strcmp(obj.responseMode, 'Cell attached')
+                result = obj.spikeDetector.detectSpikes(e.rawSignal);
+                spikeFrames = result.sp;
+                e.spikeTimes = e.t(spikeFrames);
+                e.signal = obj.spikeRateSignal(e.spikeTimes, e.t);
+            else
+                if isempty(obj.wholeCellMode)
+                    % first epoch decides: voltages have spikes, currents do not
+                    if contains(lower(char(e.units)), 'v')
+                        obj.wholeCellMode = 'spikes';
+                    else
+                        obj.wholeCellMode = 'amplitude';
+                    end
+                    obj.applyModeToRadios();
+                    obj.selectDefaultMeasureForMode();
+                end
+                isVoltage = contains(lower(char(e.units)), 'v');
+                spikeFrames = [];
+                if isVoltage
+                    spikeFrames = sa_labs.figures.ResponseAnalysisFigure.simpleThresholdSpikes( ...
+                        e.rawSignal, obj.wholeCellSpikeThreshold, e.sampleRate);
+                end
+                e.spikeTimes = e.t(spikeFrames);
+                if strcmp(obj.wholeCellMode, 'spikes')
+                    e.signal = obj.spikeRateSignal(e.spikeTimes, e.t);
+                else
+                    sig = e.rawSignal(:)';
+                    if ~isempty(spikeFrames)
+                        sig = sa_labs.figures.ResponseAnalysisFigure.removeSpikes(sig, spikeFrames, msToPts(1), msToPts(3));
+                    end
+                    pre = e.t < obj.analysisRegion(1);
+                    if any(pre)
+                        baseline = mean(sig(pre));
+                    else
+                        baseline = mean(sig);
+                    end
+                    e.signal = sig - baseline;
+                end
+            end
+
+            e.measurements = containers.Map();
+            inRegion = e.t > obj.analysisRegion(1) & e.t < obj.analysisRegion(2);
+            signalInAnalysisRegion = e.signal(inRegion);
+            for i = 1:numel(obj.allMeasurementNames)
+                name = obj.allMeasurementNames{i};
+                switch name
+                    case 'amplitude'
+                        % signed peak deviation from baseline (0 for the
+                        % baseline-subtracted whole-cell signal)
+                        if isempty(signalInAnalysisRegion)
+                            result = NaN;
+                        else
+                            [~, k] = max(abs(signalInAnalysisRegion));
+                            result = signalInAnalysisRegion(k);
+                        end
+                    case 'spikeCount'
+                        result = nnz(e.spikeTimes > obj.analysisRegion(1) & e.spikeTimes < obj.analysisRegion(2));
+                    otherwise
+                        fcn = str2func(name);
+                        result = fcn(signalInAnalysisRegion);
+                end
+                e.measurements(name) = result;
+            end
+        end
+
+        function rate = spikeRateSignal(obj, spikeTimes, t)
+            spikeBins = [0:obj.spikeRateBinLength:max(t), inf];
+            spikeRate_binned = histcounts(spikeTimes, spikeBins);
+            if numel(spikeBins) - 1 < 2
+                rate = zeros(size(t));
+                return;
+            end
+            rate = interp1(spikeBins(1:end-1), spikeRate_binned, t, 'pchip');
+            rate = rate / obj.spikeRateBinLength;
+            rate = rate(:)';
         end
         
         function deletePlotCallback(obj, ~, ~, measi)
@@ -235,53 +430,7 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 end
 %                     msToPts = @(t)max(round(t / 1e3 * e.sampleRate), 1);
 
-                if strcmp(obj.responseMode, 'Whole cell')
-                    e.signal = e.rawSignal;
-                    e.spikeTimes = [];
-                else
-                    % Extract spikes from signal
-                    result = obj.spikeDetector.detectSpikes(e.rawSignal);
-                    spikeFrames = result.sp;
-                    e.spikeTimes = e.t(spikeFrames);
-
-                    % Generate spike rate signals
-%                         spikeRate = zeros(size(e.rawSignal));
-%                         spikeRate(spikeFrames) = 1.0;
-                    spikeBins = [0:obj.spikeRateBinLength:max(e.t), inf];
-                    spikeRate_binned = histcounts(e.spikeTimes, spikeBins);
-%                         spikeRate_smoothed = resample(spikeRate_binned, spikeBins(1:end-1), e.sampleRate);
-                    spikeRate_smoothed = interp1(spikeBins(1:end-1), spikeRate_binned, e.t, 'pchip');
-%                         whos spikeRate_smoothed
-%                         f = hann(e.sampleRate / 10);
-%                         spikeRate_smoothed = filtfilt(f, 1, spikeRate); % 10 ms (100 samples) window filter
-                    spikeRate_smoothed = spikeRate_smoothed / obj.spikeRateBinLength;
-                    e.signal = spikeRate_smoothed';
-
-                end
-
-                % setup time regions for analysis
-                % remove baseline signal
-                %             if ~isempty(obj.baselineRegion)
-                %                 x1 = msToPts(obj.baselineRegion(1));
-                %                 x2 = msToPts(obj.baselineRegion(2));
-                %                 baseline = e.signal(x1:x2);
-                %                 e.signal = e.signal - mean(baseline);
-                %             end
-
-%                     if ~isempty(obj.measurementRegion)
-%                         x1 = msToPts(obj.measurementRegion(1));
-%                         x2 = msToPts(obj.measurementRegion(2));
-%                         e.signal = e.signal(x1:x2);
-%                     end
-
-                % make analysis measurements
-                e.measurements = containers.Map();
-                signalInAnalysisRegion = e.signal(e.t > obj.analysisRegion(1) & e.t < obj.analysisRegion(2));
-                for i = 1:numel(obj.allMeasurementNames)
-                    fcn = str2func(obj.allMeasurementNames{i});
-                    result = fcn(signalInAnalysisRegion);
-                    e.measurements(obj.allMeasurementNames{i}) = result;
-                end
+                e = obj.processChannel(e);
 
                 channels{ci} = e;
             end
@@ -318,13 +467,15 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
                 ylabel(obj.responseAxis, epoch.units, 'Interpreter', 'none');                
                 
+                if ~isempty(epoch.spikeTimes)
+                    % mark detected spikes (cell attached, or whole cell with a threshold)
+                    [~, spikeFrames] = ismember(epoch.spikeTimes, epoch.t);
+                    spikeFrames = spikeFrames(spikeFrames > 0);
+                    plot(obj.responseAxis, epoch.t(spikeFrames), signal(spikeFrames), '.');
+                end
                 if strcmp(obj.responseMode, 'Cell attached')
-                    % plot spikes detected
                     spikeTimes = epoch.spikeTimes;
-                    [~, spikeFrames] = ismember(spikeTimes, epoch.t);
-                    spikeHeights = signal(spikeFrames);
-                    plot(obj.responseAxis, spikeTimes, spikeHeights, '.');
-                    
+
                     h = plot(obj.responseAxisSpikeRate, epoch.t, epoch.signal, 'Color', color, 'LineWidth', 3);
                     hold(obj.responseAxisSpikeRate, 'on')
                     ylim(obj.responseAxisSpikeRate, [0, max(epoch.signal) * 1.1 + .1]);
@@ -567,5 +718,46 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 end
             end
         end
+
+        function h = getFigureHandle(obj)
+            h = obj.figureHandle;
+        end
+    end
+
+    methods (Static)
+
+        function idx = simpleThresholdSpikes(signal, threshold, sampleRate)
+            % Upward crossings of an absolute threshold, with a 2 ms refractory
+            % period so one spike is counted once. Returns sample indices.
+            s = signal(:)';
+            idx = find(s(1:end-1) < threshold & s(2:end) >= threshold) + 1;
+            if numel(idx) > 1
+                minSep = max(1, round(2e-3 * sampleRate));
+                keep = true(size(idx));
+                last = idx(1);
+                for k = 2:numel(idx)
+                    if idx(k) - last < minSep
+                        keep(k) = false;
+                    else
+                        last = idx(k);
+                    end
+                end
+                idx = idx(keep);
+            end
+        end
+
+        function s = removeSpikes(signal, spikeIdx, prePts, postPts)
+            % Replace each spike (prePts before to postPts after its threshold
+            % crossing) by a straight line between the surrounding samples.
+            s = signal(:)';
+            n = numel(s);
+            for k = 1:numel(spikeIdx)
+                a = max(1, spikeIdx(k) - prePts);
+                b = min(n, spikeIdx(k) + postPts);
+                if b - a < 2, continue; end
+                s(a:b) = linspace(s(a), s(b), b - a + 1);
+            end
+        end
+
     end
 end
