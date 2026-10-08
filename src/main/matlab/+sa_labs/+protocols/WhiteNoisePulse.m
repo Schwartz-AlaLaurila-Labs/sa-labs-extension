@@ -14,7 +14,7 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
     
     properties (Hidden)
         responsePlotMode = 'cartesian'
-        responsePlotSplitParameter = ''; %'pulseAmplitude';
+        responsePlotSplitParameter = 'randomSeed';   % mean responses separated by noise seed
         seedChangeModeType = symphonyui.core.PropertyType('char', 'row', {'repeat only', 'repeat & increment', 'increment only',});
         randomSeed;
     end
