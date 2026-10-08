@@ -28,6 +28,11 @@ classdef Ramp < sa_labs.protocols.BaseProtocol
 
     methods
 
+        function obj = Ramp()
+            obj@sa_labs.protocols.BaseProtocol();
+            obj.chan1Mode = 'Whole cell';   % this protocol only; the base default is unchanged
+        end
+
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
             obj.slopeOrder = obj.rampSlope(:)';
