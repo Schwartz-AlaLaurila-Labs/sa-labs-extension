@@ -119,15 +119,14 @@ classdef MovingObject < sa_labs.protocols.StageProtocol
             xStartPos = canvasSize(1)/2 - (pixelDistance / 2) * cosd(currentDirection) + pixelOffset * cosd(currentDirection - 90);
             yStartPos = canvasSize(2)/2 - (pixelDistance / 2) * sind(currentDirection) + pixelOffset * sind(currentDirection - 90);
             
-            function pos = movementController(state)
-                pos = [NaN, NaN];
-                t = state.time - obj.preTime * 1e-3 + cts * 1e-3;
-                if t >= 0 && t < obj.stimTime * 1e-3
-                    pos = [xStartPos + t * xStep, yStartPos + t * yStep];
-                end
-            end
-            
-            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', @(state)movementController(state));
+            % Controller closures are serialized to the Stage server: capture
+            % plain values, never obj or a nested function (which shares this
+            % workspace and drags obj along).
+            tOffsetS = (cts - obj.preTime) * 1e-3;
+            stimTimeS = obj.stimTime * 1e-3;
+            movementController = @(state) sa_labs.protocols.StageProtocol.linearPosition( ...
+                state.time + tOffsetS, stimTimeS, xStartPos, yStartPos, xStep, yStep);
+            objectMovement = stage.builtin.controllers.PropertyController(object, 'position', movementController);
             p.addController(objectMovement);
             
             obj.setOnDuringStimController(p, object);

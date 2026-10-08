@@ -749,7 +749,22 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
         end
 
     end
-    
 
+    methods (Static)
+
+        function pos = linearPosition(t, stimTime, x0, y0, xStep, yStep)
+            % Position of a linearly moving stage object at time t (s after
+            % stimulus onset): [NaN NaN] outside [0, stimTime). Used by the
+            % moving-bar/object controllers; a static method keeps the
+            % controller closure free of the protocol object so it can be
+            % serialized to the Stage server.
+            if t >= 0 && t < stimTime
+                pos = [x0 + t * xStep, y0 + t * yStep];
+            else
+                pos = [NaN, NaN];
+            end
+        end
+
+    end
 
 end

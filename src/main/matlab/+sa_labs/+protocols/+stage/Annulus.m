@@ -54,14 +54,16 @@ classdef Annulus < sa_labs.protocols.StageProtocol
             outerCircle.position = [canvasSize(1)/2,  canvasSize(2)/2];
             p.addStimulus(outerCircle);
             
-            function i = onDuringStim(state)
-                i = obj.meanLevel;
-                if state.time >= obj.preTime * 1e-3 && state.time < (obj.preTime + obj.stimTime) * 1e-3
-                    i = obj.intensity;
-                end
-            end
-            
-            outerVisible = stage.builtin.controllers.PropertyController(outerCircle, 'color', @(state)onDuringStim(state));
+            % The controller closure is serialized to the Stage server, so it
+            % must capture plain values only. A nested function here would
+            % capture obj (the whole protocol with its .NET handles) and fail
+            % on the server, leaving no frames and hence no acquisition trigger.
+            preTime = obj.preTime * 1e-3;
+            stimEnd = (obj.preTime + obj.stimTime) * 1e-3;
+            intensity = obj.intensity;   %#ok<*PROP>
+            meanLevel = obj.meanLevel;
+            outerVisible = stage.builtin.controllers.PropertyController(outerCircle, 'color', ...
+                @(state) meanLevel + (intensity - meanLevel) * (state.time >= preTime && state.time < stimEnd));
             p.addController(outerVisible);
             
             spotDiameterPix = obj.um2pix(obj.curInnerDiameter);

@@ -77,15 +77,14 @@ classdef MovingBar < sa_labs.protocols.StageProtocol
             xStartPos = canvasSize(1)/2 - (pixelDistance / 2 + stepBack) * cosd(obj.barAngle);
             yStartPos = canvasSize(2)/2 - (pixelDistance / 2 + stepBack) * sind(obj.barAngle);
             
-            function pos = movementController(state)
-                pos = [NaN, NaN];
-                t = state.time - obj.preTime * 1e-3;
-                if t >= 0 && t < obj.stimTime * 1e-3
-                    pos = [xStartPos + t * xStep, yStartPos + t * yStep];
-                end
-            end
-            
-            barMovement = stage.builtin.controllers.PropertyController(bar, 'position', @(state)movementController(state));
+            % Controller closures are serialized to the Stage server: capture
+            % plain values, never obj or a nested function (which shares this
+            % workspace and drags obj along).
+            preTimeS = obj.preTime * 1e-3;
+            stimTimeS = obj.stimTime * 1e-3;
+            movementController = @(state) sa_labs.protocols.StageProtocol.linearPosition( ...
+                state.time - preTimeS, stimTimeS, xStartPos, yStartPos, xStep, yStep);
+            barMovement = stage.builtin.controllers.PropertyController(bar, 'position', movementController);
             p.addController(barMovement);
             
             

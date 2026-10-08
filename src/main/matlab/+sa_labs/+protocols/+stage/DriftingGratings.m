@@ -106,17 +106,13 @@ classdef DriftingGratings < sa_labs.protocols.StageProtocol
             posControllerFunc = stage.builtin.controllers.PropertyController(grat, 'position', @(s)posController(s, p.duration, obj.preTime, obj.tailTime, centerPos));
             p.addController(posControllerFunc);
             
-            function phase = phaseController(state, startMovementTime, temporalFreq)
-                
-                if state.time > startMovementTime
-                    phase = -360 * (state.time - startMovementTime) * temporalFreq;
-                else
-                    phase = 0;
-                end
-            end
+            % Controller closures are serialized to the Stage server: an
+            % anonymous function over plain values, not a nested function
+            % (which shares this workspace and drags obj along).
             startMovementTime = (obj.preTime/1E3 + obj.movementDelay/1E3);
             tf = obj.gratingSpeed/(2*obj.cycleHalfWidth);
-            phaseControllerFunc = stage.builtin.controllers.PropertyController(grat, 'phase', @(state)phaseController(state, startMovementTime, tf));
+            phaseControllerFunc = stage.builtin.controllers.PropertyController(grat, 'phase', ...
+                @(state) -360 * max(state.time - startMovementTime, 0) * tf);
             p.addController(phaseControllerFunc);
             
             %             obj.addFrameTracker(p);
