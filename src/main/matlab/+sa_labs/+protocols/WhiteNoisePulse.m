@@ -2,14 +2,14 @@ classdef WhiteNoisePulse < sa_labs.protocols.BaseProtocol
     properties
         outputAmpSelection = 1
         preTime = 500
-        stimTime = 1000
+        stimTime = 5000
         tailTime = 500
         amplitude = 0 %pA
         std = 20 %pA
         frequency = 100 %Hz
         numberOfEpochs = 5
         seedStartValue = 1
-        seedChangeMode = 'increment only';
+        seedChangeMode = 'repeat & increment';
     end
     
     properties (Hidden)
