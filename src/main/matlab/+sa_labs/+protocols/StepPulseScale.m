@@ -39,7 +39,15 @@ classdef StepPulseScale < sa_labs.protocols.BaseProtocol
             
         end
         
-        function stim = createAmpStimulus(obj)
+        function stim = createAmpStimulus(obj, ampName)
+            if nargin < 2, ampName = sprintf('amp%g', obj.outputAmpSelection); end
+            % Current steps: the amplifier must be in current clamp. In voltage clamp
+            % the command units are mV and Symphony rejects a pA stimulus with the
+            % unhelpful "Sample units must be in Volts".
+            units = obj.rig.getDevice(ampName).background.displayUnits;
+            if ~strcmp(units, 'pA')
+                error('StepPulseScale delivers current steps (pA): switch %s to current clamp (it is in a mode with %s command units)', ampName, units);
+            end
             gen = symphonyui.builtin.stimuli.PulseGenerator();
             gen.preTime = obj.preTime;
             gen.stimTime = obj.scaledStimTime;
@@ -47,7 +55,7 @@ classdef StepPulseScale < sa_labs.protocols.BaseProtocol
             gen.amplitude = obj.scaledAmplitude;
             gen.mean = 0;
             gen.sampleRate = obj.sampleRate;
-            gen.units = 'pA';
+            gen.units = units;
             
             stim = gen.generate();
         end
