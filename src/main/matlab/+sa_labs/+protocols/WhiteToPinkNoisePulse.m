@@ -29,6 +29,11 @@ classdef WhiteToPinkNoisePulse < sa_labs.protocols.BaseProtocol
     end
     
     methods
+        function obj = WhiteToPinkNoisePulse()
+            obj@sa_labs.protocols.BaseProtocol();
+            obj.chan1Mode = 'Whole cell';   % this protocol only; the base default is unchanged
+        end
+
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.BaseProtocol(obj);
             allBetas = repelem(obj.betas, obj.numberOfEpochsPerBeta);
