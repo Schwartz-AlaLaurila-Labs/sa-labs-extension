@@ -97,7 +97,13 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             
             set(obj.figureHandle, 'Name', 'Response Analysis Figure');
             set(obj.figureHandle, 'MenuBar', 'none');
-            set(obj.figureHandle, 'DefaultAxesFontSize',8, 'DefaultTextFontSize',8);
+            set(obj.figureHandle, 'Color', 'w');
+            set(obj.figureHandle, 'DefaultAxesFontSize', 9, 'DefaultTextFontSize', 9, ...
+                'DefaultAxesBox', 'off', 'DefaultAxesTickDir', 'out', 'DefaultAxesTickLength', [0.01 0.01], ...
+                'DefaultAxesXColor', [0.25 0.25 0.25], 'DefaultAxesYColor', [0.25 0.25 0.25], ...
+                'DefaultAxesGridColor', [0.85 0.85 0.85], 'DefaultAxesGridAlpha', 1, ...
+                'DefaultUicontrolFontSize', 9, 'DefaultUicontrolBackgroundColor', 'w', ...
+                'DefaultUipanelBackgroundColor', 'w', 'DefaultUicontainerBackgroundColor', 'w');
             
             fullBox = sa_labs.util.ui.hbox('Parent', obj.figureHandle, 'Spacing', 10);
             leftBox = sa_labs.util.ui.vbox('Parent', fullBox, 'Spacing', 10);
@@ -159,20 +165,24 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                         %obj.axesHandlesAnalysis(measi) = axes('Parent', rowBoxes(measi));
                 end
                 
-                plotControlBoxes(measi) = sa_labs.util.ui.vbox('Parent', rowBoxes(measi));
-                
-                thisFuncIndex = find(not(cellfun('isempty', strfind(obj.activeFunctionNames, funcName))), 1);
-                
+                plotControlBoxes(measi) = sa_labs.util.ui.vbox('Parent', rowBoxes(measi), 'Spacing', 2);
+
+                thisFuncIndex = find(strcmp(obj.allMeasurementNames, funcName), 1);
+                if isempty(thisFuncIndex), thisFuncIndex = 1; end
+
+                uicontrol('Style', 'text', 'Parent', plotControlBoxes(measi), 'String', 'response measure', ...
+                    'HorizontalAlignment', 'left', 'ForegroundColor', [0.3 0.3 0.3]);
                 measListBoxes(measi) = uicontrol( 'Style', 'listbox', 'Parent', plotControlBoxes(measi), ...
                     'String', obj.allMeasurementNames, 'Value',thisFuncIndex, 'Back', 'w',...
                     'Callback',{@obj.functionSelectorCallback, measi});
+                sa_labs.util.ui.setSizes(plotControlBoxes(measi), [18 -1]);
                 
 %                 delPlotButtons(measi) = uicontrol('Style','pushbutton', 'Parent', plotControlBoxes(measi),...
 %                     'String', 'del', 'Callback',{@obj.deletePlotCallback, measi});
                 
 %                 set(plotControlBoxes(measi), 'Heights', [-1, 30])
                 
-                sa_labs.util.ui.setSizes(rowBoxes(measi), [-3 80]);
+                sa_labs.util.ui.setSizes(rowBoxes(measi), [-3 120]);
             end
             
             buttonArea = sa_labs.util.ui.buttonbox('horizontal', 'Parent', leftBox, 'ButtonSize', [100, 30]);
@@ -362,6 +372,27 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
             end
         end
 
+        function u = signalUnits(obj, epoch)
+            % Units of e.signal: spike rate for cell-attached and whole-cell
+            % spike mode, the recorded units otherwise.
+            if strcmp(obj.responseMode, 'Cell attached') || strcmp(obj.wholeCellMode, 'spikes')
+                u = 'spikes / s';
+            else
+                u = char(epoch.units);
+            end
+        end
+
+        function l = measureLabel(obj, funcName, epoch)
+            switch funcName
+                case 'spikeCount'
+                    l = 'spike count';
+                case 'amplitude'
+                    l = ['amplitude (' obj.signalUnits(epoch) ')'];
+                otherwise
+                    l = [funcName ' (' obj.signalUnits(epoch) ')'];
+            end
+        end
+
         function rate = spikeRateSignal(obj, spikeTimes, t)
             spikeBins = [0:obj.spikeRateBinLength:max(t), inf];
             spikeRate_binned = histcounts(spikeTimes, spikeBins);
@@ -464,8 +495,17 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                 
                 hold(obj.responseAxis, 'on');
                 set(obj.responseAxis,'LooseInset',get(obj.responseAxis,'TightInset'))
-                title(obj.responseAxis, sprintf('Previous: %s: %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs))
-                ylabel(obj.responseAxis, epoch.units, 'Interpreter', 'none');                
+                if isempty(obj.epochSplitParameter)
+                    title(obj.responseAxis, sprintf('Last response (%g of %g)', length(obj.epochData), obj.totalNumEpochs), 'FontWeight', 'normal');
+                elseif ischar(epoch.splitParameter)
+                    title(obj.responseAxis, sprintf('Last response: %s = %s (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs), 'FontWeight', 'normal', 'Interpreter', 'none');
+                else
+                    title(obj.responseAxis, sprintf('Last response: %s = %g (%g of %g)', obj.epochSplitParameter, epoch.splitParameter, length(obj.epochData), obj.totalNumEpochs), 'FontWeight', 'normal', 'Interpreter', 'none');
+                end
+                ylabel(obj.responseAxis, epoch.units, 'Interpreter', 'none');
+                xlabel(obj.responseAxis, 'Time (s)');
+                grid(obj.responseAxis, 'on');
+                box(obj.responseAxis, 'off');
                 
                 if ~isempty(epoch.spikeTimes)
                     % mark detected spikes (cell attached, or whole cell with a threshold)
@@ -491,8 +531,8 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
 
             end
             %             legend(obj.responseAxis, obj.channelNames , 'Location', 'east')
-            line(obj.responseAxis, [obj.analysisRegion(1), obj.analysisRegion(1)], ylim(obj.responseAxis),'Color','g')
-            line(obj.responseAxis, [obj.analysisRegion(2), obj.analysisRegion(2)], ylim(obj.responseAxis),'Color','r')
+            line(obj.responseAxis, [obj.analysisRegion(1), obj.analysisRegion(1)], ylim(obj.responseAxis), 'Color', [0.2 0.65 0.2], 'LineStyle', '--')
+            line(obj.responseAxis, [obj.analysisRegion(2), obj.analysisRegion(2)], ylim(obj.responseAxis), 'Color', [0.8 0.25 0.25], 'LineStyle', '--')
             hold(obj.responseAxis, 'off')
             if strcmp(obj.responseMode, 'Cell attached')
                 hold(obj.responseAxisSpikeRate, 'off')
@@ -566,16 +606,32 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     %                 axh = obj.axesHandlesAnalysis
                     thisAxis = obj.axesHandlesAnalysis(measi);
                     if strcmp(obj.plotMode, 'cartesian')
-                        %                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
-                        plot(thisAxis, X, Y, '-o','LineWidth',2, 'Color', color);
-                        hold(thisAxis, 'on');
-                        plot(thisAxis, X, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
-                        plot(thisAxis, X, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
-                        hold(thisAxis, 'off');
-                        if ischar(epoch.splitParameter)
-                            set(thisAxis,'xtick',X);
-                            set(thisAxis,'xticklabel',lX);
+                        if isempty(obj.epochSplitParameter)
+                            % no independent variable: show the measure epoch by epoch
+                            plot(thisAxis, 1:numel(allMeasurementsByEpoch), allMeasurementsByEpoch, '-o', 'LineWidth', 1.5, 'Color', color);
+                            hold(thisAxis, 'on');
+                            if numel(allMeasurementsByEpoch) > 1
+                                plot(thisAxis, [1 numel(allMeasurementsByEpoch)], mean(allMeasurementsByEpoch) * [1 1], '--', 'LineWidth', 1, 'Color', color);
+                            end
+                            hold(thisAxis, 'off');
+                            xlabel(thisAxis, 'epoch');
+                            xlim(thisAxis, [0.5, max(1.5, numel(allMeasurementsByEpoch) + 0.5)]);
+                        else
+                            %                     errorbar(obj.axesHandlesAnalysis(measi), X, Y, Y_std);
+                            plot(thisAxis, X, Y, '-o','LineWidth',2, 'Color', color);
+                            hold(thisAxis, 'on');
+                            plot(thisAxis, X, Y + Y_std, '.--','LineWidth',.5, 'Color', color);
+                            plot(thisAxis, X, Y - Y_std, '.--','LineWidth',.5, 'Color', color);
+                            hold(thisAxis, 'off');
+                            if ischar(epoch.splitParameter)
+                                set(thisAxis,'xtick',X);
+                                set(thisAxis,'xticklabel',lX);
+                            end
+                            xlabel(thisAxis, obj.epochSplitParameter, 'Interpreter', 'none');
                         end
+                        ylabel(thisAxis, obj.measureLabel(funcName, epoch), 'Interpreter', 'none');
+                        grid(thisAxis, 'on');
+                        box(thisAxis, 'off');
                     else
                         %                     axes(obj.axesHandlesAnalysis(measi));
                         
@@ -690,13 +746,20 @@ classdef ResponseAnalysisFigure < symphonyui.core.FigureHandler
                     xlim(thisAxis, [t(1), t(end)])
                     if ~isempty(obj.epochSplitParameter)
                         if ischar(epoch.splitParameter)
-                            titl = title(thisAxis, sprintf('%s: %s, %g repeats', obj.epochSplitParameter, lX{paramValueIndex},numSignalsCombined));
+                            title(thisAxis, sprintf('%s = %s   (mean of %g)', obj.epochSplitParameter, lX{paramValueIndex}, numSignalsCombined), 'FontWeight', 'normal', 'Interpreter', 'none');
                         else
-                            titl = title(thisAxis, sprintf('%s: %g, %g repeats', obj.epochSplitParameter,paramValue,numSignalsCombined));
+                            title(thisAxis, sprintf('%s = %g   (mean of %g)', obj.epochSplitParameter, paramValue, numSignalsCombined), 'FontWeight', 'normal', 'Interpreter', 'none');
                         end
+                    else
+                        title(thisAxis, sprintf('mean of %g epoch(s)', numSignalsCombined), 'FontWeight', 'normal');
                     end
+                    ylabel(thisAxis, obj.signalUnits(epoch), 'Interpreter', 'none');
+                    grid(thisAxis, 'on');
+                    box(thisAxis, 'off');
                     if paramValueIndex < length(X)
                         set(thisAxis, 'XTickLabel', '');
+                    else
+                        xlabel(thisAxis, 'Time (s)');
                     end
                     set(thisAxis,'LooseInset',get(thisAxis,'TightInset')) % remove the blasted whitespace
 
