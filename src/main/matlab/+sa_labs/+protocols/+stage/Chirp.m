@@ -39,7 +39,12 @@ classdef Chirp < sa_labs.protocols.StageProtocol
     end
     
     methods
-        
+
+        function obj = Chirp()
+            obj@sa_labs.protocols.StageProtocol();
+            obj.meanLevel = 0.5;   % this protocol only (the contrast chirp needs a non-zero mean); the base default is unchanged
+        end
+
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);
             
