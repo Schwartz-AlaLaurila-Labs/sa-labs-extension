@@ -65,6 +65,10 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
     end
     
     properties (Hidden)
+        % Per-protocol projector defaults (NDF, uvLED, ...), set in a subclass constructor as
+        % obj.protocolProjectorDefaults = struct('NDF', 3, 'uvLED', 100). didSetRig applies them
+        % after the rig defaults (filterWheelDefaultValue, colorMode LED presets), so they win.
+        protocolProjectorDefaults = struct();
         colorPattern1Type = symphonyui.core.PropertyType('char', 'row', {'green','blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern2Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
         colorPattern3Type = symphonyui.core.PropertyType('char', 'row', {'none','green', 'blue', 'uv', 'blue+green', 'green+uv', 'blue+uv', 'blue+uv+green','red'});
@@ -272,6 +276,12 @@ classdef (Abstract) StageProtocol < sa_labs.protocols.BaseProtocol
                 obj.filterWheelAttenuationValues_Green = filterWheel.getResource('filterWheelAttenuationValues_Green');
                 obj.filterWheelAttenuationValues_UV = filterWheel.getResource('filterWheelAttenuationValues_UV');
                 obj.NDF = filterWheel.getResource('defaultNdfValue');
+            end
+
+            % per-protocol defaults (see protocolProjectorDefaults) override the rig defaults
+            fn = fieldnames(obj.protocolProjectorDefaults);
+            for i = 1:numel(fn)
+                obj.(fn{i}) = obj.protocolProjectorDefaults.(fn{i});
             end
         end        
         

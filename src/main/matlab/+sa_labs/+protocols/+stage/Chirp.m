@@ -43,6 +43,7 @@ classdef Chirp < sa_labs.protocols.StageProtocol
         function obj = Chirp()
             obj@sa_labs.protocols.StageProtocol();
             obj.meanLevel = 0.5;   % this protocol only (the contrast chirp needs a non-zero mean); the base default is unchanged
+            obj.protocolProjectorDefaults = struct('NDF', 3, 'uvLED', 100);   % recorded 2026-10-08
         end
 
         function prepareRun(obj)

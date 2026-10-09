@@ -26,6 +26,12 @@ classdef FlashedBar < sa_labs.protocols.StageProtocol
     end
     
     methods
+
+        function obj = FlashedBar()
+            obj@sa_labs.protocols.StageProtocol();
+            % projector defaults for this protocol only (recorded values, 2026-10)
+            obj.protocolProjectorDefaults = struct('NDF', 3, 'uvLED', 10);
+        end
                
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);

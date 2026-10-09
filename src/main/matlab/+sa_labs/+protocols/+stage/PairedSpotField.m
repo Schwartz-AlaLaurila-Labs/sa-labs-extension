@@ -63,6 +63,12 @@ classdef PairedSpotField < sa_labs.protocols.StageProtocol
     
     methods
 
+        function obj = PairedSpotField()
+            obj@sa_labs.protocols.StageProtocol();
+            % projector defaults for this protocol only (recorded values, 2026-10)
+            obj.protocolProjectorDefaults = struct('NDF', 3, 'uvLED', 100);
+        end
+
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj)
             %%

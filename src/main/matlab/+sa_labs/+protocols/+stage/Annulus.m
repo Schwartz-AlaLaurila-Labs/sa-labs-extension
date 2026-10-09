@@ -35,6 +35,12 @@ classdef Annulus < sa_labs.protocols.StageProtocol
         totalNumEpochs
     end
     methods
+
+        function obj = Annulus()
+            obj@sa_labs.protocols.StageProtocol();
+            % projector defaults for this protocol only (recorded values, 2026-10)
+            obj.protocolProjectorDefaults = struct('NDF', 5, 'uvLED', 10);
+        end
                 
         function prepareRun(obj)
             prepareRun@sa_labs.protocols.StageProtocol(obj);

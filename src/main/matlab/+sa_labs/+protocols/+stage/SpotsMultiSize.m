@@ -39,6 +39,12 @@ classdef SpotsMultiSize < sa_labs.protocols.StageProtocol
     end
     
     methods
+
+        function obj = SpotsMultiSize()
+            obj@sa_labs.protocols.StageProtocol();
+            % projector defaults for this protocol only (recorded values, 2026-10)
+            obj.protocolProjectorDefaults = struct('NDF', 3, 'uvLED', 10);
+        end
         function d = getPropertyDescriptor(obj, name)
             d = getPropertyDescriptor@sa_labs.protocols.StageProtocol(obj, name);
             switch name
